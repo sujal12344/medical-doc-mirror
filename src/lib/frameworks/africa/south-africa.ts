@@ -1,0 +1,137 @@
+import type { RegulatoryFramework } from "../types";
+
+export const ZA_FRAMEWORKS: RegulatoryFramework[] = [
+  {
+    id: "ZA_SAHPRA",
+    countryCode: "ZA",
+    countryName: "South Africa",
+    flag: "🇿🇦",
+    authority: "SAHPRA",
+    documentType: "Medical Device Registration",
+    sections: [
+      {
+        id: "s1",
+        title: "Administrative Information",
+        description: "Applicant details, responsible person, and device identification for SAHPRA registration",
+        fields: [
+          { id: "1.1", label: "Applicant (Registration Holder)", hint: "South African legal entity or authorized representative applying for SAHPRA medical device registration with company registration number (CIPC)" },
+          { id: "1.2", label: "Responsible Person", hint: "Designated responsible person per SAHPRA regulations with qualifications, contact details, and accountability for regulatory compliance in South Africa" },
+          { id: "1.3", label: "SAHPRA Registration Number", hint: "Existing SAHPRA medical device registration number for renewal or variation; leave blank for new applications via the SAHPRA online portal" },
+          { id: "1.4", label: "Device Name", hint: "Official device trade name as it will appear on the SAHPRA registration certificate, matching manufacturer labelling and marketing materials" },
+          { id: "1.5", label: "SAHPRA Classification", hint: "Risk classification per SAHPRA classification rules: Class A (low), B (low-moderate), C (moderate-high), or D (high) aligned with GHTF/IMDRF principles" },
+          { id: "1.6", label: "GMDN Code", hint: "Global Medical Device Nomenclature (GMDN) preferred term code and definition for the device as required by SAHPRA submission format" },
+        ],
+      },
+      {
+        id: "s2",
+        title: "Device Description",
+        description: "Comprehensive technical characterization of the device per SAHPRA requirements",
+        fields: [
+          { id: "2.1", label: "Device Description", hint: "Detailed technical description including design, dimensions, weight, operating principles, and key performance characteristics per SAHPRA technical documentation format", textarea: true },
+          { id: "2.2", label: "Intended Purpose", hint: "Precise statement of intended medical purpose per SAHPRA regulations including target condition, patient population, intended user, and clinical context", textarea: true },
+          { id: "2.3", label: "Technical Specifications", hint: "Measurable performance specifications including dimensions, tolerances, electrical ratings, output parameters, and operating/storage conditions" },
+          { id: "2.4", label: "Materials & Composition", hint: "Complete bill of materials for patient-contacting and critical components with material grades, biological origin, and substances of toxicological concern", textarea: true },
+          { id: "2.5", label: "Key Components", hint: "Critical subassemblies and functional components with part numbers, specifications, and supplier qualification status" },
+          { id: "2.6", label: "Software Information", hint: "Software version, IEC 62304 safety class, SaMD classification per IMDRF, SOUP inventory, cybersecurity considerations, and interoperability documentation", textarea: true },
+          { id: "2.7", label: "Accessories", hint: "All accessories and ancillary devices required for intended operation with compatibility specifications and individual regulatory status in South Africa" },
+          { id: "2.8", label: "Variants & Configurations", hint: "All models, sizes, and configurations included in the SAHPRA application with justification for grouping as a single device family" },
+          { id: "2.9", label: "Sterilization Method", hint: "Terminal sterilization method (EtO, gamma, e-beam, steam) or aseptic processing with SAL of 10⁻⁶ and reprocessing instructions if reusable" },
+        ],
+      },
+      {
+        id: "s3",
+        title: "Essential Requirements",
+        description: "Demonstration of conformity with SAHPRA essential requirements for safety and performance",
+        fields: [
+          { id: "3.1", label: "SAHPRA Essential Requirements Checklist", hint: "Clause-by-clause compliance matrix against SAHPRA essential principles of safety and performance (aligned with IMDRF essential principles) with evidence references", textarea: true },
+          { id: "3.2", label: "Applied Standards (SANS/ISO)", hint: "List of SANS (South African National Standards), ISO, and IEC standards applied with full designation, edition, and statement of conformity", textarea: true },
+          { id: "3.3", label: "Conformity Evidence", hint: "Summary of methods used to demonstrate compliance: testing, analysis, literature review, clinical data, or equivalence with document cross-references", textarea: true },
+        ],
+      },
+      {
+        id: "s4",
+        title: "Risk Management",
+        description: "Risk management documentation per ISO 14971 as required by SAHPRA",
+        fields: [
+          { id: "4.1", label: "Risk Management File (ISO 14971)", hint: "Complete risk management file per ISO 14971:2019 including plan, hazard analysis, risk evaluation, risk control measures, and risk management report", textarea: true },
+          { id: "4.2", label: "Hazard Identification", hint: "Systematic hazard identification using FMEA, FTA, or HAZOP covering normal use, foreseeable misuse, and single-fault conditions per ISO 14971", textarea: true },
+          { id: "4.3", label: "Risk Control Measures", hint: "Risk control measures in priority order: inherently safe design, protective measures, and information for safety with verification of effectiveness", textarea: true },
+          { id: "4.4", label: "Residual Risk Assessment", hint: "Evaluation of individual and overall residual risk after implementation of control measures with benefit-risk determination per ISO 14971 Clause 8" },
+        ],
+      },
+      {
+        id: "s5",
+        title: "Testing & Validation",
+        description: "Verification and validation testing per South African and international standards",
+        fields: [
+          { id: "5.1", label: "SANS Standards Testing", hint: "Test reports against applicable SANS standards (South African adoptions of ISO/IEC standards) from SANAS-accredited laboratories", textarea: true },
+          { id: "5.2", label: "Performance Testing", hint: "Design verification test reports demonstrating the device meets all design output specifications under nominal, worst-case, and simulated-use conditions", textarea: true },
+          { id: "5.3", label: "Biocompatibility (ISO 10993)", hint: "Biological evaluation per ISO 10993-1:2018 with endpoint selection based on body contact nature and duration, test reports from accredited labs", textarea: true },
+          { id: "5.4", label: "Electrical Safety (IEC 60601)", hint: "IEC 60601-1 Ed. 3.2 and applicable particular standards test reports for electrically powered medical devices from accredited test laboratories", textarea: true },
+          { id: "5.5", label: "Electromagnetic Compatibility (EMC)", hint: "IEC 60601-1-2 Ed. 4.1 EMC test report covering emissions and immunity for the intended electromagnetic environment in South Africa (230V/50Hz)" },
+          { id: "5.6", label: "Software Validation (IEC 62304)", hint: "Software verification and validation per IEC 62304 including unit, integration, and system testing with requirements traceability matrix", textarea: true },
+          { id: "5.7", label: "Sterilization Validation", hint: "Sterilization process validation per ISO 11135 (EtO), ISO 11137 (radiation), or ISO 17665 (moist heat) with SAL demonstration" },
+          { id: "5.8", label: "Stability / Shelf Life", hint: "Real-time and accelerated aging studies per ASTM F1980 with sterile barrier integrity testing per ISO 11607 throughout claimed shelf life" },
+          { id: "5.9", label: "Packaging Validation", hint: "Packaging system validation per ISO 11607 including seal strength, distribution simulation (ASTM D4169), and transit stability testing" },
+        ],
+      },
+      {
+        id: "s6",
+        title: "Clinical Evidence",
+        description: "Clinical data supporting safety and performance for SAHPRA evaluation",
+        fields: [
+          { id: "6.1", label: "Clinical Evaluation Report", hint: "Systematic clinical evaluation per MEDDEV 2.7/1 Rev 4 or SAHPRA-accepted methodology demonstrating overall benefit-risk acceptability", textarea: true },
+          { id: "6.2", label: "Clinical Data", hint: "Clinical investigation data per ISO 14155 (if conducted) or post-market clinical experience supporting safety and performance claims", textarea: true },
+          { id: "6.3", label: "Literature Review", hint: "Structured literature search with defined databases, search strategy, PICO criteria, critical appraisal, and data synthesis", textarea: true },
+          { id: "6.4", label: "Equivalence Analysis", hint: "Demonstration of clinical, technical, and biological equivalence to a comparator device per SAHPRA clinical evaluation guidance", textarea: true },
+        ],
+      },
+      {
+        id: "s7",
+        title: "Quality System",
+        description: "QMS certification, SAHPRA GMP audit, and quality documentation",
+        fields: [
+          { id: "7.1", label: "ISO 13485 Certification", hint: "Current ISO 13485:2016 certificate with scope covering the device, issued by a SANAS or IAF MLA signatory-accredited certification body" },
+          { id: "7.2", label: "SAHPRA GMP Audit", hint: "SAHPRA GMP inspection report or recognized international audit (MDSAP, EU NB audit) demonstrating manufacturing site compliance" },
+          { id: "7.3", label: "QMS Scope", hint: "Quality management system scope statement covering all products, processes, and sites included in the SAHPRA registration application" },
+          { id: "7.4", label: "CAPA Procedures", hint: "Corrective and preventive action procedures with documented effectiveness verification and links to complaint trending and audit findings", textarea: true },
+        ],
+      },
+      {
+        id: "s8",
+        title: "Labelling",
+        description: "English-language labelling and instructions for use per SAHPRA requirements",
+        fields: [
+          { id: "8.1", label: "Device Labels (English)", hint: "All device labels in English per SAHPRA labelling requirements including device name, manufacturer, SAHPRA registration number, and lot/serial" },
+          { id: "8.2", label: "Instructions for Use", hint: "Complete IFU in English with indications, contraindications, warnings, precautions, operating instructions, maintenance, and disposal guidance", textarea: true },
+          { id: "8.3", label: "Packaging Labels", hint: "Inner and outer packaging labels with storage conditions (considering South African climate), sterility indicators, and symbols per ISO 15223-1" },
+          { id: "8.4", label: "SAHPRA-Specific Labelling", hint: "SAHPRA-mandated labelling elements including registration number format, responsible person identification, and South African importer details" },
+        ],
+      },
+      {
+        id: "s9",
+        title: "Manufacturing",
+        description: "Manufacturing site information, processes, and supply chain details",
+        fields: [
+          { id: "9.1", label: "Manufacturing Sites", hint: "Name, address, and regulatory status of all manufacturing, assembly, packaging, and sterilization sites with scope of activities at each location" },
+          { id: "9.2", label: "Manufacturing Process", hint: "Process flow from raw materials to finished device release including critical steps, in-process controls, special processes, and validated parameters", textarea: true },
+          { id: "9.3", label: "Quality Control", hint: "Incoming, in-process, and final inspection/testing procedures with acceptance criteria, sampling plans (AQL), and measurement traceability" },
+          { id: "9.4", label: "Key Suppliers", hint: "Critical component and raw material suppliers with qualification status, quality agreements, and second-source strategies per ISO 13485 Clause 7.4" },
+        ],
+      },
+      {
+        id: "s10",
+        title: "Post-Market & Certificates",
+        description: "Post-market surveillance, vigilance reporting, and supporting regulatory certificates",
+        fields: [
+          { id: "10.1", label: "Adverse Event Reporting to SAHPRA", hint: "Procedure for reporting medical device adverse events and near-incidents to SAHPRA within mandated timelines (2 days serious, 10 days non-serious)", textarea: true },
+          { id: "10.2", label: "Post-Market Surveillance Plan", hint: "Proactive PMS plan per SAHPRA requirements including data collection, complaint trending, periodic safety reporting, and PMCF activities", textarea: true },
+          { id: "10.3", label: "Free Sale Certificate", hint: "Certificate of Free Sale from the country of origin confirming the device is legally marketed, apostilled or authenticated for South Africa" },
+          { id: "10.4", label: "ISO 13485 Certificate", hint: "Current ISO 13485:2016 certificate copy with certification body accreditation details, scope statement, and validity dates" },
+          { id: "10.5", label: "CE / FDA Certificate", hint: "EC/EU Declaration of Conformity with NB certificate or FDA 510(k)/PMA clearance — SAHPRA may accept prior CE or FDA approval as supporting evidence" },
+          { id: "10.6", label: "Foreign Regulatory Approvals", hint: "Summary of marketing authorizations in reference jurisdictions (FDA, EU, Japan, Canada, Australia) with approval dates and indication scope", textarea: true },
+        ],
+      },
+    ],
+  },
+];

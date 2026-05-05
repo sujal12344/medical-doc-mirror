@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Appendix III – Device Master File – MAGLUMI® HEV IgG (CLIA)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    color: #000;
+    background: #fff;
+    padding: 28px 32px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  /* ── PAGE HEADER ── */
+  .page-title {
+    text-align: center;
+    font-size: 13pt;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+  .note-box {
+    font-size: 9.5pt;
+    margin-bottom: 18px;
+    line-height: 1.5;
+  }
+  .note-box strong { font-weight: bold; }
+
+  /* ── SECTION HEADING ── */
+  .section-heading {
+    font-weight: bold;
+    font-size: 11pt;
+    margin: 18px 0 0 0;
+  }
+
+  /* ── MAIN TWO-COLUMN TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 0;
+  }
+  td, th {
+    border: 1px solid #000;
+    padding: 5px 7px;
+    vertical-align: top;
+    font-size: 10.5pt;
+    line-height: 1.5;
+  }
+  th {
+    font-weight: bold;
+    background: #fff;
+    text-align: left;
+  }
+
+  .col-left  { width: 36%; }
+  .col-right { width: 64%; }
+
+  .row-number {
+    width: 28px;
+    text-align: center;
+    font-weight: bold;
+  }
+
+  /* sub-table inside a cell */
+  .inner-table td, .inner-table th {
+    border: 1px solid #000;
+    font-size: 10pt;
+    padding: 4px 6px;
+  }
+  .inner-table th { background: #fff; font-weight: bold; }
+  .inner-table { width: 100%; border-collapse: collapse; margin-top: 4px; }
+
+  .bold { font-weight: bold; }
+  .underline { text-decoration: underline; }
+
+  ul.disc { padding-left: 20px; margin: 4px 0; }
+  ul.disc li { margin-bottom: 2px; }
+
+  p { margin: 3px 0; }
+
+  .section-label {
+    font-weight: bold;
+    text-align: center;
+    background: #fff;
+  }
+
+  /* no-top-border utility */
+  .no-top { border-top: none; }
+  .no-bottom { border-bottom: none; }
+
+  @media print {
+    .toolbar { display: none !important; }
+    body { padding: 12px 16px; }
+  }
+
+  /* ── TOP TOOLBAR ── */
+  .toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin: -10px 0 12px;
+    padding: 8px 0;
+    background: #fff;
+  }
+  .pdf-btn {
+    border: 1px solid #000;
+    background: #fff;
+    color: #000;
+    padding: 7px 12px;
+    font-size: 10.5pt;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  .pdf-btn:hover { background: #f3f3f3; }
+</style>
+</head>
+<body>
+
+<div class="toolbar">
+  <button class="pdf-btn" type="button" onclick="downloadPDF()">Download PDF</button>
+</div>
+
+<div class="page-title">Appendix III</div>
+<div class="page-title">DEVICE MASTER FILE FOR IN-VITRO DIAGNOSTIC MEDICAL DEVICES</div>
+
+<p class="note-box" style="margin-top:10px;">
+  <strong>Note:</strong> The manufacturer shall submit the duly signed and notarized information pertaining to Medical Device in the following format. All information/reports/data should be in English only. It is expected that the information submitted in the form of hard copy shall also be submitted in the form of hard copy shall also be submitted in the form of soft copy. The dossier shall have an index listing the details of the documents produced as requested here-under and shall reflect the page numbers.
+</p>
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 1 – EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════ -->
+<table>
+  <tr>
+    <td colspan="2" class="section-label">1. EXECUTIVE SUMMARY (Not more than three A4 size pages):</td>
+  </tr>
+  <tr>
+    <td colspan="2">An executive summary shall be provided by the manufacturer and shall contain:</td>
+  </tr>
+
+  <!-- 1.1 -->
+  <tr>
+    <td class="col-left">
+      <strong>1.1 Introductory<br/>Descriptive information on the in-vitro diagnostic medical device, the intended use and risk Class of in-vitro diagnostic medical device, novel features (if any), claimed shelf life and a synopsis on the content of the Dossier</strong>
+    </td>
+    <td class="col-right">
+      <p><strong>Product Name:</strong> {{1.1a}}</p>
+      <p><strong>Description:</strong> {{1.1b}}</p>
+      <p>{{1.1c}}</p>
+      <br/>
+      <p><strong>INTENDED USE:</strong> {{2.1b}}</p>
+      <p><strong>Risk Class:</strong> {{1.1e}}</p>
+      <p><strong>Shelf Life:</strong> {{1.1d}}</p>
+    </td>
+  </tr>
+
+  <!-- 1.2 -->
+  <tr>
+    <td class="col-left"><strong>1.2 Regulatory status of the similar device in India (approved or new in-vitro diagnostic medical device)</strong></td>
+    <td class="col-right">{{1.2}}</td>
+  </tr>
+
+  <!-- 1.3 -->
+  <tr>
+    <td class="col-left"><strong>1.3 Domestic price of the in-vitro diagnostic medical device in the currency followed in the country of origin</strong></td>
+    <td class="col-right">
+      <p>{{1.3}}</p>
+    </td>
+  </tr>
+
+  <!-- 1.4 -->
+  <tr>
+    <td class="col-left"><strong>1.4 Marketing history of the in-vitro diagnostic medical device from the date of introducing the in-vitro diagnostic medical device in the market</strong></td>
+    <td class="col-right">{{1.4}}</td>
+  </tr>
+
+  <!-- 1.5 -->
+  <tr>
+    <td class="col-left"><strong>1.5 List of regulatory approvals or marketing clearance obtained in below format (submit respective copy of approval certificate)</strong></td>
+    <td class="col-right">
+      <p>{{1.5}}</p>
+      <br/>
+      <table class="inner-table">
+        <thead>
+          <tr>
+            <th>S. No</th>
+            <th>Country</th>
+            <th>Approved Indication</th>
+            <th>Approved Shelf-Life</th>
+            <th>Composition and/or Material of Construction</th>
+            <th>Risk Class</th>
+            <th>Date of First Approval</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>1</td><td>USA</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+          <tr><td>2</td><td>Australia</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+          <tr><td>3</td><td>Japan</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+          <tr><td>4</td><td>Canada</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+          <tr><td>5</td><td>European Union<br/>Germany</td><td>N/A</td><td>N/A</td><td>Magnetic Microbeads, Calibrator Low, Calibrator High, Buffer, ABEI Label, Diluent, Controls (Control 1, Control 2)</td><td>IVDR class B</td><td></td></tr>
+          <tr><td>6</td><td>Other*</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td><td>N/A</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:9.5pt;margin-top:4px;">Other* - Optional</p>
+    </td>
+  </tr>
+
+  <!-- 1.6 -->
+  <tr>
+    <td colspan="2">
+      <strong>1.6 Status of pending request for market clearance</strong>
+      <table class="inner-table" style="margin-top:6px;">
+        <thead>
+          <tr>
+            <th>Regulatory Agency of the Country</th>
+            <th>Intended Use</th>
+            <th>Indication for Use</th>
+            <th>Registration Status and Date</th>
+            <th>Reason for Rejection/Withdrawal, if any</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="5">{{1.6}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+
+  <!-- 1.7 -->
+  <tr>
+    <td colspan="2">
+      <strong>1.7 Safety and Performance related information of the device:</strong><br/>
+      Summary of reportable events and field safety corrective action from the date of introduction. For adverse event (false diagnosis or any other hazard during its use)
+      <table class="inner-table" style="margin-top:6px;">
+        <thead>
+          <tr>
+            <th>Adverse Event (false diagnosis)</th>
+            <th>Frequency of Occurrence during the period (Number of Report/Total Units sold)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="2">{{1.7a}}</td></tr>
+        </tbody>
+      </table>
+      <br/>
+      For Field Safety Corrective Action (FSCA)
+      <table class="inner-table" style="margin-top:6px;">
+        <thead>
+          <tr>
+            <th>Date of FSCA</th>
+            <th>Reason for FSCA</th>
+            <th>Countries where FSCA was conducted</th>
+            <th>Description of the action taken</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="4">{{1.7b}}</td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+
+  <!-- 1.B -->
+  <tr>
+    <td colspan="2">
+      <strong>B</strong> If the in-vitro diagnostic medical device contains any of the following, then descriptive information on the following need to be provided
+    </td>
+  </tr>
+  <tr>
+    <td class="row-number">1</td>
+    <td colspan="1">Animal or Human Cells Tissues and/or derivatives there rendered non-viable &nbsp;&nbsp;&nbsp; Not Applicable</td>
+  </tr>
+  <tr>
+    <td class="row-number">2</td>
+    <td>Cells, Tissues and/or derivatives of Microbial recombinant origin &nbsp;&nbsp;&nbsp; Not Applicable</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 2 – DEVICE DESCRIPTION
+═══════════════════════════════════════════════════════ -->
+<table style="margin-top:18px;">
+  <tr>
+    <td colspan="2" class="section-label">2.0 Description and Specification, including variants and accessories of the in-vitro diagnostic medical device</td>
+  </tr>
+  <tr>
+    <td colspan="2" class="section-label">2.1 Device Description: The Device Master File should include the following device descriptive information</td>
+  </tr>
+
+  <!-- 2.1A header -->
+  <tr>
+    <td colspan="2"><strong>A It May Include:-</strong></td>
+  </tr>
+
+  <!-- 2.1A.1 -->
+  <tr>
+    <td class="row-number">1</td>
+    <td>What is Detected: {{2.1a}}</td>
+  </tr>
+
+  <!-- 2.1A.2 -->
+  <tr>
+    <td class="row-number">2</td>
+    <td>Its function (for example Screening, Monitoring, Diagnostics or Aid to Diagnosis, Staging or Aid to Staging of Disease) &nbsp;&nbsp; {{2.1b}}</td>
+  </tr>
+
+  <!-- 2.1A.3 -->
+  <tr>
+    <td class="row-number">3</td>
+    <td>
+      The Specific Disorder, Condition or Risk factor of interest that it is intended to Detect, Define or Differentiate
+      <p>{{2.1c}}</p>
+    </td>
+  </tr>
+
+  <!-- 2.1A.4 -->
+  <tr>
+    <td class="row-number">4</td>
+    <td>Whether it is Automated or not &nbsp;&nbsp; {{2.1d}}</td>
+  </tr>
+
+  <!-- 2.1A.5 -->
+  <tr>
+    <td class="row-number">5</td>
+    <td>Whether it is Qualitative or Quantitative &nbsp;&nbsp; {{2.1e}}</td>
+  </tr>
+
+  <!-- 2.1A.6 -->
+  <tr>
+    <td class="row-number">6</td>
+    <td>The type of specimen required (e.g. Serum, Plasma, Whole Blood, Tissue Biopsy, Urine) &nbsp;&nbsp; {{2.1f}}</td>
+  </tr>
+
+  <!-- 2.1A.7 -->
+  <tr>
+    <td class="row-number">7</td>
+    <td>Testing Population &nbsp;&nbsp; {{2.1g}}</td>
+  </tr>
+
+  <!-- 2.1B -->
+  <tr>
+    <td class="col-left"><strong>B</strong> The Intended User (lay person or professional)</td>
+    <td class="col-right">{{2.1h}}</td>
+  </tr>
+
+  <!-- 2.1C -->
+  <tr>
+    <td class="col-left"><strong>C</strong> A general description of the principle of the Assay Method</td>
+    <td class="col-right">
+      <p>{{2.1i}}</p>
+    </td>
+  </tr>
+
+  <!-- 2.1D -->
+  <tr>
+    <td class="col-left"><strong>D</strong> The Risk based class of the Device</td>
+    <td class="col-right">{{2.1e}}</td>
+  </tr>
+
+  <!-- 2.1E -->
+  <tr>
+    <td class="col-left"><strong>E</strong> A Description of the components (e.g. Reagents, Assay Controls and Calibrators) and where appropriate, a description of the reactive ingredients of relevant components (such as Antibodies, Antigens, Nucleic Acid primers) where applicable</td>
+    <td class="col-right">
+      <p>{{2.1j}}</p>
+    </td>
+  </tr>
+
+  <!-- 2.1F -->
+  <tr>
+    <td class="col-left"><strong>F</strong> A Description of the specimen collection and transport materials provided with the in-vitro diagnostic medical device or descriptions of specifications recommended for use</td>
+    <td class="col-right">
+      <p>{{2.1k}}</p>
+    </td>
+  </tr>
+
+  <!-- 2.1G -->
+  <tr>
+    <td class="col-left"><strong>G</strong> For Instruments of Automated Assays, a description of the appropriate assay characteristics or dedicated assays</td>
+    <td class="col-right">{{2.1l}}</td>
+  </tr>
+
+  <!-- 2.1H -->
+  <tr>
+    <td class="col-left"><strong>H</strong> For Automated Assays; a description of the appropriate instrumentation characteristics or dedicated instrumentation</td>
+    <td class="col-right">{{2.1m}}</td>
+  </tr>
+
+  <!-- 2.1I -->
+  <tr>
+    <td class="col-left"><strong>I</strong> A Description of any software to be used with the in-vitro diagnostic medical device</td>
+    <td class="col-right">{{2.1n}}</td>
+  </tr>
+
+  <!-- 2.1J -->
+  <tr>
+    <td class="col-left"><strong>J</strong> A Description or complete list of the various configurations/variants of the in-vitro diagnostic medical device that will be made available</td>
+    <td class="col-right">{{2.1o}}</td>
+  </tr>
+
+  <!-- 2.1K -->
+  <tr>
+    <td class="col-left"><strong>K</strong> A Description of the accessories, other in-vitro diagnostic medical device and other products that are not in-vitro diagnostic medical device, which are intended to be used in combination with the in-vitro diagnostic medical device</td>
+    <td class="col-right">
+      <p>{{2.1o}}</p>
+    </td>
+  </tr>
+
+  <tr>
+    <td colspan="2">Reference to the Manufacturer's previous Device Generation(s) or Similar Devices or Device history</td>
+  </tr>
+
+  <!-- 2.2 -->
+  <tr>
+    <td class="col-left">
+      <strong>2.2 For a new in-vitro diagnostic medical device:</strong><br/>
+      Where relevant to demonstrating conformity to the essential principles, and to provide general background information, the device master file may provide a summary of Clinical Performance Evaluation reports.
+    </td>
+    <td class="col-right">{{2.2}}</td>
+  </tr>
+
+  <!-- 2.3 -->
+  <tr>
+    <td colspan="2"><strong>2.3 For an in-vitro diagnostic medical device already available on the market in India:</strong></td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>I.</strong> This information may include a summary of the number of adverse event reports related to the safety and performance of this in vitro diagnostic medical device in relation to the number of in vitro diagnostic medical devices placed on the market.
+    </td>
+    <td class="col-right">{{2.3}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>II.</strong> External Certificates and Documents which give written evidence of conformity with the essential principles may be annexed to the device master file.
+    </td>
+    <td class="col-right">{{2.3}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>III.</strong> Comparative Analysis to prove substantial equivalence to the predicate device(s), if claimed in the application
+    </td>
+    <td class="col-right">{{2.3}}</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 3 – ESSENTIAL PRINCIPLES
+═══════════════════════════════════════════════════════ -->
+<table style="margin-top:18px;">
+  <tr>
+    <td colspan="2" class="section-label">3.0 ESSENTIAL PRINCIPLES (EP) CHECK LIST</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <p>i. The device master file should include an essential principles checklist that identifies:-</p>
+      <p style="margin-top:6px;">a. the essential principles of safety and performance;</p>
+      <p>b. whether each essential principle applies to the in vitro diagnostic medical device and if not, why not;</p>
+      <p>c. the method used to demonstrate conformity with each essential principle that applies; and</p>
+      <p>d. the reference to the actual technical documentation that offers evidence of conformity with each method used</p>
+    </td>
+    <td class="col-right">{{3a}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <p>ii. The method used to demonstrate conformity may include one or more of the following:-</p>
+      <p style="margin-top:6px;">a. conformity with recognized or other standards;</p>
+      <p>b. conformity with a commonly accepted industry test method (reference method)</p>
+      <p>c. conformity with appropriate in house test methods that have been validated and verified;</p>
+      <p>d. comparison to an in vitro diagnostic medical device already available on the market</p>
+    </td>
+    <td class="col-right">{{3b}}</td>
+  </tr>
+  <tr>
+    <td colspan="2">iii. The essential principles checklist should include a cross-reference to the location of such evidence both within the full technical documentation held by the manufacturer and within the Device master file (when such documentation is specifically required for inclusion in the Summary Technical Documentation as outlined in this guidance)</td>
+  </tr>
+  <tr>
+    <td colspan="2">A template for the check-list is shown in as under</td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <table class="inner-table">
+        <thead>
+          <tr>
+            <th>Essential Principle</th>
+            <th>Relevant Yes/No</th>
+            <th>Specification/standard Sub-clause/reference</th>
+            <th>Complies Yes/No</th>
+            <th>Document Reference</th>
+            <th>Justification and/or comments</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td>
+          </tr>
+        </tbody>
+      </table>
+    </td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 4 – RISK ANALYSIS
+═══════════════════════════════════════════════════════ -->
+<table style="margin-top:18px;">
+  <tr>
+    <td class="col-left"><strong>4.0 RISK ANALYSIS AND CONTROL SUMMARY</strong><br/><br/>
+    The device master file should contain a summary of the risks identified during the risk analysis process and a description of how these risks have been controlled to an acceptable level. Preferably, this risk analysis should be based on recognized standards and be part of the manufacturer's risk management plan. The summary should address possible hazards for the in vitro diagnostic medical device such as the risk from false positive or false negative results, indirect risks which may result from in vitro diagnostic medical device associated hazards, such as instability, which could lead to erroneous results, or from user-related hazards, such as reagents containing infectious agents. The results of the risk analysis should provide a conclusion with evidence that remaining risks are acceptable when compared to the benefits.</td>
+    <td class="col-right">{{4a}}<br/><br/>{{4b}}</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 5 – DESIGN & MANUFACTURING
+═══════════════════════════════════════════════════════ -->
+<table style="margin-top:18px;">
+  <tr>
+    <td colspan="2" class="section-label">5.0 DESIGN AND MANUFACTURING INFORMATION</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>5.1 Device Design</strong><br/><br/>
+      The Device master file should contain information to allow a reviewer to obtain a general understanding of the design applied to the in vitro diagnostic medical device. It should include a description of the critical ingredients of an assay such as antibodies, antigens, enzymes and nucleic acid primers provided or recommended for use with the in vitro diagnostic medical device. This section is not intended to take the place of the more detailed information required for a QMS audit or other conformity assessment activity. If design takes place at multiple sites, a controlling site must be identified.
+    </td>
+    <td class="col-right">{{5.1}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>5.2 Manufacturing Processes</strong><br/><br/>
+      The device master file should contain information to allow a reviewer to obtain a general understanding of the manufacturing processes. It is not intended to take the place of the more detailed information required for a QMS audit or other conformity assessment activity. The information may take the form of a process flow chart showing, for example, an overview of production including the technologies used, assembly, any in process and final product testing, and packaging of the finished in-vitro medical device.
+    </td>
+    <td class="col-right">{{5.2}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>5.3 Manufacturing Sites</strong><br/><br/>
+      The device master file should identify the sites where these activities are performed (this does not include the sites of all suppliers of raw materials but only the sites that are involved in critical manufacturing activities). If Quality Management System certificates, or the equivalent, exist for these sites, they may be annexed to the device master file.
+    </td>
+    <td class="col-right">{{5.3}}</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 6 – PRODUCT VALIDATION & VERIFICATION
+═══════════════════════════════════════════════════════ -->
+<table style="margin-top:18px;">
+  <tr>
+    <td colspan="2">
+      <strong>6. Product Validation and Verification:</strong><br/>
+      The information provided in the product validation and verification section of the device master file will vary in the level of detail as determined by the class of the device. The device master file should summarize the results of validation and verification studies undertaken to demonstrate conformity of the in vitro diagnostic medical device with the essential principles that apply to it. Where appropriate, such information might come from literature.<br/><br/>
+      For the purpose of the device master file document, summary and detailed information are defined as follows:
+    </td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>6.1 Summary Information</strong><br/><br/>
+      A summary should provide enough to assess the validity of that information by the regulatory authorities. This summary should contain a brief description of:<br/>
+      (a) the study protocol;<br/>
+      (b) the study results;<br/>
+      (c) The study conclusion.<br/><br/>
+      This summary may include:<br/>
+      (a) Where a recognized standard exists, a declaration/certificate of conformity to a recognized standard can be provided with a summary of the data if no acceptance criteria are specified in the standard;<br/>
+      (b) In the absence of a recognized standard, a declaration/certificate of conformity to a published standard that has not been recognized might be provided if it is supported by a rationale for its use, and summary of the data, and a conclusion, if no acceptance criteria are specified in the standard;
+    </td>
+    <td class="col-right">{{6.1}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      (c) In the absence of a recognized standard and non-recognized published standards, a professional guideline, industry method, or in-house standard may be referred to in the summarized information. However, it should be supported by a rationale for its use, a description of the method used, a summary of the data in sufficient detail and a conclusion to allow assessment of its adequacy;<br/>
+      (d) A review of relevant published literature regarding the device/analyze (measure and) or substantially similar in vitro diagnostic medical devices.
+    </td>
+    <td class="col-right">{{6.1}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>6.2 Detailed Information</strong><br/><br/>
+      Detailed information should include:<br/>
+      (a) complete study protocol;<br/>
+      (b) method of data analysis;<br/>
+      (c) complete study report;<br/>
+      (d) Study conclusion.<br/><br/>
+      For detailed information, when a recognized standard exists that contains the protocol and the method of data analysis, this information can be substituted by a declaration or certificate of conformity to the recognized standard along with a summary of the data and conclusions. Where appropriate, actual test result summaries with their acceptance criteria should be provided and not just pass/fail statements.
+    </td>
+    <td class="col-right">{{6.2}}</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 7–18 – ANALYTICAL STUDIES
+═══════════════════════════════════════════════════════ -->
+<table style="margin-top:18px;">
+
+  <!-- Section 7 -->
+  <tr>
+    <td class="col-left">
+      <strong>7 Analytical Studies</strong><br/><br/>
+      The statements and descriptions in the following sections refer to all in vitro diagnostic medical devices. It must be noted however that there are applicability differences between instrumentation and reagent-based assays, and that the assays themselves may be quantitative, semi-quantitative or qualitative in nature. There may be limited applicability of some of the following subsections for qualitative or semi-quantitative assays. Where possible, comments regarding instrumentation or qualitative assays appear in the subsections
+    </td>
+    <td class="col-right">{{7}}</td>
+  </tr>
+
+  <!-- Section 8 -->
+  <tr>
+    <td class="col-left">
+      a) This section should describe the different specimen types that can be used. This should include their stability and storage conditions. Stability includes storage and where applicable transport conditions. Storage includes elements such as duration, temperature limits and freeze/thaw cycles.
+    </td>
+    <td class="col-right">
+      <p>{{8a}}</p>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2" class="section-label">8 Specimen Type</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      (b) This section should include summary information for each matrix and anticoagulant when applicable, including a description of the measurement procedure for comparison or determination of measurement accuracy. This includes information such as specimen type tested, number of samples, sample range (using spiked samples as appropriate) or target concentrations tested, calculations and statistical methods, results and conclusions
+    </td>
+    <td class="col-right">{{8b}}</td>
+  </tr>
+
+  <!-- Section 9 -->
+  <tr>
+    <td colspan="2" class="section-label">9 Analytical Performance Characteristics</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>9.1 Accuracy of Measurement</strong><br/><br/>
+      This section should describe both trueness and precision studies.<br/><br/>
+      Explanation: - The general term measurement accuracy is currently used to cover both trueness and precision, whereas this term was used in the past to cover only the one component now named trueness. While measurement trueness, affected by systematic error, is normally expressed in terms of bias, measurement precision, affected by random error, is naturally expressed in terms of standard deviation; Accuracy is affected by a combination of systematic and random effects that contribute as individual components of the total error of measurement.
+    </td>
+    <td class="col-right">{{9.1}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>9.2 Reproducibility</strong><br/><br/>
+      This section should include reproducibility estimates and information about the studies used to estimate, as appropriate, variability between days, runs, sites, lots, operators and instruments. Such variability is also known as "Intermediate Precision". Reproducibility data is obtained for instrumentation in conjunction with an appropriate assay<br/><br/>
+      Note 1. - Such studies should include the use of samples that represent the full range of expected analyte (measure and) that can be measured by the test as claimed by the manufacturer<br/>
+      Note 2. - If a recognized standard is used, a declaration/certificate of conformity to the recognized standard along with a summary of the data and conclusions
+    </td>
+    <td class="col-right">{{9.2}}</td>
+  </tr>
+
+  <!-- Section 10 -->
+  <tr>
+    <td class="col-left">
+      This section should include information about the study design and results. It should provide a description of specimen type and preparation including matrix, analyte (measure and) levels, and how levels were established. The number of replicates tested at each concentration should also be provided as well as a description of the calculation used to determine assay sensitivity. For example:<br/>
+      (a) Number of standard deviations above the mean value of the sample without analyte (measure and), commonly referred to as limit of blank (LoB)<br/>
+      (b) Lowest concentration distinguishable from zero, based on measurements of samples containing analyte (measure and), commonly referred to as limit of detection (LoD)
+    </td>
+    <td class="col-right" rowspan="2">{{10}}</td>
+  </tr>
+  <tr>
+    <td class="col-left">
+      <strong>10 Analytical Sensitivity</strong><br/>
+      (c) Lowest concentration at which precision and/or trueness are within specified criteria, commonly referred to as limit of quantitation (LoQ)<br/><br/>
+      For Class C and D in vitro diagnostic medical devices, detailed information would be provided
+    </td>
+  </tr>
+
+  <!-- Section 11 -->
+  <tr>
+    <td class="col-left">
+      This section should describe interference and cross reactivity studies to determine the analytical specificity, defined as the ability of a measurement procedure to detect or measure only the analyte (measure and) to be detected, in the presence of other substances/agents in the sample.<br/><br/>
+      <strong>11 Analytical Specificity</strong><br/><br/>
+      Provide information on the evaluation of potentially interfering and cross reacting substances/agents on the assay. Information should be provided on the substance/agent type and concentration tested, sample type, analyte (measure and) test concentration, and results.<br/><br/>
+      Interferents and cross reacting substances/agents, which vary greatly depending on the assay type and design, could derive from exogenous or endogenous sources such as:<br/>
+      (a) Substances used for patient treatment (e.g. therapeutic drugs, anticoagulants, etc.);<br/>
+      (b) Substances ingested by the patient (e.g. over the counter medications, alcohol, vitamins, foods, etc.);<br/>
+      (c) substances added during sample preparation (e.g. preservatives, stabilizers);<br/>
+      (d) substances encountered in specific specimens types (e.g. hemoglobin, lipids, bilirubin, proteins);<br/>
+      (e) analytes of similar structure (e.g. precursors, metabolites) or medical conditions unrelated to the test condition including specimens negative for the assay but positive for a condition that may mimic the test condition (e.g. for a hepatitis A assay: test specimens negative for hepatitis A virus, but positive for hepatitis B virus).<br/><br/>
+      Explanation,- Interference studies involve adding the potential interferent to the sample and determining any bias of the test parameter relative to the control sample to which no interferent has been added.
+    </td>
+    <td class="col-right">{{11}}</td>
+  </tr>
+
+  <!-- Section 12 -->
+  <tr>
+    <td class="col-left">
+      <strong>12 Metrological Traceability of Calibrator and Control Material Values</strong><br/><br/>
+      Where applicable, summarize the information about metrological traceability of values assigned to calibrators and trueness control materials. Include, for example, methods and acceptance criteria for the metrological traceability to reference materials and/or reference measurement procedures and a description of value assignment and validation.<br/><br/>
+      Precision control materials, used when establishing the reproducibility of a measurement procedure do not require the assessment of metrological traceability to a reference material or a reference method.
+    </td>
+    <td class="col-right">{{12}}</td>
+  </tr>
+
+  <!-- Section 13 -->
+  <tr>
+    <td class="col-left">
+      <strong>13 Measuring Range of the Assay</strong><br/><br/>
+      This section should include a summary of studies which define the measuring range (linear and non-linear measuring systems) including the limit of detection and describe information on how these were established.<br/><br/>
+      This summary should include a description of specimen type, number of samples, number of replicates, and preparation including information on matrix, analyte (measure and) levels and how levels were established. If applicable, add a description of high dose hook effect and the data supporting the mitigation (e.g. dilution) steps.
+    </td>
+    <td class="col-right">{{13}}</td>
+  </tr>
+
+  <!-- Section 14 -->
+  <tr>
+    <td class="col-left">
+      <strong>14 Definition of Assay Cut-off</strong><br/><br/>
+      This section should provide a summary of analytical data with a description of the study design including methods for determining the assay cut-off, including:<br/>
+      (a) the population(s) studied (demographics / selection / inclusion and exclusion criteria / number of individuals included);<br/>
+      (b) method or mode of characterization of specimens; and<br/>
+      (c) Statistical methods e.g. Receiver Operator Characteristic (ROC) to generate results and if applicable, define gray zone/equivocal zone.
+    </td>
+    <td class="col-right">{{14}}</td>
+  </tr>
+
+  <!-- Section 15 -->
+  <tr>
+    <td class="col-left">
+      <strong>15 Stability (Excluding Specimen Stability)</strong><br/><br/>
+      This section should describe claimed shelf life, in use stability and shipping studies.
+    </td>
+    <td class="col-right">{{15}}</td>
+  </tr>
+
+  <!-- Section 16 -->
+  <tr>
+    <td class="col-left">
+      This section should provide information on stability testing studies to support the claimed shelf life. Testing should be performed on at least three different lots manufactured under conditions that are essentially equivalent to routine production conditions (these lots do not need to be consecutive lots). Accelerated studies or extrapolated data from real time data are acceptable for initial shelf life claim but need to be followed up with real time stability studies. Such detailed information should describe:<br/>
+      (a) the study report (including the protocol, number of lots, acceptance criteria and testing intervals);<br/>
+      (b) when accelerated studies have been performed in anticipation of the real time studies, the method used for accelerated studies;<br/><br/>
+      <strong>16 Claimed Shelf Life</strong><br/>
+      (c) Conclusions and claimed shelf life<br/><br/>
+      Explanation,- Shelf life can be derived from the lot with the longest real time stability data as long as accelerated or extrapolated data from all three lots are comparable.
+    </td>
+    <td class="col-right">{{16}}</td>
+  </tr>
+
+  <!-- Section 17 -->
+  <tr>
+    <td class="col-left">
+      This section should provide information on in use stability studies for one lot reflecting actual routine use of the device (real or simulated). This may include open vial stability and/or, for automated instruments, on board stability. In the case of automated instrumentation if calibration stability is claimed, supporting data should be included. Such detailed information should describe:<br/>
+      (a) the study report (including the protocol, acceptance criteria and testing intervals);<br/><br/>
+      <strong>17 In Use Stability</strong><br/>
+      (b) Conclusions and claimed in use stability.
+    </td>
+    <td class="col-right">{{17}}</td>
+  </tr>
+
+  <!-- Section 18 -->
+  <tr>
+    <td class="col-left">
+      This section should provide information on shipping stability studies for one lot to evaluate the tolerance of products to the anticipated shipping conditions. Shipping studies can be done under real and/or simulated conditions and should include variable shipping conditions such as extreme heat or cold. Such information should describe:<br/>
+      (a) the study report (including the protocol, acceptance criteria);<br/>
+      (b) method used for simulated conditions;<br/><br/>
+      <strong>18 Shipping Stability</strong><br/>
+      (c) Conclusion and recommended shipping conditions.
+    </td>
+    <td class="col-right">{{18}}</td>
+  </tr>
+
+  <!-- Section 19 -->
+  <tr>
+    <td class="col-left">
+      <strong>19 Clinical Evidence</strong><br/><br/>
+      The device master file should contain the Clinical Evidence, Evaluation report that demonstrates conformity of the in vitro diagnostic medical device to the Essential Principles that apply to it.
+    </td>
+    <td class="col-right">{{19}}</td>
+  </tr>
+
+  <!-- Section 20 -->
+  <tr>
+    <td class="col-left">
+      <strong>20 LABELLING</strong><br/><br/>
+      The device master file should typically contain a complete set of labeling associated with the in vitro medical device as described in Chapter VI.
+    </td>
+    <td class="col-right">{{20}}</td>
+  </tr>
+
+  <!-- Section 21 -->
+  <tr>
+    <td class="col-left">
+      <strong>21 Post marketing surveillance data (vigilance reporting)</strong><br/><br/>
+      The dossier should contain the post marketing surveillance or vigilance reporting procedures and data collected by the manufacturer encompassing the details of the complaints received and corrective and Preventive actions taken for the same.
+    </td>
+    <td class="col-right">{{21}}</td>
+  </tr>
+</table>
+
+
+<!-- ═══════════════════════════════════════════════════════
+     SECTION 22 – ADDITIONAL IVD INFORMATION
+═══════════════════════════════════════════════════════ -->
+<table style="margin-top:18px;">
+  <tr>
+    <td colspan="3" class="section-label">22 Information required to be submitted for the in vitro diagnostic medical device:</td>
+  </tr>
+  <tr>
+    <td class="row-number">1</td>
+    <td>The details of source antigen or antibody as the case may be and characterization of the same. Process control of coating of antigen or antibody on the base material like Nitrocellulose paper, strips or cards or ELISA wells etc. Detailed composition of the in vitro diagnostic medical device and manufacturing flow chart process of the in vitro diagnostic medical device showing the specific flow diagram of individual components or source of the individual components.</td>
+    <td>{{22.1}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">2</td>
+    <td>Test protocol of the in vitro diagnostic medical device showing the specifications and method of testing. In house evaluation report of sensitivity, specificity and stability studies carried out by the manufacturer.</td>
+    <td>{{22.2}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">3</td>
+    <td>In case of imported diagnostic in vitro diagnostic medical devices, the report of evaluation in details conducted by the National Control Authority of country of origin.</td>
+    <td>{{22.3}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">4</td>
+    <td>Specimen batch test report for at least consecutive 3 batches showing specification of each testing parameter.</td>
+    <td>{{22.4}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">5</td>
+    <td>The detailed test report of all the components used/packed in the finished in vitro diagnostic medical device.</td>
+    <td>{{22.5}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">6</td>
+    <td>Pack size and labeling.</td>
+    <td>{{22.6}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">7</td>
+    <td>Product inserts.</td>
+    <td>{{22.7}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">8</td>
+    <td>Specific evaluation report, if done by any laboratory in India, showing the sensitivity and specificity of the in vitro diagnostic medical device.</td>
+    <td>{{22.8}}</td>
+  </tr>
+  <tr>
+    <td class="row-number">9</td>
+    <td>Specific processing like safe handling, material control, area control, process control, and stability studies, storage at quarantine stage and finished stage, packaging should be highlighted in the product dossier</td>
+    <td>{{22.9}}</td>
+  </tr>
+</table>
+{{__ADDITIONAL_FIELDS__}}
+
+<script>
+function downloadPDF() {
+  const prevTitle = document.title;
+  document.title = "Appendix_III_DMF_MAGLUMI_HEV_IgG_CLIA";
+  window.print();
+  document.title = prevTitle;
+}
+</script>
+</body>
+</html>

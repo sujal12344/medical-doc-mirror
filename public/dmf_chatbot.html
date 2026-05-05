@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DMF Form Assistant — Multilingual</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --bg:#f7f5f2;--surface:#ffffff;--surface2:#faf9f7;--border:#e8e3dc;--border2:#d7cfc5;
+  --accent:#d97757;--accent-light:#fff4ee;--accent2:#c86645;
+  --text:#1f1b16;--text-muted:#746a5e;--text-dim:#9a8f82;
+  --success:#2f7a51;--success-light:#eef8f1;
+  --warning:#9a6a00;--pending:#6d6357;--pending-light:#f2efeb;
+  --danger:#a12727;
+  --radius:12px;
+  --sh:0 1px 2px rgba(31,27,22,.04),0 8px 20px rgba(31,27,22,.04);
+  --shm:0 1px 2px rgba(31,27,22,.05),0 14px 28px rgba(31,27,22,.08);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden;font-size:13px;letter-spacing:.1px}
+
+/* LANG GATE */
+.lgate{position:fixed;inset:0;background:linear-gradient(135deg,#0f172a,#1e1b4b 50%,#0f172a);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;z-index:999;padding:24px}
+.lgate-ico{width:72px;height:72px;background:linear-gradient(135deg,#3b82f6,#6366f1);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;box-shadow:0 0 40px rgba(99,102,241,.4)}
+.lgate h1{font-size:26px;font-weight:700;color:#fff;text-align:center;letter-spacing:-.5px}
+.lgate p{color:#94a3b8;font-size:14px;text-align:center;max-width:380px;line-height:1.6}
+.lgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;max-width:560px;width:100%}
+.lbtn{display:flex;flex-direction:column;align-items:center;gap:6px;padding:18px 10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:14px;cursor:pointer;transition:all .2s;color:#fff;font-family:'Inter',sans-serif}
+.lbtn:hover{background:rgba(255,255,255,.12);border-color:#6366f1;transform:translateY(-3px);box-shadow:0 8px 24px rgba(99,102,241,.3)}
+.lbtn .flag{font-size:30px}.lbtn .lname{font-size:13px;font-weight:600}.lbtn .lnat{font-size:11px;color:#94a3b8}
+
+/* TOPBAR */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;gap:14px;height:64px;flex-shrink:0;box-shadow:var(--sh);position:relative;z-index:10}
+.tlogo{display:flex;align-items:center;gap:10px}
+.tlogo-ic{width:34px;height:34px;background:var(--accent-light);border:1px solid #f1d8cd;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;box-shadow:none}
+.tlogo b{font-size:16px;font-weight:700;letter-spacing:-.2px}
+.tlogo small{font-size:11px;color:var(--text-muted);display:block;margin-top:-1px}
+.bi-main{display:block;font-weight:700;color:var(--text);line-height:1.2}
+.bi-sub{display:block;font-weight:500;color:var(--text-muted);font-size:.86em;line-height:1.2;margin-top:1px}
+.tdiv{width:1px;height:30px;background:var(--border);flex-shrink:0}
+
+/* PROGRESS in header */
+.prog-wrap{display:flex;align-items:center;gap:14px;flex:1}
+.pstat{display:flex;flex-direction:column;align-items:center;line-height:1.1;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 10px;min-width:72px}
+.pstat .num{font-size:19px;font-weight:700}
+.pstat .lbl{font-size:9px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;margin-top:1px}
+.pstat .lbl .bi-main{font-size:9px;text-transform:uppercase;letter-spacing:.6px}
+.pstat .lbl .bi-sub{font-size:8px;letter-spacing:.35px;margin-top:0}
+.pstat.tot .num{color:var(--text)}
+.pstat.fil .num{color:var(--success)}
+.pstat.pen .num{color:var(--pending)}
+.pbar-wrap{flex:1;max-width:320px}
+.pbar-track{height:8px;background:#eef2f5;border-radius:99px;overflow:hidden;border:1px solid #dde4ea}
+.pbar-fill{height:100%;border-radius:99px;background:var(--accent);transition:width .5s ease}
+.pbar-pct{font-size:11px;font-weight:600;color:var(--text-muted);margin-top:4px;text-align:right}
+
+.tright{display:flex;align-items:center;gap:8px;margin-left:auto}
+.lang-toggle{display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font-size:11px;color:var(--text-muted)}
+.lang-toggle input{accent-color:var(--accent)}
+select{font-family:'Inter',sans-serif;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;cursor:pointer;outline:none}
+select:focus{border-color:var(--accent)}
+.upbtn{display:flex;align-items:center;gap:6px;padding:8px 14px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;position:relative;overflow:hidden;white-space:nowrap;box-shadow:none}
+.upbtn:hover{background:var(--accent2)}
+.upbtn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.clrbn{padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:6px;font-family:'Inter',sans-serif;font-size:12px;color:var(--text-muted);cursor:pointer;transition:all .15s}
+.clrbn:hover{border-color:var(--danger);color:var(--danger)}
+
+/* MAIN */
+.main{display:flex;flex:1;overflow:hidden}
+
+/* FORM PANEL */
+.fpanel{flex:1;overflow-y:auto;padding:22px;background:var(--bg)}
+.fpanel::-webkit-scrollbar{width:5px}
+.fpanel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+.fdoc{max-width:980px;margin:0 auto}
+
+.sec-block{border:1px solid var(--border);border-radius:14px;background:var(--surface);margin:0 0 14px;box-shadow:var(--sh)}
+.sec-hdr{display:flex;align-items:center;gap:10px;padding:12px 13px;border-bottom:1px solid var(--border);background:var(--surface2);cursor:pointer;user-select:none}
+.sec-num{width:27px;height:27px;border-radius:999px;background:#f7e8df;color:#8a4a32;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0}
+.sec-title{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.sec-cnt{margin-left:auto;font-size:11px;color:var(--text-muted);background:var(--surface2);padding:4px 9px;border-radius:999px;border:1px solid var(--border)}
+.sec-toggle{margin-left:8px;font-size:12px;color:var(--text-muted);font-weight:700}
+.sec-body{padding:10px 10px 2px}
+.sec-block.collapsed .sec-body{display:none}
+.sec-block.collapsed .sec-toggle{transform:rotate(-90deg)}
+
+.qcard{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin-bottom:10px;overflow:hidden;transition:border-color .2s,box-shadow .2s;box-shadow:none}
+.qcard:hover{border-color:var(--border2);box-shadow:var(--shm)}
+.qcard.filled{border-left:3px solid #82c49d}
+.qcard.pending{border-left:3px solid #e8e3dc}
+
+.qhdr{display:flex;align-items:flex-start;gap:10px;padding:12px 14px 8px;background:var(--surface)}
+.qnum{font-size:10px;font-weight:600;color:var(--text-muted);font-family:'JetBrains Mono',monospace;background:#f8f5f1;padding:2px 6px;border-radius:999px;flex-shrink:0;margin-top:1px;border:1px solid var(--border)}
+.qlabel{font-size:13.5px;font-weight:600;color:var(--text);flex:1;line-height:1.45}
+.qstat{flex-shrink:0;font-size:10px;font-weight:600;padding:2px 8px;border-radius:12px;margin-top:1px}
+.qstat.empty{background:var(--surface2);color:var(--text-muted)}
+.qstat.filled{background:var(--success-light);color:var(--success)}
+.qstat.aifil{background:var(--accent-light);color:var(--accent)}
+
+.qbody{padding:10px 14px 13px;border-top:1px solid var(--border)}
+.qinp{width:100%;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:8px 10px;resize:vertical;min-height:36px;outline:none;transition:border-color .15s,background .15s;line-height:1.5}
+.qinp:focus{border-color:var(--accent);background:#fff;box-shadow:0 0 0 3px rgba(217,119,87,.15)}
+.qinp.hv{background:var(--success-light);border-color:#a7f3d0}
+.qinp.av{background:var(--accent-light);border-color:#bfdbfe}
+.qsplit{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qcol{background:#fff;border:1px solid var(--border);border-radius:10px;padding:8px}
+.qcol .qlbl{font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.qcol .qlbl::before{content:'';width:6px;height:6px;border-radius:50%;background:#94a3b8;display:inline-block}
+.qcol.eng .qlbl::before{background:#d97757}
+.qeng{background:#f8fafc}
+.qeng.av{background:#fff2eb;border-color:#f0c7b4}
+@media (max-width:1200px){.qsplit{grid-template-columns:1fr}}
+.qhint{font-size:11px;color:var(--text-muted);margin-top:8px;line-height:1.45;background:#faf8f5;border:1px solid var(--border);border-radius:8px;padding:7px 9px}
+.qsrc{display:inline-flex;align-items:center;gap:4px;margin-top:5px;font-size:10px;font-family:'JetBrains Mono',monospace;background:var(--accent-light);color:#8a4a32;padding:2px 7px;border-radius:999px;border:1px solid #f0c7b4}
+
+/* CHAT PANEL */
+.cpanel{width:430px;flex-shrink:0;background:var(--surface);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--sh)}
+.ctop{padding:14px 14px;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
+.ctop h3{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px}
+.ctop p{font-size:11px;color:var(--text-muted);line-height:1.4}
+.dtags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.dtag{display:flex;align-items:center;gap:4px;padding:4px 9px;background:var(--success-light);border:1px solid #bfe3c8;border-radius:999px;font-size:11px;color:var(--success);font-weight:600}
+.dtag button{background:none;border:none;cursor:pointer;color:var(--success);font-size:11px;padding:0;line-height:1}
+.dtag button:hover{color:var(--danger)}
+.nodoc{font-size:11px;color:var(--text-muted);font-style:italic}
+
+.afbar{padding:10px 12px;border-bottom:1px solid #f0e3d7;background:#fff8f3;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.afbar span{font-size:11px;color:#8a4a32;flex:1}
+.afbtn{padding:6px 12px;background:var(--accent);color:#fff;border:none;border-radius:999px;font-family:'Inter',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:all .15s}
+.afbtn:hover{background:var(--accent2)}.afbtn:disabled{background:var(--border2);cursor:not-allowed}
+
+.msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;background:var(--surface2)}
+.msgs::-webkit-scrollbar{width:4px}
+.msgs::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+.msg{display:flex;gap:8px}
+.msg.user{flex-direction:row-reverse}
+.mav{width:27px;height:27px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:2px}
+.msg.bot .mav{background:#efe9e2;color:#7a6e62}
+.msg.user .mav{background:#f4eee7;border:1px solid var(--border)}
+.mbub{max-width:315px;padding:10px 13px;border-radius:16px;font-size:12.5px;line-height:1.55}
+.msg.bot .mbub{background:#fff;border:1px solid var(--border);border-top-left-radius:6px;color:var(--text)}
+.msg.user .mbub{background:#f3ece5;color:var(--text);border:1px solid #e9dfd4;border-top-right-radius:6px}
+.mbub strong{font-weight:600}
+
+.typing-ind{display:flex;align-items:center;gap:4px;padding:10px 11px}
+.typing-ind span{width:6px;height:6px;background:var(--text-muted);border-radius:50%;animation:pulse 1.2s infinite}
+.typing-ind span:nth-child(2){animation-delay:.2s}
+.typing-ind span:nth-child(3){animation-delay:.4s}
+@keyframes pulse{0%,80%,100%{opacity:.2;transform:scale(.7)}40%{opacity:1;transform:scale(1)}}
+
+.cinput{padding:12px;border-top:1px solid var(--border);flex-shrink:0;background:#fff}
+.cinrow{display:flex;gap:7px;align-items:flex-end;background:#fff;border:1px solid var(--border);border-radius:18px;padding:7px 7px 7px 12px;transition:border-color .15s, box-shadow .15s}
+.cinrow:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(217,119,87,.14)}
+.cinrow textarea{flex:1;background:none;border:none;font-family:'Inter',sans-serif;font-size:13px;color:var(--text);resize:none;outline:none;min-height:20px;max-height:80px;line-height:1.4;padding:2px 0}
+.cinrow textarea::placeholder{color:var(--text-muted)}
+.attbtn{width:31px;height:31px;background:var(--surface2);border:1px solid var(--border);border-radius:999px;color:var(--text-muted);cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.attbtn:hover{border-color:var(--accent);color:var(--accent);background:#fff}
+.sndbtn{width:31px;height:31px;background:var(--accent);border:none;border-radius:999px;color:#fff;cursor:pointer;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.sndbtn:hover{background:#1d4ed8}.sndbtn:disabled{background:var(--border2);cursor:not-allowed}
+.chint{font-size:10px;color:var(--text-muted);margin-top:5px;text-align:center}
+kbd{font-family:'JetBrains Mono',monospace;font-size:10px;background:var(--surface);border:1px solid var(--border);border-radius:3px;padding:1px 4px;color:var(--text-muted)}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.legend .item{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#55657d;background:#fff;border:1px solid #e2e8f0;padding:5px 8px;border-radius:999px}
+.legend .dot{width:7px;height:7px;border-radius:50%}
+.legend .dot.pending{background:#cbd5e1}
+.legend .dot.filled{background:#10b981}
+.legend .dot.ai{background:#6366f1}
+.doc-toolbar{display:flex;justify-content:flex-end;gap:8px;margin:0 0 12px}
+.pdf-btn{border:1px solid #000;background:#fff;color:#000;padding:7px 12px;font-size:10.5pt;font-weight:700;cursor:pointer}
+.pdf-btn:hover{background:#f3f3f3}
+
+@page { size: A4; margin: 12mm; }
+@media print{
+  body{background:#fff !important;padding:0 !important;max-width:none !important}
+  .lgate,.topbar,.cpanel,.main{display:none !important}
+  .print-doc{display:block !important}
+  .print-doc{
+    font-family: Arial, sans-serif;
+    font-size: 11pt;
+    color:#000;
+    background:#fff;
+    max-width:900px;
+    margin:0 auto;
+    padding:0;
+  }
+  .print-doc .ptitle{text-align:center;font-size:13pt;font-weight:bold;margin-bottom:6px}
+  .print-doc .pnote{font-size:9.5pt;line-height:1.5;margin-bottom:18px}
+  .print-doc table{width:100%;border-collapse:collapse;margin-bottom:0}
+  .print-doc td,.print-doc th{border:1px solid #000;padding:5px 7px;vertical-align:top;font-size:10.5pt;line-height:1.5}
+  .print-doc th{font-weight:bold;background:#fff;text-align:left}
+  .print-doc .section-label{font-weight:bold;text-align:center;background:#fff}
+  .print-doc .col-left{width:36%}
+  .print-doc .col-right{width:64%}
+}
+</style>
+</head>
+<body>
+
+<!-- LANG GATE -->
+<div class="lgate" id="lgate">
+  <div class="lgate-ico">📋</div>
+  <h1>DMF Form Assistant</h1>
+  <p>Multilingual AI assistant for Device Master Files (IVD). Select your language to begin.</p>
+  <div class="lgrid">
+    <button class="lbtn" onclick="pickLang('en')"><span class="flag">🇬🇧</span><span class="lname">English</span><span class="lnat">English</span></button>
+    <button class="lbtn" onclick="pickLang('zh')"><span class="flag">🇨🇳</span><span class="lname">Chinese</span><span class="lnat">中文</span></button>
+    <button class="lbtn" onclick="pickLang('ko')"><span class="flag">🇰🇷</span><span class="lname">Korean</span><span class="lnat">한국어</span></button>
+    <button class="lbtn" onclick="pickLang('ja')"><span class="flag">🇯🇵</span><span class="lname">Japanese</span><span class="lnat">日本語</span></button>
+    <button class="lbtn" onclick="pickLang('hi')"><span class="flag">🇮🇳</span><span class="lname">Hindi</span><span class="lnat">हिन्दी</span></button>
+    <button class="lbtn" onclick="pickLang('de')"><span class="flag">🇩🇪</span><span class="lname">German</span><span class="lnat">Deutsch</span></button>
+    <button class="lbtn" onclick="pickLang('fr')"><span class="flag">🇫🇷</span><span class="lname">French</span><span class="lnat">Français</span></button>
+    <button class="lbtn" onclick="pickLang('ar')"><span class="flag">🇸🇦</span><span class="lname">Arabic</span><span class="lnat">العربية</span></button>
+  </div>
+</div>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tlogo">
+    <div class="tlogo-ic">📋</div>
+    <div><b id="appTitle">DMF Form Assistant</b><small id="appSub">Device Master File — IVD Medical Devices</small></div>
+  </div>
+  <div class="tdiv"></div>
+  <div class="prog-wrap">
+    <div class="pstat tot"><span class="num" id="sTot">0</span><span class="lbl" id="lblTot">Total</span></div>
+    <div class="pstat fil"><span class="num" id="sFil">0</span><span class="lbl" id="lblFil">Filled</span></div>
+    <div class="pstat pen"><span class="num" id="sPen">0</span><span class="lbl" id="lblPen">Pending</span></div>
+    <div class="pbar-wrap">
+      <div class="pbar-track"><div class="pbar-fill" id="pbarFill" style="width:0%"></div></div>
+      <div class="pbar-pct" id="pbarPct">0% complete</div>
+    </div>
+  </div>
+  <div class="tright">
+    <select id="lsel" onchange="changeLang(this.value)">
+      <option value="en">🇬🇧 English</option>
+      <option value="zh">🇨🇳 中文</option>
+      <option value="ko">🇰🇷 한국어</option>
+      <option value="ja">🇯🇵 日本語</option>
+      <option value="hi">🇮🇳 हिन्दी</option>
+      <option value="de">🇩🇪 Deutsch</option>
+      <option value="fr">🇫🇷 Français</option>
+      <option value="ar">🇸🇦 العربية</option>
+    </select>
+    <label class="lang-toggle" title="Show local + English together">
+      <input id="dualLang" type="checkbox" onchange="setDualMode(this.checked)">
+      Dual language
+    </label>
+    <button class="upbtn" type="button" onclick="document.getElementById('fileInput').click()" style="display:none">
+      <span id="uploadLbl">📎 Upload Documents</span>
+    </button>
+    <input id="fileInput" type="file" accept=".pdf,.docx,.txt,.doc" multiple style="display:none" onchange="handleUpload(this.files); this.value='';">
+    <button class="clrbn" onclick="clearForm()" id="clearLbl">🗑 Clear All</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="fpanel" id="fpanel"></div>
+  <div class="cpanel">
+    <div class="ctop">
+      <h3 id="aiHdr">🤖 AI Document Assistant</h3>
+      <p id="cdesc">Upload your COA, clinical report or DMF document — I'll auto-fill matching fields instantly.</p>
+      <div class="dtags" id="dtags"><span class="nodoc" id="nodocMsg">No documents uploaded yet</span></div>
+    </div>
+    <div class="afbar" id="afbar" style="display:none">
+      <span id="afText">📄 Document ready — auto-fill all blank fields?</span>
+      <button class="afbtn" id="afBtn" onclick="autoFillAll()">✨ Fill All</button>
+    </div>
+    <div class="msgs" id="msgs"></div>
+    <div class="cinput">
+      <div class="cinrow">
+        <textarea id="cinp" rows="1" placeholder="Ask about any field or your document…" onkeydown="ck(event)" oninput="ar(this)"></textarea>
+        <button class="attbtn" type="button" onclick="document.getElementById('fileInput').click()" title="Upload documents">📎</button>
+        <button class="sndbtn" id="sndbtn" onclick="sendChat()">➤</button>
+      </div>
+      <div class="chint" id="chatHint"><kbd>Enter</kbd> send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> new line</div>
+    </div>
+  </div>
+</div>
+<div class="print-doc" id="printDoc" style="display:none"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script>
+// ─────────────────────────────────────────
+// ALL DMF QUESTIONS
+// ─────────────────────────────────────────
+const SECTIONS = [
+  { id:'S1', num:'1', title:'Executive Summary', qs:[
+    {id:'1.1a', num:'1.1', label:'Product Name', hint:'Full commercial name of the IVD medical device', ta:false},
+    {id:'1.1b', num:'1.1', label:'Device Description', hint:'Brief description: purpose, technology, mechanism of action', ta:true},
+    {id:'1.1c', num:'1.1', label:'Novel Features (if any)', hint:'Any features that distinguish it from existing devices', ta:true},
+    {id:'1.1d', num:'1.1', label:'Claimed Shelf Life', hint:'e.g. 18 months from date of manufacture', ta:false},
+    {id:'1.1e', num:'1.1', label:'Risk Class of Device', hint:'Class A / B / C / D per IVDR or applicable local regulation', ta:false},
+    {id:'1.1f', num:'1.1', label:'Synopsis of Dossier Contents', hint:'Brief overview of all sections submitted in the dossier', ta:true},
+    {id:'1.2',  num:'1.2', label:'Regulatory Status of Similar Device in India', hint:'Whether approved or new IVD medical device in India', ta:false},
+    {id:'1.3',  num:'1.3', label:'Domestic Price in Country of Origin Currency', hint:'Price per unit in the currency of the manufacturing country', ta:true},
+    {id:'1.4',  num:'1.4', label:'Marketing History', hint:'Marketing history from date of first introduction to market', ta:true},
+    {id:'1.5',  num:'1.5', label:'Regulatory Approvals / Marketing Clearances (Table)', hint:'Country | Approved Indication | Shelf-Life | Composition/Material | Risk Class | Date of First Approval', ta:true},
+    {id:'1.6',  num:'1.6', label:'Pending Requests for Market Clearance (Table)', hint:'Regulatory Agency | Intended Use | Indication | Registration Status & Date | Reason for Rejection/Withdrawal', ta:true},
+    {id:'1.7a', num:'1.7', label:'Summary of Reportable Adverse Events', hint:'Summary of adverse events since date of introduction with frequency of occurrence', ta:true},
+    {id:'1.7b', num:'1.7', label:'Field Safety Corrective Actions (FSCA)', hint:'Date of FSCA | Reason for FSCA | Countries where FSCA was conducted | Description of action taken', ta:true},
+  ]},
+  { id:'S2', num:'2', title:'Description & Specification of Device', qs:[
+    {id:'2.1a', num:'2.1', label:'What is Detected (Analyte / Measurand)', hint:'Specific analyte, pathogen, antibody, antigen, or substance detected', ta:false},
+    {id:'2.1b', num:'2.1', label:'Device Function', hint:'Screening / Monitoring / Diagnostics / Aid to Diagnosis / Staging / Aid to Staging', ta:false},
+    {id:'2.1c', num:'2.1', label:'Specific Disorder / Condition / Risk Factor Detected', hint:'Include limitations, precautions, and special patient considerations', ta:true},
+    {id:'2.1d', num:'2.1', label:'Automated or Manual?', hint:'State clearly: Automated / Semi-automated / Manual', ta:false},
+    {id:'2.1e', num:'2.1', label:'Qualitative or Quantitative?', hint:'Qualitative / Semi-quantitative / Quantitative', ta:false},
+    {id:'2.1f', num:'2.1', label:'Specimen Type Required', hint:'e.g. Serum, Plasma, Whole Blood, Urine, Tissue Biopsy, CSF', ta:false},
+    {id:'2.1g', num:'2.1', label:'Testing Population', hint:'Human / Animal / Both', ta:false},
+    {id:'2.1h', num:'2.1', label:'Intended User', hint:'Lay person / Professional / Point-of-care / Laboratory', ta:false},
+    {id:'2.1i', num:'2.1', label:'General Description of Assay Principle', hint:'Technology used (ELISA, CLIA, PCR, LFIA, turbidimetry, etc.) and step-by-step mechanism', ta:true},
+    {id:'2.1j', num:'2.1', label:'Components Description (Reagents, Controls, Calibrators)', hint:'Each component: name, reactive ingredient, concentration/amount, function', ta:true},
+    {id:'2.1k', num:'2.1', label:'Specimen Collection & Transport Specifications', hint:'Collection materials recommended, handling instructions, required sample volume, stability', ta:true},
+    {id:'2.1l', num:'2.1', label:'Instrumentation / Analyzer (for Automated Assays)', hint:'Dedicated instrument name, model, specifications, compatibility', ta:true},
+    {id:'2.1m', num:'2.1', label:'Software Used with Device (if applicable)', hint:'Software name, version, function; N/A if not applicable', ta:true},
+    {id:'2.1n', num:'2.1', label:'Configurations / Variants Available', hint:'All product sizes, pack configurations and variants made available', ta:true},
+    {id:'2.1o', num:'2.1', label:'Accessories and Companion Devices', hint:'All accessories, instruments and other products intended for use in combination', ta:true},
+    {id:'2.2',  num:'2.2', label:'Clinical Performance Evaluation Summary (New Device)', hint:'Summary of clinical performance evaluation reports; N/A if device is not new', ta:true},
+    {id:'2.3',  num:'2.3', label:'Adverse Event Summary & External Certificates (Existing Market Device)', hint:'Number of adverse event reports relative to units placed on market; external conformity certificates', ta:true},
+  ]},
+  { id:'S3', num:'3', title:'Essential Principles (EP) Checklist', qs:[
+    {id:'3a', num:'3.0', label:'EP Checklist — Safety and Performance Principles', hint:'Checklist: EP number | Relevant Yes/No | Specification/Standard | Complies Yes/No | Document Reference/Justification', ta:true},
+    {id:'3b', num:'3.0', label:'Methods Used to Demonstrate Conformity', hint:'Standards / reference methods / validated in-house methods / predicate device comparison', ta:true},
+  ]},
+  { id:'S4', num:'4', title:'Risk Analysis and Control Summary', qs:[
+    {id:'4a', num:'4.0', label:'Risk Analysis Summary', hint:'Risks identified during risk analysis process (preferably per ISO 14971) and how controlled to acceptable level', ta:true},
+    {id:'4b', num:'4.0', label:'Possible Hazards Addressed', hint:'False positives/negatives, instability, infectious reagents, user-related hazards; evidence remaining risks are acceptable', ta:true},
+  ]},
+  { id:'S5', num:'5', title:'Design and Manufacturing Information', qs:[
+    {id:'5.1', num:'5.1', label:'Device Design Description', hint:'Critical ingredients: antibodies, antigens, enzymes, nucleic acid primers; design sites if multiple; controlling site identified', ta:true},
+    {id:'5.2', num:'5.2', label:'Manufacturing Process Overview / Flow Chart', hint:'Technologies used, assembly, in-process testing, final product testing, packaging overview', ta:true},
+    {id:'5.3', num:'5.3', label:'Manufacturing Site(s)', hint:'Name and full address of all critical manufacturing sites; QMS certificates (ISO 13485 etc.) if available', ta:true},
+  ]},
+  { id:'S6', num:'6', title:'Product Validation and Verification', qs:[
+    {id:'6.1', num:'6.1', label:'COA / Summary Information', hint:'(a) Study protocol summary (b) Study results (c) Study conclusions; conformity declaration/certificate if applicable', ta:true},
+    {id:'6.2', num:'6.2', label:'Detailed Information (Analytical Performances / Clinical Study / Stability)', hint:'Complete study protocol, method of data analysis, complete study report, study conclusion with acceptance criteria', ta:true},
+  ]},
+  { id:'S7', num:'7', title:'Analytical Studies', qs:[
+    {id:'7',   num:'7.0', label:'Analytical Studies Overview', hint:'Studies demonstrating conformity (quantitative / semi-quantitative / qualitative); applicability notes for each assay type', ta:true},
+  ]},
+  { id:'S8', num:'8', title:'Specimen Type', qs:[
+    {id:'8a',  num:'8a',  label:'Specimen Types and Stability Conditions', hint:'Each matrix: stability, storage temperature, duration, freeze/thaw cycles allowed', ta:true},
+    {id:'8b',  num:'8b',  label:'Matrix and Anticoagulant Comparison Details', hint:'Number of samples tested per matrix, range, statistical methods, results, conclusions', ta:true},
+  ]},
+  { id:'S9', num:'9', title:'Analytical Performance Characteristics', qs:[
+    {id:'9.1', num:'9.1', label:'Accuracy of Measurement (Trueness & Precision)', hint:'Trueness (systematic error/bias) and precision (random error/SD) study designs, results, conclusions', ta:true},
+    {id:'9.2', num:'9.2', label:'Reproducibility / Intermediate Precision', hint:'Variability between days, runs, sites, lots, operators and instruments; study design and results', ta:true},
+    {id:'10',  num:'10',  label:'Analytical Sensitivity (LoB / LoD / LoQ)', hint:'Specimen type, analyte levels, replicates, calculation methods for limit of blank, detection, quantitation', ta:true},
+    {id:'11',  num:'11',  label:'Analytical Specificity — Interference & Cross-Reactivity', hint:'All interferents tested: therapeutic drugs, patient ingested substances, sample additives, endogenous substances, structural analogs', ta:true},
+    {id:'12',  num:'12',  label:'Metrological Traceability of Calibrators and Controls', hint:'Reference materials, reference measurement procedures, methods and acceptance criteria for traceability', ta:true},
+    {id:'13',  num:'13',  label:'Measuring Range of the Assay', hint:'Linear range, non-linear range, LoD, high-dose hook effect (if applicable), how ranges were established', ta:true},
+    {id:'14',  num:'14',  label:'Definition of Assay Cut-off', hint:'Populations studied, characterization/selection/inclusion-exclusion criteria, ROC analysis, gray/equivocal zone if applicable', ta:true},
+  ]},
+  { id:'S15', num:'15', title:'Stability Studies', qs:[
+    {id:'15',  num:'15',  label:'Stability Studies — Overview', hint:'Summary of claimed shelf life, in-use stability, and shipping stability studies', ta:true},
+    {id:'16',  num:'16',  label:'Claimed Shelf Life Study Details', hint:'≥3 lots; real-time ± accelerated; protocol, acceptance criteria, testing intervals, conclusions and claimed shelf life', ta:true},
+    {id:'17',  num:'17',  label:'In-Use Stability (Open Vial / On-Board / Calibration)', hint:'One lot, real or simulated routine use; protocol, acceptance criteria, testing intervals, conclusions', ta:true},
+    {id:'18',  num:'18',  label:'Shipping Stability', hint:'One lot; real/simulated conditions including extremes; protocol, acceptance criteria, recommended shipping conditions', ta:true},
+  ]},
+  { id:'S19', num:'19', title:'Clinical Evidence / Evaluation', qs:[
+    {id:'19',  num:'19',  label:'Clinical Evidence and Evaluation Report', hint:'Clinical evidence demonstrating conformity to all applicable essential principles; diagnostic sensitivity/specificity', ta:true},
+  ]},
+  { id:'S20', num:'20', title:'Labelling', qs:[
+    {id:'20',  num:'20',  label:'Complete Set of Labelling', hint:'All labelling: outer box label, primary label, IFU / Instructions for Use — per Chapter VI requirements', ta:true},
+  ]},
+  { id:'S21', num:'21', title:'Post-Marketing Surveillance (Vigilance)', qs:[
+    {id:'21',  num:'21',  label:'Post-Marketing Surveillance and Vigilance Data', hint:'Surveillance procedures, complaints received, corrective and preventive actions (CAPA) taken', ta:true},
+  ]},
+  { id:'S22', num:'22', title:'Additional Required Information', qs:[
+    {id:'22.1',num:'22.1',label:'Source Antigen/Antibody Details & Process Control', hint:'Source, characterization, coating process on base material (nitrocellulose, ELISA wells, microbeads, etc.)', ta:true},
+    {id:'22.2',num:'22.2',label:'Test Protocol: Specifications & Method of Testing', hint:'Specifications, testing method, in-house evaluation reports: sensitivity, specificity, stability', ta:true},
+    {id:'22.3',num:'22.3',label:'Evaluation Report by National Control Authority (Imported Devices)', hint:'Detailed evaluation by NCA of country of origin; N/A if domestic device', ta:true},
+    {id:'22.4',num:'22.4',label:'Specimen Batch Test Report (≥3 Consecutive Batches)', hint:'Batch test report for at least 3 consecutive batches showing specification of each testing parameter', ta:true},
+    {id:'22.5',num:'22.5',label:'Detailed Test Report of All Components', hint:'Test report for all components used/packed in the finished IVD device', ta:true},
+    {id:'22.6',num:'22.6',label:'Pack Size and Labelling Details', hint:'All available pack sizes (e.g. 50 tests, 100 tests) and labelling specification', ta:false},
+    {id:'22.7',num:'22.7',label:'Product Inserts (IFU — Instructions for Use)', hint:'Full IFU document reference or summary', ta:true},
+    {id:'22.8',num:'22.8',label:'Evaluation Report by Indian Laboratory (if conducted)', hint:'Sensitivity and specificity evaluation report from an Indian laboratory; N/A if not conducted', ta:true},
+    {id:'22.9',num:'22.9',label:'Safety Data Sheet (SDS)', hint:'Safe handling, material control, area control, process control, stability studies, storage at quarantine and finished stage, packaging', ta:true},
+  ]},
+];
+
+// ─────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────
+let lang='en', docs=[], chatHist=[], busy=false;
+const OPENAI_API_KEY = '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'
+const OCR_MIN_CHARS = 100;
+const engCache = new Map();
+const BASE_SECTIONS = JSON.parse(JSON.stringify(SECTIONS));
+const uiTranslateCache = {};
+let langSwitchSeq = 0;
+let hasWelcomed = false;
+let dualMode = false;
+
+function snapshotFormValues(){
+  const snap={};
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    const el=document.getElementById('qi'+q.id);
+    const eel=document.getElementById('qe'+q.id);
+    if(el && el.value!=null)snap['qi'+q.id]=el.value;
+    if(eel && eel.value!=null)snap['qe'+q.id]=eel.value;
+  }));
+  return snap;
+}
+
+function restoreFormValues(snap){
+  if(!snap)return;
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    const el=document.getElementById('qi'+q.id);
+    const eel=document.getElementById('qe'+q.id);
+    const v=snap['qi'+q.id]||'';
+    const ev=snap['qe'+q.id]||'';
+    if(el){
+      el.value=v;
+      onIC(q.id,v);
+    }
+    if(eel)eel.value=ev;
+  }));
+  updateProg();
+}
+
+const T={
+  en:{desc:"Upload COA, clinical report, or DMF — I'll auto-fill matching fields instantly.",noDoc:"No documents uploaded yet",fill:"✨ Fill All",
+      sys:"You are a DMF/regulatory expert. Answer in English. Be concise and precise."},
+  zh:{desc:"上传COA、临床报告等，我将自动填写匹配字段。",noDoc:"尚未上传文件",fill:"✨ 全部填写",
+      sys:"您是DMF法规专家助手。请用中文简洁准确地回答。"},
+  ko:{desc:"COA, 임상 보고서 업로드 — 일치하는 필드를 자동으로 채워드립니다.",noDoc:"업로드된 문서 없음",fill:"✨ 모두 채우기",
+      sys:"당신은 DMF 규제 전문가입니다. 한국어로 간결하고 정확하게 답변하세요."},
+  ja:{desc:"COA、臨床報告書をアップロードすると、フォームを自動入力します。",noDoc:"文書未アップロード",fill:"✨ 全て入力",
+      sys:"あなたはDMF規制の専門家です。日本語で簡潔に回答してください。"},
+  hi:{desc:"COA, क्लिनिकल रिपोर्ट अपलोड करें — मैं फ़ील्ड स्वतः भरूंगा।",noDoc:"कोई दस्तावेज़ नहीं",fill:"✨ सब भरें",
+      sys:"आप DMF नियामक विशेषज्ञ हैं। हिंदी में संक्षेप में उत्तर दें।"},
+  de:{desc:"COA, klinische Berichte hochladen — ich fülle Felder automatisch aus.",noDoc:"Keine Dokumente hochgeladen",fill:"✨ Alle ausfüllen",
+      sys:"Sie sind DMF/Zulassungsexperte. Antworten Sie kurz und präzise auf Deutsch."},
+  fr:{desc:"Téléchargez COA, rapport clinique — je remplis les champs automatiquement.",noDoc:"Aucun document téléchargé",fill:"✨ Tout remplir",
+      sys:"Vous êtes expert DMF/réglementaire. Répondez brièvement et précisément en français."},
+  ar:{desc:"حمّل COA أو تقرير سريري — سأملأ الحقول تلقائياً.",noDoc:"لا توجد مستندات",fill:"✨ ملء الكل",
+      sys:"أنت خبير DMF/تنظيمي. أجب بإيجاز ودقة بالعربية."}
+};
+T.en.total='Total';T.en.filled='Filled';T.en.pending='Pending';
+T.en.complete='complete';
+T.zh.total='总计';T.zh.filled='已填写';T.zh.pending='待填写';
+T.zh.complete='完成';
+T.ko.total='전체';T.ko.filled='완료';T.ko.pending='미입력';
+T.ko.complete='완료';
+T.ja.total='合計';T.ja.filled='入力済み';T.ja.pending='未入力';
+T.ja.complete='完了';
+T.hi.total='कुल';T.hi.filled='भरा गया';T.hi.pending='लंबित';
+T.hi.complete='पूर्ण';
+T.de.total='Gesamt';T.de.filled='Ausgefüllt';T.de.pending='Offen';
+T.de.complete='abgeschlossen';
+T.fr.total='Total';T.fr.filled='Rempli';T.fr.pending='En attente';
+T.fr.complete='terminé';
+T.ar.total='الإجمالي';T.ar.filled='معبأ';T.ar.pending='قيد الانتظار';
+T.ar.complete='مكتمل';
+T.en.appTitle="DMF Form Assistant";T.en.appSub="Device Master File — IVD Medical Devices";T.en.upload="📎 Upload Documents";T.en.clear="🗑 Clear All";T.en.aiHdr="🤖 AI Document Assistant";T.en.afText="📄 Document ready — auto-fill all blank fields?";T.en.askPh="Ask about any field or your document…";T.en.sendWord="send";T.en.newLineWord="new line";
+T.en.welcome="👋 Welcome! This is a blank DMF form template. Upload your documents (COA, clinical report, IFU, SDS) using the button above and I'll automatically fill in the matching fields. You can also type questions about any field.";
+T.zh.appTitle="DMF表单助手";T.zh.appSub="设备主文件 — 体外诊断医疗器械";T.zh.upload="📎 上传文件";T.zh.clear="🗑 清空全部";T.zh.aiHdr="🤖 AI文档助手";T.zh.afText="📄 文档已就绪 — 自动填写所有空白字段？";T.zh.askPh="询问任何字段或文档内容…";T.zh.sendWord="发送";T.zh.newLineWord="换行";
+T.zh.welcome="👋 欢迎！这是一个空白DMF表单模板。请使用上方按钮上传您的文件（COA、临床报告、IFU、SDS），我会自动填写匹配字段。您也可以直接提问任意字段。";
+T.ko.appTitle="DMF 양식 도우미";T.ko.appSub="장치 마스터 파일 — 체외진단 의료기기";T.ko.upload="📎 문서 업로드";T.ko.clear="🗑 전체 지우기";T.ko.aiHdr="🤖 AI 문서 도우미";T.ko.afText="📄 문서 준비됨 — 빈 항목 자동 채우기?";T.ko.askPh="필드나 문서에 대해 질문하세요…";T.ko.sendWord="전송";T.ko.newLineWord="줄바꿈";
+T.ko.welcome="👋 환영합니다! 이것은 빈 DMF 양식 템플릿입니다. 위 버튼으로 문서(COA, 임상 보고서, IFU, SDS)를 업로드하면 일치하는 필드를 자동으로 채워드립니다. 원하는 항목에 대해 질문할 수도 있습니다.";
+T.ja.appTitle="DMFフォームアシスタント";T.ja.appSub="デバイスマスターファイル — 体外診断用医療機器";T.ja.upload="📎 文書アップロード";T.ja.clear="🗑 すべてクリア";T.ja.aiHdr="🤖 AIドキュメントアシスタント";T.ja.afText="📄 文書の準備完了 — 空欄を自動入力しますか？";T.ja.askPh="項目または文書について質問…";T.ja.sendWord="送信";T.ja.newLineWord="改行";
+T.ja.welcome="👋 ようこそ！これは空のDMFフォームテンプレートです。上のボタンから文書（COA、臨床報告書、IFU、SDS）をアップロードすると、一致する項目を自動入力します。任意の項目について質問することもできます。";
+T.hi.appTitle="DMF फ़ॉर्म असिस्टेंट";T.hi.appSub="डिवाइस मास्टर फ़ाइल — IVD मेडिकल डिवाइस";T.hi.upload="📎 दस्तावेज़ अपलोड करें";T.hi.clear="🗑 सब साफ़ करें";T.hi.aiHdr="🤖 AI दस्तावेज़ सहायक";T.hi.afText="📄 दस्तावेज़ तैयार — सभी खाली फ़ील्ड ऑटो-फिल करें?";T.hi.askPh="किसी फ़ील्ड या दस्तावेज़ के बारे में पूछें…";T.hi.sendWord="भेजें";T.hi.newLineWord="नई पंक्ति";
+T.hi.welcome="👋 स्वागत है! यह एक खाली DMF फ़ॉर्म टेम्पलेट है। ऊपर दिए गए बटन से अपने दस्तावेज़ (COA, क्लिनिकल रिपोर्ट, IFU, SDS) अपलोड करें, मैं मिलते-जुलते फ़ील्ड स्वतः भर दूँगा। आप किसी भी फ़ील्ड के बारे में प्रश्न भी पूछ सकते हैं।";
+T.de.appTitle="DMF-Formularassistent";T.de.appSub="Device Master File — IVD-Medizinprodukte";T.de.upload="📎 Dokumente hochladen";T.de.clear="🗑 Alles löschen";T.de.aiHdr="🤖 KI-Dokumentassistent";T.de.afText="📄 Dokument bereit — alle leeren Felder automatisch ausfüllen?";T.de.askPh="Frage zu Feld oder Dokument…";T.de.sendWord="senden";T.de.newLineWord="neue Zeile";
+T.de.welcome="👋 Willkommen! Dies ist eine leere DMF-Formularvorlage. Laden Sie Ihre Dokumente (COA, klinischer Bericht, IFU, SDS) über die Schaltfläche oben hoch, und ich fülle passende Felder automatisch aus. Sie können auch Fragen zu jedem Feld stellen.";
+T.fr.appTitle="Assistant de formulaire DMF";T.fr.appSub="Device Master File — Dispositifs médicaux DIV";T.fr.upload="📎 Télécharger des documents";T.fr.clear="🗑 Tout effacer";T.fr.aiHdr="🤖 Assistant documentaire IA";T.fr.afText="📄 Document prêt — remplir automatiquement tous les champs vides ?";T.fr.askPh="Posez une question sur un champ ou un document…";T.fr.sendWord="envoyer";T.fr.newLineWord="nouvelle ligne";
+T.fr.welcome="👋 Bienvenue ! Ceci est un modèle de formulaire DMF vide. Téléchargez vos documents (COA, rapport clinique, IFU, SDS) via le bouton ci-dessus et je remplirai automatiquement les champs correspondants. Vous pouvez aussi poser des questions sur n'importe quel champ.";
+T.ar.appTitle="مساعد نموذج DMF";T.ar.appSub="ملف الجهاز الرئيسي — أجهزة التشخيص خارج الجسم";T.ar.upload="📎 رفع المستندات";T.ar.clear="🗑 مسح الكل";T.ar.aiHdr="🤖 مساعد مستندات بالذكاء الاصطناعي";T.ar.afText="📄 المستند جاهز — ملء كل الحقول الفارغة تلقائياً؟";T.ar.askPh="اسأل عن أي حقل أو مستند…";T.ar.sendWord="إرسال";T.ar.newLineWord="سطر جديد";
+T.ar.welcome="👋 أهلاً بك! هذا نموذج DMF فارغ. ارفع مستنداتك (COA، التقرير السريري، IFU، SDS) باستخدام الزر بالأعلى وسأقوم بملء الحقول المطابقة تلقائياً. ويمكنك أيضاً طرح أسئلة عن أي حقل.";
+
+function bilingual(nativeText,englishText){
+  if(!nativeText || lang==='en')return englishText;
+  if(nativeText===englishText)return englishText;
+  return dualMode ? `${nativeText} / ${englishText}` : nativeText;
+}
+
+function biHTML(nativeText, englishText){
+  if(lang==='en' || !nativeText || nativeText===englishText){
+    return `<span class="bi-main">${englishText}</span>`;
+  }
+  if(!dualMode)return `<span class="bi-main">${nativeText}</span>`;
+  return `<span class="bi-main">${nativeText}</span><span class="bi-sub">${englishText}</span>`;
+}
+
+function biText(nativeText, englishText){
+  if(lang==='en' || !nativeText || nativeText===englishText)return englishText;
+  return dualMode ? `${nativeText} / ${englishText}` : nativeText;
+}
+
+function setDualMode(v){
+  dualMode=!!v;
+  try{localStorage.setItem('dmf_dual',dualMode?'1':'0');}catch(e){}
+  applyT();
+  const snap=snapshotFormValues();
+  buildForm();
+  restoreFormValues(snap);
+}
+
+async function localizeUI(code){
+  SECTIONS.splice(0,SECTIONS.length,...JSON.parse(JSON.stringify(BASE_SECTIONS)));
+  if(code==='en')return;
+  if(uiTranslateCache[code]){
+    applyLocalizedSections(uiTranslateCache[code]);
+    return;
+  }
+  try{
+    const translated = [];
+    for(const baseSection of BASE_SECTIONS){
+      const one = await translateOneSection(baseSection, code);
+      translated.push(one);
+    }
+    uiTranslateCache[code]=translated;
+    applyLocalizedSections(translated);
+  }catch(e){
+    botMsg('⚠️ UI translation failed. Showing English labels.');
+  }
+}
+
+async function translateOneSection(baseSection, code){
+  const payload={id:baseSection.id,title:baseSection.title,qs:baseSection.qs.map(q=>({id:q.id,label:q.label,hint:q.hint}))};
+  const prompt=`Translate this DMF UI section JSON to language code "${code}".
+Rules:
+- Return JSON only, no markdown.
+- Keep all ids exactly unchanged.
+- Translate only title, label, hint values.
+- Preserve medical meaning.
+
+JSON:
+${JSON.stringify(payload)}`;
+  let parsed=null;
+  for(let i=0;i<2;i++){
+    const resp=await callAI([{role:'user',content:prompt}],4000,'');
+    parsed=parseJsonSafe(resp);
+    if(parsed && parsed.id && Array.isArray(parsed.qs))return parsed;
+  }
+  // Fallback: translate each string independently (slower, but reliable).
+  return await translateSectionFieldByField(baseSection, code);
+}
+
+function parseJsonSafe(text){
+  const raw=(text||'').replace(/```json|```/g,'').trim();
+  try{return JSON.parse(raw);}catch(e){}
+  const s=raw.indexOf('{'), e=raw.lastIndexOf('}');
+  if(s>=0 && e>s){
+    try{return JSON.parse(raw.slice(s,e+1));}catch(err){}
+  }
+  return null;
+}
+
+async function translateSectionFieldByField(baseSection, code){
+  const out={id:baseSection.id,title:await translateText(baseSection.title, code),qs:[]};
+  for(const q of baseSection.qs){
+    out.qs.push({
+      id:q.id,
+      label:await translateText(q.label, code),
+      hint:await translateText(q.hint, code)
+    });
+  }
+  return out;
+}
+
+async function translateText(text, code){
+  const prompt=`Translate to language code "${code}". Return only translated text.\n\n${text}`;
+  const resp=await callAI([{role:'user',content:prompt}],250,'');
+  return (resp||'').replace(/```/g,'').trim() || text;
+}
+
+function applyLocalizedSections(translated){
+  translated.forEach(ts=>{
+    const s=SECTIONS.find(x=>x.id===ts.id);
+    const bs=BASE_SECTIONS.find(x=>x.id===ts.id);
+    if(!s||!bs)return;
+    s.title=bilingual(ts.title,bs.title);
+    ts.qs.forEach(tq=>{
+      const q=s.qs.find(x=>x.id===tq.id);
+      const bq=bs.qs.find(x=>x.id===tq.id);
+      if(!q||!bq)return;
+      q.label=bilingual(tq.label,bq.label);
+      q.hint=bilingual(tq.hint,bq.hint);
+    });
+  });
+}
+
+// ─────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────
+async function pickLang(code){
+  const seq=++langSwitchSeq;
+  const snap=snapshotFormValues();
+  lang=code;
+  try{localStorage.setItem('dmf_lang',code);}catch(e){}
+  document.getElementById('lgate').style.display='none';
+  document.getElementById('lsel').value=code;
+  SECTIONS.splice(0,SECTIONS.length,...JSON.parse(JSON.stringify(BASE_SECTIONS)));
+  buildForm();
+  restoreFormValues(snap);
+  applyT();
+  await localizeUI(code);
+  if(seq!==langSwitchSeq)return;
+  const snap2=snapshotFormValues();
+  buildForm();
+  restoreFormValues(snap2);
+  applyT();
+  if(!hasWelcomed){
+    const t=T[lang]||T.en;
+    const w=lang==='en'?T.en.welcome:`${t.welcome} / ${T.en.welcome}`;
+    botMsg(w);
+    hasWelcomed=true;
+  }
+}
+async function changeLang(code){
+  const seq=++langSwitchSeq;
+  const snap=snapshotFormValues();
+  lang=code;
+  try{localStorage.setItem('dmf_lang',code);}catch(e){}
+  SECTIONS.splice(0,SECTIONS.length,...JSON.parse(JSON.stringify(BASE_SECTIONS)));
+  buildForm();
+  restoreFormValues(snap);
+  applyT();
+  await localizeUI(code);
+  if(seq!==langSwitchSeq)return;
+  const snap2=snapshotFormValues();
+  buildForm();
+  restoreFormValues(snap2);
+  applyT();
+}
+function applyT(){
+  const t=T[lang]||T.en;
+  document.getElementById('cdesc').textContent=biText(t.desc,T.en.desc);
+  document.getElementById('afBtn').textContent=biText(t.fill,T.en.fill);
+  document.getElementById('appTitle').innerHTML=biHTML(t.appTitle,T.en.appTitle);
+  document.getElementById('appSub').innerHTML=biHTML(t.appSub,T.en.appSub);
+  document.getElementById('uploadLbl').textContent=biText(t.upload,T.en.upload);
+  document.getElementById('clearLbl').textContent=biText(t.clear,T.en.clear);
+  document.getElementById('aiHdr').textContent=biText(t.aiHdr,T.en.aiHdr);
+  document.getElementById('afText').textContent=biText(t.afText,T.en.afText);
+  document.getElementById('cinp').placeholder=biText(t.askPh,T.en.askPh);
+  const localSend=t.sendWord||'send';
+  const localNl=t.newLineWord||'new line';
+  document.getElementById('chatHint').innerHTML=(lang==='en' || !dualMode)
+    ? `<kbd>Enter</kbd> send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> new line`
+    : `<kbd>Enter</kbd> ${localSend} / send &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> ${localNl} / new line`;
+  const nd=document.getElementById('nodocMsg');
+  if(nd)nd.textContent=biText(t.noDoc,T.en.noDoc);
+  document.getElementById('lblTot').innerHTML=biHTML(t.total||'Total','Total');
+  document.getElementById('lblFil').innerHTML=biHTML(t.filled||'Filled','Filled');
+  document.getElementById('lblPen').innerHTML=biHTML(t.pending||'Pending','Pending');
+}
+
+window.addEventListener('DOMContentLoaded',()=>{
+  let saved='en';
+  try{saved=localStorage.getItem('dmf_lang')||'en';}catch(e){}
+  try{
+    dualMode=(localStorage.getItem('dmf_dual')||'0')==='1';
+    const d=document.getElementById('dualLang');
+    if(d)d.checked=dualMode;
+  }catch(e){}
+  if(saved!=='en'){
+    const sel=document.getElementById('lsel');
+    if(sel)sel.value=saved;
+    void changeLang(saved);
+  }else{
+    applyT();
+  }
+});
+
+// ─────────────────────────────────────────
+// BUILD FORM
+// ─────────────────────────────────────────
+function buildForm(){
+  const panel=document.getElementById('fpanel');
+  panel.innerHTML='';
+  const doc=document.createElement('div');
+  doc.className='fdoc';
+  panel.appendChild(doc);
+  const toolbar=document.createElement('div');
+  toolbar.className='doc-toolbar';
+  toolbar.innerHTML=`<button class="pdf-btn" type="button" onclick="downloadA4PDF()">Download PDF (A4)</button>`;
+  doc.appendChild(toolbar);
+  const legend=document.createElement('div');
+  legend.className='legend';
+  legend.innerHTML=`
+    <span class="item"><span class="dot pending"></span> Pending</span>
+    <span class="item"><span class="dot filled"></span> Filled</span>
+    <span class="item"><span class="dot ai"></span> AI Filled</span>
+  `;
+  doc.appendChild(legend);
+  SECTIONS.forEach((sec)=>{
+    const block=document.createElement('div');
+    block.className='sec-block collapsed';
+    block.id='sb'+sec.id;
+    const sh=document.createElement('div');
+    sh.className='sec-hdr';
+    sh.onclick=()=>toggleSection(sec.id);
+    sh.innerHTML=`<div class="sec-num">${sec.num}</div><div class="sec-title">${sec.title}</div><div class="sec-cnt" id="sc${sec.id}">${sec.qs.length} fields</div><div class="sec-toggle">⌄</div>`;
+    block.appendChild(sh);
+    const body=document.createElement('div');
+    body.className='sec-body';
+    sec.qs.forEach(q=>{
+      const card=document.createElement('div');
+      card.className='qcard pending';
+      card.id='qc'+q.id;
+      card.innerHTML=`
+        <div class="qhdr">
+          <span class="qnum">${q.num}</span>
+          <span class="qlabel">${q.label}</span>
+          <span class="qstat empty" id="qs${q.id}">○ Pending</span>
+        </div>
+        <div class="qbody">
+          <div class="qsplit">
+            <div class="qcol">
+              <div class="qlbl">Original</div>
+              ${q.ta
+                ?`<textarea class="qinp" id="qi${q.id}" rows="2" placeholder="${q.label}…" oninput="onIC('${q.id}',this.value)"></textarea>`
+                :`<input class="qinp" id="qi${q.id}" type="text" placeholder="${q.label}…" oninput="onIC('${q.id}',this.value)">`
+              }
+            </div>
+            <div class="qcol eng">
+              <div class="qlbl">English</div>
+              <textarea class="qinp qeng" id="qe${q.id}" rows="2" placeholder="English translation…" readonly></textarea>
+            </div>
+          </div>
+          <div class="qhint">${q.hint}</div>
+          <div id="qsr${q.id}"></div>
+        </div>`;
+      body.appendChild(card);
+    });
+    block.appendChild(body);
+    doc.appendChild(block);
+  });
+  updateProg();
+}
+
+function toggleSection(secId){
+  const b=document.getElementById('sb'+secId);
+  if(!b)return;
+  b.classList.toggle('collapsed');
+}
+
+function collectEnglishFormValues(){
+  const values={};
+  const fields=[];
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    const eng=(document.getElementById('qe'+q.id)?.value||'').trim();
+    const orig=(document.getElementById('qi'+q.id)?.value||'').trim();
+    const finalVal=eng||orig;
+    values[q.id]=finalVal;
+    fields.push({id:q.id,num:q.num,label:q.label,hint:q.hint,value:finalVal,sectionId:sec.id,sectionNum:sec.num,sectionTitle:sec.title});
+  }));
+  return {values,fields};
+}
+
+async function downloadA4PDF(){
+  const payload=collectEnglishFormValues();
+  const resp=await fetch('/api/print-template',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)
+  });
+  if(!resp.ok){
+    alert('Failed to prepare PDF template.');
+    return;
+  }
+  const html=await resp.text();
+  const w=window.open('about:blank','_blank');
+  if(!w){
+    alert('Popup blocked. Please allow popups to download PDF.');
+    return;
+  }
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+}
+
+// ─────────────────────────────────────────
+// PROGRESS
+// ─────────────────────────────────────────
+function updateProg(){
+  let tot=0,fil=0;
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    tot++;
+    const el=document.getElementById('qi'+q.id);
+    if(el&&el.value.trim())fil++;
+  }));
+  const pen=tot-fil, pct=tot?Math.round(fil/tot*100):0;
+  document.getElementById('sTot').textContent=tot;
+  document.getElementById('sFil').textContent=fil;
+  document.getElementById('sPen').textContent=pen;
+  document.getElementById('pbarFill').style.width=pct+'%';
+  const completeTxt = (lang==='en' || !dualMode)
+    ? ((lang==='en')?'complete':((T[lang]&&T[lang].complete)||'complete'))
+    : `${(T[lang]&&T[lang].complete)||'complete'} (complete)`;
+  document.getElementById('pbarPct').textContent=`${pct}% ${completeTxt}`;
+  updateSectionProgress();
+}
+
+function updateSectionProgress(){
+  SECTIONS.forEach(sec=>{
+    const total=sec.qs.length;
+    let filled=0;
+    sec.qs.forEach(q=>{
+      const el=document.getElementById('qi'+q.id);
+      if(el&&el.value.trim())filled++;
+    });
+    const pending=total-filled;
+    const pct=total?Math.round((filled/total)*100):0;
+    const el=document.getElementById('sc'+sec.id);
+    if(el)el.textContent=`${filled}/${total} done · ${pending} pending · ${pct}%`;
+  });
+}
+
+function onIC(qid,val){
+  const card=document.getElementById('qc'+qid);
+  const stat=document.getElementById('qs'+qid);
+  const inp=document.getElementById('qi'+qid);
+  if(val.trim()){
+    card.classList.replace('pending','filled');
+    inp.classList.add('hv');inp.classList.remove('av');
+    stat.className='qstat filled';stat.textContent='✓ Filled';
+  } else {
+    card.classList.replace('filled','pending');
+    inp.classList.remove('hv','av');
+    stat.className='qstat empty';stat.textContent='○ Pending';
+    document.getElementById('qsr'+qid).innerHTML='';
+  }
+  updateProg();
+}
+
+function setField(qid,val,src,ai){
+  const el=document.getElementById('qi'+qid);
+  const eel=document.getElementById('qe'+qid);
+  const card=document.getElementById('qc'+qid);
+  const stat=document.getElementById('qs'+qid);
+  const srcel=document.getElementById('qsr'+qid);
+  if(!el||!val||!val.trim())return;
+  el.value=val.trim();
+  if(eel)eel.value='';
+  el.classList.remove('hv');el.classList.add(ai?'av':'hv');
+  card.classList.replace('pending','filled');
+  stat.className='qstat aifil';stat.textContent='🤖 AI Filled';
+  if(src)srcel.innerHTML=`<span class="qsrc">📄 ${src}</span>`;
+  if(ai)void fillEnglish(qid,val.trim());
+  updateProg();
+}
+
+function isMeaningfulExtractedValue(v){
+  const t=(v||'').trim();
+  if(!t)return false;
+  const low=t.toLowerCase();
+  if(low==='n/a' || low==='na' || low==='none' || low==='null' || low==='undefined')return false;
+  if(low.includes('not found'))return false;
+  if(/\[\s*.*not found.*\]/i.test(t))return false;
+  return true;
+}
+
+function normForCompare(s){
+  return (s||'')
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu,' ')
+    .trim()
+    .replace(/\s+/g,' ');
+}
+
+function isEchoOfPromptText(val,q){
+  const v=normForCompare(val);
+  if(!v)return true;
+  const label=normForCompare(q?.label||'');
+  const hint=normForCompare(q?.hint||'');
+  if(label && (v===label || v.includes(label) || label.includes(v)))return true;
+  if(hint && (v===hint || v.includes(hint) || hint.includes(v)))return true;
+  if(v.length<6)return true;
+  return false;
+}
+
+async function fillEnglish(qid,text){
+  const eel=document.getElementById('qe'+qid);
+  if(!eel||!text)return;
+  if(isLikelyEnglish(text)){
+    eel.value=text;
+    eel.classList.add('av');
+    return;
+  }
+  const key=text.slice(0,1000);
+  if(engCache.has(key)){
+    eel.value=engCache.get(key);
+    eel.classList.add('av');
+    return;
+  }
+  eel.value='Translating to English...';
+  try{
+    const prompt=`Translate the following text to clear professional English for a regulatory DMF form.\nReturn only the translated text.\n\nTEXT:\n${text}`;
+    const translated=await callAI([{role:'user',content:prompt}],500,'');
+    const out=(translated||'').trim()||text;
+    engCache.set(key,out);
+    eel.value=out;
+    eel.classList.add('av');
+  }catch(e){
+    eel.value='[Translation failed]';
+  }
+}
+
+function isLikelyEnglish(text){
+  const t=(text||'').trim();
+  if(!t)return true;
+  const letters=(t.match(/[A-Za-z]/g)||[]).length;
+  const nonAscii=(t.match(/[^\x00-\x7F]/g)||[]).length;
+  return letters>=5 && nonAscii===0;
+}
+
+// ─────────────────────────────────────────
+// UPLOAD
+// ─────────────────────────────────────────
+async function handleUpload(files){
+  const picked=Array.from(files||[]);
+  if(!picked.length)return;
+  botMsg(`⏳ Processing ${picked.length} file(s). Extraction may take longer for scanned PDFs.`);
+
+  for(const f of picked){
+    const docId='d'+Date.now()+Math.random().toString(36).slice(2,7);
+    docs.push({id:docId,name:f.name,content:'[Processing upload...]'});
+    renderDTags();
+    document.getElementById('afbar').style.display='flex';
+
+    let content='';
+    try{
+      content=await extractFileText(f,(msg)=>botMsg(`🔎 ${msg}`));
+    }catch(e){
+      content=`[Could not extract readable text from: ${f.name}]`;
+      botMsg(`⚠️ Extraction error for **${f.name}**: ${e?.message||'unknown error'}`);
+    }
+    const idx=docs.findIndex(d=>d.id===docId);
+    if(idx>=0)docs[idx].content=content;
+    renderDTags();
+    botMsg(`✅ **${f.name}** indexed (${Math.round(f.size/1024)} KB). Click **Fill All** to auto-fill, or ask me a question about it.`);
+    botMsg(renderExtractPreview(f.name, content));
+    if(content.startsWith('[Could not extract readable text')){
+      botMsg('⚠️ This file appears to be scanned/image-based or unreadable as text. Please upload a searchable PDF, DOCX/TXT, or run OCR first.');
+    }
+  }
+}
+
+function renderExtractPreview(name, text){
+  const clean=(text||'').replace(/\s+/g,' ').trim();
+  const preview=clean ? clean.slice(0,1200) : '[No text could be extracted]';
+  const suffix=clean.length>1200?' ...':'';
+  return `📄 **Extracted text preview — ${name}**\n\n${preview}${suffix}\n\n(${clean.length} characters extracted)`;
+}
+
+async function extractFileText(file,onProgress){
+  const lower=file.name.toLowerCase();
+  if(lower.endsWith('.pdf')){
+    await ensurePdfLib();
+    if(!window.pdfjsLib)throw new Error('PDF parser unavailable');
+    if(window.pdfjsLib.GlobalWorkerOptions){
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.worker.min.js';
+    }
+    const arr=await file.arrayBuffer();
+    const pdf=await loadPdfDocument(arr);
+    let out='';
+    for(let p=1;p<=pdf.numPages;p++){
+      const page=await pdf.getPage(p);
+      const txt=await page.getTextContent({normalizeWhitespace:true});
+      const pageText=txt.items.map(it=>it.str||'').join(' ');
+      out+=`\n${pageText}`;
+    }
+    let cleaned=out.trim();
+    if(!cleaned || cleaned.length<OCR_MIN_CHARS || !isReadableText(cleaned)){
+      if(onProgress)onProgress(`Low PDF text detected in ${file.name}. Running OCR on each page...`);
+      try{
+        cleaned=await ocrPdfWithTesseract(pdf,onProgress);
+      }catch(ocrErr){
+        if(onProgress)onProgress(`OCR retry with safe PDF mode for ${file.name}...`);
+        const pdfNoWorker=await loadPdfDocument(arr,true);
+        cleaned=await ocrPdfWithTesseract(pdfNoWorker,onProgress);
+      }
+      if(onProgress)onProgress(`OCR completed for ${file.name}.`);
+    }
+    if(!cleaned || cleaned.length<OCR_MIN_CHARS || !isReadableText(cleaned))throw new Error('Unreadable PDF text layer');
+    return cleaned;
+  }
+  const text=await file.text();
+  if(!isReadableText(text))throw new Error('Unreadable text content');
+  return text;
+}
+
+async function loadPdfDocument(arrayBuffer,disableWorker=false){
+  const opts={data:arrayBuffer};
+  if(disableWorker)opts.disableWorker=true;
+  try{
+    return await window.pdfjsLib.getDocument(opts).promise;
+  }catch(e){
+    if(!disableWorker)return await window.pdfjsLib.getDocument({...opts,disableWorker:true}).promise;
+    throw e;
+  }
+}
+
+async function ocrPdfWithTesseract(pdf,onProgress){
+  await ensureTesseractLib();
+  if(!window.Tesseract)throw new Error('Tesseract unavailable');
+  let out='';
+  for(let p=1;p<=pdf.numPages;p++){
+    if(onProgress)onProgress(`OCR page ${p}/${pdf.numPages}...`);
+    const page=await pdf.getPage(p);
+    const viewport=page.getViewport({scale:2});
+    const canvas=document.createElement('canvas');
+    const ctx=canvas.getContext('2d');
+    canvas.width=Math.floor(viewport.width);
+    canvas.height=Math.floor(viewport.height);
+    await page.render({canvasContext:ctx,viewport}).promise;
+    const res=await window.Tesseract.recognize(canvas,'eng');
+    out+=`\n${res?.data?.text||''}`;
+  }
+  return out.trim();
+}
+
+async function ensurePdfLib(){
+  if(window.pdfjsLib)return;
+  await loadScriptWithFallback([
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.5.136/pdf.min.js',
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.5.136/build/pdf.min.mjs',
+    'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.5.136/build/pdf.min.js'
+  ]);
+}
+
+async function ensureTesseractLib(){
+  if(window.Tesseract)return;
+  await loadScriptWithFallback([
+    'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js',
+    'https://unpkg.com/tesseract.js@5/dist/tesseract.min.js'
+  ]);
+}
+
+async function loadScriptWithFallback(urls){
+  let lastErr=null;
+  for(const url of urls){
+    try{
+      await loadScript(url);
+      return;
+    }catch(e){
+      lastErr=e;
+    }
+  }
+  throw lastErr||new Error('Failed to load external script');
+}
+
+function loadScript(url){
+  return new Promise((resolve,reject)=>{
+    const existing=[...document.scripts].find(s=>s.src===url);
+    if(existing){
+      if(existing.dataset.loaded==='1')return resolve();
+      existing.addEventListener('load',()=>resolve(),{once:true});
+      existing.addEventListener('error',()=>reject(new Error(`Failed to load: ${url}`)),{once:true});
+      return;
+    }
+    const s=document.createElement('script');
+    s.src=url;
+    s.async=true;
+    s.crossOrigin='anonymous';
+    s.onload=()=>{s.dataset.loaded='1';resolve();};
+    s.onerror=()=>reject(new Error(`Failed to load: ${url}`));
+    document.head.appendChild(s);
+  });
+}
+
+function isReadableText(text){
+  if(!text || text.length<30)return false;
+  const sample=text.slice(0,5000);
+  let good=0;
+  for(let i=0;i<sample.length;i++){
+    const c=sample.charCodeAt(i);
+    if(c===9||c===10||c===13||(c>=32&&c<=126))good++;
+  }
+  return (good/sample.length)>=0.75;
+}
+
+function renderDTags(){
+  const el=document.getElementById('dtags');
+  const nd=document.getElementById('nodocMsg');
+  if(nd)nd.remove();
+  el.innerHTML='';
+  docs.forEach(d=>{
+    const tag=document.createElement('div');
+    tag.className='dtag';
+    const name=d.name.length>24?d.name.slice(0,22)+'…':d.name;
+    tag.innerHTML=`📄 ${name} <button onclick="removeDoc('${d.id}')">✕</button>`;
+    el.appendChild(tag);
+  });
+}
+
+function removeDoc(id){
+  docs=docs.filter(d=>d.id!==id);
+  renderDTags();
+  if(!docs.length){
+    const t=(T[lang]||T.en);
+    const ndTxt=(lang==='en' || !dualMode)?(lang==='en'?T.en.noDoc:t.noDoc):`${t.noDoc} / ${T.en.noDoc}`;
+    document.getElementById('dtags').innerHTML=`<span class="nodoc" id="nodocMsg">${ndTxt}</span>`;
+    document.getElementById('afbar').style.display='none';
+  }
+}
+
+// ─────────────────────────────────────────
+// CLEAR FORM
+// ─────────────────────────────────────────
+function clearForm(){
+  if(!confirm('Clear all filled fields?'))return;
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    const el=document.getElementById('qi'+q.id);
+    const eel=document.getElementById('qe'+q.id);
+    if(el)el.value='';
+    if(eel)eel.value='';
+    onIC(q.id,'');
+  }));
+}
+
+// ─────────────────────────────────────────
+// RETRIEVAL
+// ─────────────────────────────────────────
+function getCtx(query){
+  if(!docs.length)return'';
+  const qw=new Set(query.toLowerCase().split(/\W+/).filter(w=>w.length>2));
+  let best='',bs=-1;
+  docs.forEach(doc=>{
+    const chunks=doc.content.match(/.{1,800}/g)||[];
+    chunks.forEach(chunk=>{
+      const sc=chunk.toLowerCase().split(/\W+/).filter(w=>qw.has(w)).length;
+      if(sc>bs){bs=sc;best=`[${doc.name}]\n${chunk}`;}
+    });
+  });
+  if(bs<=0)return docs.map(d=>`[${d.name}]\n${d.content.slice(0,500)}`).join('\n---\n');
+  return best;
+}
+
+// ─────────────────────────────────────────
+// AUTO-FILL ALL
+// ─────────────────────────────────────────
+async function autoFillAll(){
+  if(!docs.length||busy)return;
+  const btn=document.getElementById('afBtn');
+  btn.disabled=true;btn.textContent='⏳ Filling…';
+  botMsg('🔄 Extracting data from your documents and filling matching fields…');
+
+  const emptyQs=[];
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    const el=document.getElementById('qi'+q.id);
+    if(!el||!el.value.trim())emptyQs.push(q);
+  }));
+
+  const docCtx=docs.map(d=>`=== ${d.name} ===\n${d.content.slice(0,4000)}`).join('\n\n');
+  const qlist=emptyQs.map(q=>`${q.id}|||${q.label}: ${q.hint}`).join('\n');
+
+  const prompt=`You are a DMF regulatory data extraction expert.
+
+UPLOADED DOCUMENTS:
+${docCtx}
+
+FORM FIELDS TO FILL (id|||label: description):
+${qlist}
+
+INSTRUCTIONS:
+- Extract data ONLY from the uploaded documents above
+- Return a JSON object: {"field_id": "extracted value", ...}
+- Only include fields where you found actual data
+- If not found in documents, use empty string ""
+- Values must be extracted text, not invented
+- NEVER copy the field label or field description/hint as a value
+- Be concise but complete
+Return ONLY the JSON object, no markdown, no explanation.`;
+
+  try{
+    const resp=await callAI([{role:'user',content:prompt}],2000,'');
+    let json={};
+    try{json=JSON.parse(resp.replace(/```json|```/g,'').trim());}catch(e){}
+    let n=0,rejectedEcho=0;
+    const qById={};
+    SECTIONS.forEach(sec=>sec.qs.forEach(q=>{qById[q.id]=q;}));
+    Object.entries(json).forEach(([qid,val])=>{
+      const q=qById[qid];
+      if(!q)return;
+      if(!isMeaningfulExtractedValue(val))return;
+      if(isEchoOfPromptText(String(val),q)){rejectedEcho++;return;}
+      setField(qid,String(val),docs[0]?.name,true);
+      n++;
+    });
+    if(rejectedEcho>0){
+      botMsg(`ℹ️ Ignored **${rejectedEcho}** generic label/hint-like outputs that were not real extracted values.`);
+    }
+    botMsg(`✅ Done! **${n}** fields auto-filled from your documents. Review and edit any field as needed.`);
+  }catch(e){
+    botMsg('⚠️ Error during auto-fill. Try asking individual questions instead.');
+  }
+  btn.disabled=false;btn.textContent=(T[lang]||T.en).fill;
+}
+
+// ─────────────────────────────────────────
+// CHAT
+// ─────────────────────────────────────────
+function ck(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendChat();}}
+function ar(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,80)+'px';}
+
+function normText(s){return (s||'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();}
+
+function findQuestionByLabel(raw){
+  const qtxt=normText(raw);
+  if(!qtxt)return null;
+  let best=null,bestScore=0;
+  SECTIONS.forEach(sec=>sec.qs.forEach(q=>{
+    const l=normText(q.label);
+    if(!l)return;
+    let score=0;
+    if(l===qtxt)score=100;
+    else if(l.includes(qtxt)||qtxt.includes(l))score=70;
+    else{
+      const toks=qtxt.split(' ').filter(Boolean);
+      const hit=toks.filter(t=>l.includes(t)).length;
+      score=hit;
+    }
+    if(score>bestScore){bestScore=score;best=q;}
+  }));
+  return bestScore>=2?best:null;
+}
+
+function collectFormAudit(){
+  const sections=[];
+  let filledTotal=0,pendingTotal=0,total=0;
+  SECTIONS.forEach(sec=>{
+    const filled=[],pending=[];
+    sec.qs.forEach(q=>{
+      total++;
+      const el=document.getElementById('qi'+q.id);
+      const v=(el&&el.value||'').trim();
+      if(v){filled.push({id:q.id,num:q.num,label:q.label,value:v});filledTotal++;}
+      else{pending.push({id:q.id,num:q.num,label:q.label});pendingTotal++;}
+    });
+    sections.push({id:sec.id,title:sec.title,filled,pending});
+  });
+  return {total,filledTotal,pendingTotal,sections};
+}
+
+function pendingSummaryFromAudit(audit){
+  const lines=[
+    `Form status: **${audit.filledTotal}/${audit.total} filled**, **${audit.pendingTotal} pending**.`,
+    ''
+  ];
+  audit.sections.forEach(sec=>{
+    if(!sec.pending.length)return;
+    lines.push(`### ${sec.title} (${sec.pending.length} pending)`);
+    sec.pending.slice(0,10).forEach(p=>lines.push(`- ${p.num} ${p.label}`));
+    if(sec.pending.length>10)lines.push(`- ...and ${sec.pending.length-10} more`);
+    lines.push('');
+  });
+  return lines.join('\n').trim();
+}
+
+async function explainPendingWithAI(audit){
+  const snapshot={
+    total:audit.total,
+    filledTotal:audit.filledTotal,
+    pendingTotal:audit.pendingTotal,
+    sections:audit.sections.map(s=>({
+      title:s.title,
+      filled:s.filled.map(f=>`${f.num} ${f.label}`),
+      pending:s.pending.map(p=>`${p.num} ${p.label}`)
+    }))
+  };
+  const prompt=`You are helping complete a DMF form.
+Given this form audit JSON, produce:
+1) one-line completion status,
+2) section-wise pending questions,
+3) top 5 most critical pending questions to fill first.
+Keep concise, bullet format.
+
+${JSON.stringify(snapshot)}`;
+  try{
+    return await callAI([{role:'user',content:prompt}],900,'');
+  }catch(e){
+    return pendingSummaryFromAudit(audit);
+  }
+}
+
+function tryHandleCommand(txt){
+  const t=txt.trim();
+  const low=t.toLowerCase();
+  if(/\bwhat\s+are\s+pending\b|\bpending\s+fields?\b|\bshow\s+pending\b/.test(low)){
+    const audit=collectFormAudit();
+    const quick=pendingSummaryFromAudit(audit);
+    botMsg(quick);
+    void (async()=>{
+      const aiText=await explainPendingWithAI(audit);
+      if(aiText && aiText.trim())botMsg(`**AI summary**\n\n${aiText.trim()}`);
+    })();
+    return true;
+  }
+
+  // Examples: add product name = mm23 | set risk class of device to class c
+  const m=t.match(/^(?:add|set|fill|update)\s+(.+?)\s*(?:=|:| to )\s*(.+)$/i);
+  if(m){
+    const fieldPart=m[1].trim();
+    const valuePart=m[2].trim();
+    const q=findQuestionByLabel(fieldPart);
+    if(!q){
+      botMsg(`I couldn't match field **${fieldPart}**. Try exact label, e.g. \`set Product Name = MM23\`.`);
+      return true;
+    }
+    setField(q.id,valuePart,'manual chat',false);
+    botMsg(`Updated **${q.label}** to: **${valuePart}**`);
+    return true;
+  }
+
+  // Example: fill HIV in question What is Detected
+  const m2=t.match(/^(?:add|set|fill|update)\s+(.+?)\s+in\s+(?:question|field)\s+(.+)$/i);
+  if(m2){
+    const valuePart=m2[1].trim();
+    const fieldPart=m2[2].trim();
+    const q=findQuestionByLabel(fieldPart);
+    if(!q){
+      botMsg(`I couldn't match field **${fieldPart}**. Try exact label, e.g. \`fill HIV in question What is Detected (Analyte / Measurand)\`.`);
+      return true;
+    }
+    setField(q.id,valuePart,'manual chat',false);
+    botMsg(`Updated **${q.label}** to: **${valuePart}**`);
+    return true;
+  }
+  return false;
+}
+
+async function sendChat(){
+  if(busy)return;
+  const inp=document.getElementById('cinp');
+  const txt=inp.value.trim();
+  if(!txt)return;
+  inp.value='';inp.style.height='auto';
+  appendMsg('user',esc(txt));
+  chatHist.push({role:'user',content:txt});
+
+  if(tryHandleCommand(txt))return;
+
+  busy=true;document.getElementById('sndbtn').disabled=true;
+  const tid=showTyping();
+  const ctx=getCtx(txt);
+  const t=T[lang]||T.en;
+  const sys=`${t.sys}
+
+You are an expert on Device Master Files (DMF) for IVD Medical Devices per Indian and international regulations.
+Help the user understand DMF fields, fill in specific fields, or extract data from their uploaded documents.
+
+${ctx?`DOCUMENT CONTEXT (from uploaded files):\n${ctx}`:'No documents uploaded. Answer from general DMF regulatory knowledge.'}
+
+If data found in documents, mention the source file name.
+For specific field questions, provide a ready-to-paste answer.`;
+
+  try{
+    const reply=await callAI([...chatHist.slice(-6)],800,sys);
+    hideTyping(tid);
+    botMsg(reply);
+    chatHist.push({role:'assistant',content:reply});
+  }catch(e){
+    hideTyping(tid);
+    botMsg('⚠️ Connection error. Please try again.');
+  }
+  busy=false;document.getElementById('sndbtn').disabled=false;
+}
+
+// ─────────────────────────────────────────
+// API
+// ─────────────────────────────────────────
+async function callAI(messages,maxTok=800,system=''){
+  const merged=system ? [{role:'system',content:system},...messages] : messages;
+  const r=await fetch('/api/chat',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({messages:merged,max_tokens:maxTok,temperature:0.2})
+  });
+  const d=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(d?.error||'Request failed');
+  return d.content || 'No response.';
+}
+
+// ─────────────────────────────────────────
+// CHAT UI
+// ─────────────────────────────────────────
+function botMsg(txt){appendMsg('bot',renderMd(txt));}
+function appendMsg(role,html){
+  const msgs=document.getElementById('msgs');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  div.innerHTML=`<div class="mav">${role==='bot'?'🤖':'👤'}</div><div class="mbub">${html}</div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function showTyping(){
+  const msgs=document.getElementById('msgs');
+  const id='ty'+Date.now();
+  const div=document.createElement('div');
+  div.className='msg bot';div.id=id;
+  div.innerHTML=`<div class="mav">🤖</div><div class="mbub"><div class="typing-ind"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+  return id;
+}
+function hideTyping(id){const el=document.getElementById(id);if(el)el.remove();}
+function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function renderMd(t){
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g,'<em>$1</em>')
+    .replace(/\n\n/g,'</p><p style="margin-top:5px">')
+    .replace(/\n/g,'<br>')
+    .replace(/^/,'<p>').replace(/$/,'</p>');
+}
+</script>
+</body>
+</html>

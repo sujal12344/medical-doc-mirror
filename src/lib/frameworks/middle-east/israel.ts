@@ -1,0 +1,135 @@
+import type { RegulatoryFramework } from "../types";
+
+export const IL_FRAMEWORKS: RegulatoryFramework[] = [
+  {
+    id: "IL_AMAR",
+    countryCode: "IL",
+    countryName: "Israel",
+    flag: "🇮🇱",
+    authority: "AMAR (MOH)",
+    documentType: "Medical Device Registration",
+    sections: [
+      {
+        id: "s1",
+        title: "Administrative Information",
+        description: "Applicant details, Israeli agent, and device identification for AMAR registration",
+        fields: [
+          { id: "1.1", label: "Applicant (Manufacturer)", hint: "Legal manufacturer name, address, and contact details as they will appear on the AMAR registration certificate" },
+          { id: "1.2", label: "Israeli Agent", hint: "Licensed Israeli agent or importer holding a valid MOH dealer license (rishyon socher) authorized to import and distribute the device in Israel" },
+          { id: "1.3", label: "AMAR Registration Number", hint: "Existing AMAR registration number for renewal or variation; leave blank for new applications submitted via the MOH online portal" },
+          { id: "1.4", label: "Device Name (Hebrew)", hint: "Official device name in Hebrew as it will appear on the AMAR registration and Hebrew-language labelling" },
+          { id: "1.5", label: "Device Name (English)", hint: "Official device name in English matching the manufacturer's marketing name, model numbers, and catalogue references" },
+          { id: "1.6", label: "MOH Classification", hint: "Risk classification per Israeli MOH classification rules aligned with GHTF principles and EU MDR classification (Class I, IIa, IIb, III)" },
+        ],
+      },
+      {
+        id: "s2",
+        title: "Device Description",
+        description: "Comprehensive technical characterization of the device for AMAR review",
+        fields: [
+          { id: "2.1", label: "Device Description", hint: "Detailed technical description including design, dimensions, weight, materials, operating principles, and key performance characteristics", textarea: true },
+          { id: "2.2", label: "Intended Use", hint: "Precise statement of intended medical purpose, target patient population, medical condition, and clinical context per AMAR submission requirements", textarea: true },
+          { id: "2.3", label: "Technical Specifications", hint: "Measurable performance specifications including dimensions, tolerances, electrical ratings, output parameters, and operating/storage conditions" },
+          { id: "2.4", label: "Materials & Composition", hint: "Complete materials list for patient-contacting and critical components with material grades, biological origin, and biocompatibility classification", textarea: true },
+          { id: "2.5", label: "Key Components", hint: "Critical subassemblies and functional components with part numbers, specifications, and quality-critical designations" },
+          { id: "2.6", label: "Software Information", hint: "Software version, IEC 62304 safety class, SaMD classification per IMDRF, SOUP inventory, and cybersecurity documentation", textarea: true },
+          { id: "2.7", label: "Accessories", hint: "All accessories and ancillary devices required for intended operation with compatibility specifications and individual regulatory status" },
+          { id: "2.8", label: "Variants & Configurations", hint: "All models, sizes, and configurations included in the AMAR application with technical justification for grouping as a device family" },
+        ],
+      },
+      {
+        id: "s3",
+        title: "Classification",
+        description: "Device risk classification justification and predicate device identification",
+        fields: [
+          { id: "3.1", label: "Risk Classification", hint: "Assigned risk class (Class I, IIa, IIb, or III) per Israeli MOH classification rules with specific rule number cited" },
+          { id: "3.2", label: "Classification Justification", hint: "Detailed rationale for the assigned classification including intended purpose, body contact, duration, invasiveness, and active device considerations", textarea: true },
+          { id: "3.3", label: "Predicate Device (if applicable)", hint: "Identification of substantially equivalent predicate device already registered in Israel or approved by FDA/EU with comparison of intended use, technology, and performance" },
+        ],
+      },
+      {
+        id: "s4",
+        title: "Risk Management",
+        description: "Risk management documentation per ISO 14971 as required by AMAR",
+        fields: [
+          { id: "4.1", label: "Risk Management File (ISO 14971)", hint: "Complete risk management file per ISO 14971:2019 including plan, hazard analysis, risk evaluation, risk control, and risk management report", textarea: true },
+          { id: "4.2", label: "Hazard Analysis", hint: "Systematic hazard identification using FMEA, FTA, or HAZOP covering normal use, reasonably foreseeable misuse, and single-fault conditions", textarea: true },
+          { id: "4.3", label: "Risk Control Measures", hint: "Risk control measures implemented in priority order: inherently safe design, protective measures, and information for safety per ISO 14971 Clause 7", textarea: true },
+        ],
+      },
+      {
+        id: "s5",
+        title: "Testing & Validation",
+        description: "Verification and validation testing per Israeli and international standards",
+        fields: [
+          { id: "5.1", label: "Israeli Standards (SI)", hint: "Applicable Israeli Standards (SI/תקן ישראלי) and mandatory SI standards for the device type, with conformity status and test reports", textarea: true },
+          { id: "5.2", label: "International Standards", hint: "ISO, IEC, and EN standards applied for design verification and validation with full designation, edition, and test laboratory accreditation", textarea: true },
+          { id: "5.3", label: "Biocompatibility (ISO 10993)", hint: "Biological evaluation per ISO 10993-1:2018 with endpoint selection based on body contact nature and duration, test reports from accredited laboratories", textarea: true },
+          { id: "5.4", label: "Performance Testing", hint: "Design verification test reports demonstrating device meets all design output specifications under nominal, worst-case, and simulated-use conditions", textarea: true },
+          { id: "5.5", label: "Electrical Safety (IEC 60601)", hint: "IEC 60601-1 Ed. 3.2 and applicable particular standards test reports for electrically powered medical devices, from an accredited test lab", textarea: true },
+          { id: "5.6", label: "Electromagnetic Compatibility (EMC)", hint: "IEC 60601-1-2 Ed. 4.1 EMC test report covering emissions and immunity testing in the intended electromagnetic environment", textarea: true },
+          { id: "5.7", label: "Sterilization Validation", hint: "Sterilization validation per ISO 11135, ISO 11137, or ISO 17665 with demonstrated SAL of 10⁻⁶ for devices supplied sterile" },
+          { id: "5.8", label: "Stability / Shelf Life", hint: "Real-time and accelerated aging studies per ASTM F1980 with sterile barrier integrity testing per ISO 11607 throughout claimed shelf life" },
+          { id: "5.9", label: "Software Validation", hint: "Software verification and validation per IEC 62304 including unit, integration, and system testing with full requirements traceability", textarea: true },
+        ],
+      },
+      {
+        id: "s6",
+        title: "Clinical Evidence",
+        description: "Clinical data supporting device safety and performance for AMAR evaluation",
+        fields: [
+          { id: "6.1", label: "Clinical Evaluation Report", hint: "Systematic clinical evaluation per MEDDEV 2.7/1 Rev 4 or equivalent methodology demonstrating benefit-risk acceptability of the device", textarea: true },
+          { id: "6.2", label: "Clinical Investigation Data", hint: "Clinical investigation data per ISO 14155 if conducted, including protocol, results, statistical analysis, and adverse event summary", textarea: true },
+          { id: "6.3", label: "Literature Review", hint: "Structured literature search with defined databases, search strategy, PICO criteria, critical appraisal of identified studies, and data synthesis", textarea: true },
+          { id: "6.4", label: "Equivalence Analysis", hint: "Demonstration of clinical, technical, and biological equivalence to a predicate device registered in Israel or approved by recognized authorities (FDA, EU)", textarea: true },
+        ],
+      },
+      {
+        id: "s7",
+        title: "Quality System",
+        description: "Quality management system certification and audit documentation",
+        fields: [
+          { id: "7.1", label: "ISO 13485 Certification", hint: "Current ISO 13485:2016 certificate with scope covering the device, issued by an accredited certification body with validity dates" },
+          { id: "7.2", label: "GMP Audit Report", hint: "Most recent GMP/QMS audit report from a recognized auditing organization or regulatory authority demonstrating manufacturing compliance" },
+          { id: "7.3", label: "Quality System Documentation", hint: "Quality manual scope, key QMS procedures (design control, CAPA, complaint handling, supplier management), and management review summary", textarea: true },
+        ],
+      },
+      {
+        id: "s8",
+        title: "Labelling",
+        description: "Bilingual labelling and instructions for use per Israeli MOH requirements",
+        fields: [
+          { id: "8.1", label: "Hebrew Labels", hint: "All device labels in Hebrew per Israeli Consumer Protection Regulations including device name, manufacturer, importer, and MOH registration number" },
+          { id: "8.2", label: "English Labels", hint: "Device labels in English with manufacturer name, model/catalogue number, lot/serial number, manufacturing date, and expiry date" },
+          { id: "8.3", label: "Instructions for Use (Bilingual)", hint: "Complete IFU in both Hebrew and English with indications, contraindications, warnings, precautions, operating instructions, and maintenance", textarea: true },
+          { id: "8.4", label: "Packaging Labels", hint: "Inner and outer packaging labels with storage conditions, sterility indicators, and symbols per ISO 15223-1 in Hebrew and English" },
+          { id: "8.5", label: "AMAR-Specific Labelling", hint: "AMAR-mandated labelling elements including Israeli registration number, Hebrew language requirements, and local importer identification" },
+        ],
+      },
+      {
+        id: "s9",
+        title: "Manufacturing",
+        description: "Manufacturing site information, processes, and quality control details",
+        fields: [
+          { id: "9.1", label: "Manufacturing Sites", hint: "Name, address, and regulatory status of all manufacturing, assembly, packaging, and sterilization sites with scope of activities at each" },
+          { id: "9.2", label: "Manufacturing Process", hint: "Process flow from raw materials to finished device release including critical process steps, special processes, and validated process parameters", textarea: true },
+          { id: "9.3", label: "Quality Control", hint: "Incoming, in-process, and final inspection/testing procedures with acceptance criteria, sampling plans (AQL), and measurement traceability" },
+          { id: "9.4", label: "Sterilization", hint: "Sterilization method, validated parameters, contract sterilizer details (if applicable), routine monitoring, and reprocessing instructions for reusable devices" },
+        ],
+      },
+      {
+        id: "s10",
+        title: "Post-Market & Certificates",
+        description: "Post-market surveillance, vigilance, and supporting regulatory certificates",
+        fields: [
+          { id: "10.1", label: "Adverse Event Reporting to MOH", hint: "Procedure for reporting medical device incidents to the Israeli MOH AMAR department within mandated timelines per Israeli medical device regulations", textarea: true },
+          { id: "10.2", label: "Post-Market Surveillance Plan", hint: "Proactive PMS plan including complaint trending, signal detection, periodic safety reports, and PMCF activities per AMAR requirements", textarea: true },
+          { id: "10.3", label: "Free Sale Certificate", hint: "Certificate of Free Sale from country of origin confirming the device is legally marketed, apostilled for Israeli acceptance" },
+          { id: "10.4", label: "FDA 510(k) / CE Certificate Acceptance", hint: "Copy of FDA 510(k) clearance letter or EU CE certificate — Israeli AMAR frequently accepts devices with prior FDA or CE approval under expedited pathways" },
+          { id: "10.5", label: "ISO 13485 Certificate", hint: "Current ISO 13485:2016 certificate copy with certification body accreditation details, scope statement, and validity period" },
+          { id: "10.6", label: "Foreign Regulatory Approvals", hint: "Summary of marketing authorizations in reference jurisdictions (FDA, EU, Japan, Canada, Australia) with approval dates, indication scope, and any restrictions", textarea: true },
+        ],
+      },
+    ],
+  },
+];
