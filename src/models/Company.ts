@@ -1,5 +1,4 @@
 import { Schema, model, models, Document } from "mongoose";
-import { boolean } from "zod";
 
 export interface CompanyDocument extends Document {
   companyName: string;
@@ -8,6 +7,13 @@ export interface CompanyDocument extends Document {
   companyNumber?: string;
   description?: string;
   country?: string;
+  businessSetup: {
+    gstNumber: string;
+    msmeNumber: string;
+    iecCode: string;
+    trademarkStatus: string;
+    domainName: string;
+  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -20,6 +26,22 @@ const CompanySchema = new Schema<CompanyDocument>(
     companyNumber: { type: String, required: false },
     description: { type: String, required: false },
     country: { type: String, required: false },
+    businessSetup: {
+      type: {
+        gstNumber: { type: String, default: "" },
+        msmeNumber: { type: String, default: "" },
+        iecCode: { type: String, default: "" },
+        trademarkStatus: { type: String, default: "" },
+        domainName: { type: String, default: "" },
+      },
+      default: {
+        gstNumber: "",
+        msmeNumber: "",
+        iecCode: "",
+        trademarkStatus: "",
+        domainName: "",
+      },
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt

@@ -3,12 +3,22 @@ import { getSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { RegulatoryDocument } from "@/models/Document";
+import BusinessSetupWidget from "@/components/BusinessSetupWidget";
 
 export default async function DashboardPage() {
   const user = await getSession();
   await connectToDatabase();
 
   const userId = (user as Record<string, unknown>)._id;
+  const dbSetup = (user as any).businessSetup || {};
+  const initialSetup = {
+    gstNumber: typeof dbSetup.gstNumber === 'string' ? dbSetup.gstNumber : "",
+    msmeNumber: typeof dbSetup.msmeNumber === 'string' ? dbSetup.msmeNumber : "",
+    iecCode: typeof dbSetup.iecCode === 'string' ? dbSetup.iecCode : "",
+    trademarkStatus: typeof dbSetup.trademarkStatus === 'string' ? dbSetup.trademarkStatus : "",
+    domainName: typeof dbSetup.domainName === 'string' ? dbSetup.domainName : "",
+  };
+
   const [productCount, docCount, draftCount, submittedCount] = await Promise.all([
     Product.countDocuments({ userId }),
     RegulatoryDocument.countDocuments({ userId }),
@@ -23,7 +33,7 @@ export default async function DashboardPage() {
   const isEmpty = productCount === 0;
 
   return (
-    <div className="p-6 md:p-8 max-w-5xl mx-auto">
+    <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8">
       {/* Header */}
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-foreground">Welcome back, {userName}</h1>
@@ -110,39 +120,45 @@ export default async function DashboardPage() {
         </>
       )}
 
-      {/* Quick Actions — always visible */}
-      <div className="mb-8">
-        <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">Quick Actions</h2>
-        <div className="grid md:grid-cols-3 gap-3">
-          <Link href="/dashboard/products/new" className="bg-surface border border-border rounded-xl p-4 hover:border-[var(--accent)]/40 hover:shadow-sm transition group flex items-start gap-3">
-            <div className="w-10 h-10 bg-[var(--accent)]/10 rounded-lg flex items-center justify-center text-[var(--accent)] shrink-0 group-hover:bg-[var(--accent)]/20 transition">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" strokeLinecap="round"/></svg>
-            </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">New Product</p>
-              <p className="text-xs text-muted mt-0.5">Add a medical device or IVD to get started</p>
-            </div>
-          </Link>
+      {/* Main Grid: Quick Actions + Business Setup */}
+      <div className="grid md:grid-cols-3 gap-6 mb-8">
+        <div className="md:col-span-2 space-y-4">
+          <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">Quick Actions</h2>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <Link href="/dashboard/products/new" className="bg-surface border border-border rounded-xl p-4 hover:border-[var(--accent)]/40 hover:shadow-sm transition group flex items-start gap-3">
+              <div className="w-10 h-10 bg-[var(--accent)]/10 rounded-lg flex items-center justify-center text-[var(--accent)] shrink-0 group-hover:bg-[var(--accent)]/20 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" strokeLinecap="round"/></svg>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">New Product</p>
+                <p className="text-xs text-muted mt-0.5">Add a medical device or IVD to get started</p>
+              </div>
+            </Link>
 
-          <Link href="/dashboard/products" className="bg-surface border border-border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition group flex items-start gap-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0 group-hover:bg-blue-100 transition">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">My Products</p>
-              <p className="text-xs text-muted mt-0.5">View products and generate regulatory docs</p>
-            </div>
-          </Link>
+            <Link href="/dashboard/products" className="bg-surface border border-border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition group flex items-start gap-3">
+              <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0 group-hover:bg-blue-100 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">My Products</p>
+                <p className="text-xs text-muted mt-0.5">View products and generate regulatory docs</p>
+              </div>
+            </Link>
 
-          <Link href="/dashboard/vault" className="bg-surface border border-border rounded-xl p-4 hover:border-green-300 hover:shadow-sm transition group flex items-start gap-3">
-            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600 shrink-0 group-hover:bg-green-100 transition">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </div>
-            <div>
-              <p className="font-semibold text-foreground text-sm">Document Vault</p>
-              <p className="text-xs text-muted mt-0.5">Browse, version, and export all documents</p>
-            </div>
-          </Link>
+            <Link href="/dashboard/vault" className="bg-surface border border-border rounded-xl p-4 hover:border-green-300 hover:shadow-sm transition group flex items-start gap-3">
+              <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600 shrink-0 group-hover:bg-green-100 transition">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+              <div>
+                <p className="font-semibold text-foreground text-sm">Document Vault</p>
+                <p className="text-xs text-muted mt-0.5">Browse, version, and export all documents</p>
+              </div>
+            </Link>
+          </div>
+        </div>
+
+        <div className="md:col-span-1">
+          <BusinessSetupWidget initialSetup={initialSetup} />
         </div>
       </div>
 
