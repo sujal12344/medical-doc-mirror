@@ -122,6 +122,7 @@ The primary identity entity. Every "user" is a Company.
 | `companyNumber` | String | Optional phone number |
 | `description` | String | Optional |
 | `country` | String | Optional country code |
+| `businessSetup` | Object | Tracks Phase 0 compliance (GST, MSME, IEC Code, Trademark, Domain) |
 | `createdAt/updatedAt` | Date | Auto via `timestamps: true` |
 
 ### `products` collection
@@ -241,7 +242,7 @@ The `placeholders.json` file maps each DOCX template to its tags. The upload rou
 
 | Route | Component | Description |
 |-------|-----------|-------------|
-| `/dashboard` | Server component | Home: stats cards, recent products/docs, "How it works" guide |
+| `/dashboard` | Server component | Home: Phase 0 Business Setup widget, stats cards, recent products/docs, "How it works" guide |
 | `/dashboard/products` | Server component | Product list with status badges |
 | `/dashboard/products/new` | Client component | Register a new medical device product |
 | `/dashboard/products/[id]` | Server component | Product detail: info, uploaded docs, regulatory documents |
@@ -270,6 +271,7 @@ The `placeholders.json` file maps each DOCX template to its tags. The upload rou
 | `/api/documents/[id]/sections` | PUT | Session | Update document sections |
 | `/api/documents/[id]/versions` | GET/POST | Session | Version history |
 | `/api/companies/me` | GET | Session | Current company profile |
+| `/api/companies/me/setup` | PUT | Session | Update Phase 0 business setup checklist |
 | `/api/chat` | POST | Session | General AI chat |
 | `/api/compliance-book` | GET | Session | Compliance knowledge base |
 | `/api/countries` | GET | Public | Country list for frameworks |
@@ -292,7 +294,8 @@ The `src/lib/frameworks/` directory contains structured regulatory framework def
 ```
 1. REGISTER  → /register → creates Company in MongoDB
 2. LOGIN     → /login → NextAuth issues JWT
-3. DASHBOARD → /dashboard → see stats, recent activity
+3. PHASE 0   → /dashboard → Update Business Setup widget (GST, MSME, IEC numbers)
+4. DASHBOARD → /dashboard → see stats, recent activity
 4. PRODUCT   → /dashboard/products/new → register a medical device
 5. UPLOAD    → /dashboard/upload → upload product PDFs
                 → AI extracts company + product data via RAG

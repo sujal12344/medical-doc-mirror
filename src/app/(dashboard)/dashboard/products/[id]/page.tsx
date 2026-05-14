@@ -50,9 +50,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               {product.manufacturer} &middot; Class {product.deviceClass} &middot; {product.deviceType === "ivd" ? "IVD" : "Medical Device"}
             </p>
           </div>
-          <span className={`text-xs px-3 py-1 rounded-full font-semibold ${product.status === "active" ? "bg-green-50 text-green-600" : product.status === "archived" ? "bg-gray-100 text-gray-500" : "bg-yellow-50 text-yellow-600"}`}>
-            {product.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/dashboard/products/${id}/dossier`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-violet-500 text-violet-600 hover:bg-violet-50 transition"
+            >
+              📋 Technical File (Schedule V)
+            </Link>
+            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${product.status === "active" ? "bg-green-50 text-green-600" : product.status === "archived" ? "bg-gray-100 text-gray-500" : "bg-yellow-50 text-yellow-600"}`}>
+              {product.status}
+            </span>
+          </div>
         </div>
         {product.description && <p className="text-sm text-muted mt-3 leading-relaxed">{product.description}</p>}
         <div className="flex gap-1.5 mt-3 flex-wrap">
@@ -111,6 +119,32 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         />
                       );
                     })}
+                    {code === "IN" && (
+                      <>
+                        <Link
+                          href={`/dashboard/products/${id}/md14`}
+                          className="flex flex-col text-left bg-surface border border-border rounded-xl p-4 hover:border-violet-500/50 hover:shadow-sm transition"
+                        >
+                          <span className="text-sm font-semibold text-foreground">Form MD-14</span>
+                          <span className="text-xs text-muted mt-1 line-clamp-2">Import License Application</span>
+                          <div className="flex gap-2 mt-3">
+                            <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md font-medium">CDSCO</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-600 rounded-md font-medium">Auto-fill</span>
+                          </div>
+                        </Link>
+                        <Link
+                          href={`/dashboard/products/${id}/md16`}
+                          className="flex flex-col text-left bg-surface border border-border rounded-xl p-4 hover:border-violet-500/50 hover:shadow-sm transition"
+                        >
+                          <span className="text-sm font-semibold text-foreground">Form MD-16</span>
+                          <span className="text-xs text-muted mt-1 line-clamp-2">Manufacturing License</span>
+                          <div className="flex gap-2 mt-3">
+                            <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md font-medium">CDSCO</span>
+                            <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-600 rounded-md font-medium">Auto-fill</span>
+                          </div>
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               );
