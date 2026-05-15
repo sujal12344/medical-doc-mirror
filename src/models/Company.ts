@@ -43,28 +43,7 @@ export interface CompanyDocument extends Document {
     overallCompletionPct: number;
     lastUpdated: Date;
   };
-  deviceClassification?: {
-    // Step 1 — Device Identity
-    deviceName: string;
-    intendedUse: string;
-    isIVD: boolean;
-    isSoftware: boolean;
-    isImplantable: boolean;
-    // Step 2 — MDR 2017 Classification (India)
-    mdrClass: 'A' | 'B' | 'C' | 'D' | '';
-    mdrClassRationale: string;
-    // Step 3 — Global Regulatory Targets
-    targetRegulations: Array<'CDSCO' | 'FDA-510k' | 'FDA-PMA' | 'EU-MDR' | 'CE-IVD' | 'ANVISA' | 'TGA'>;
-    // Step 4 — Predicate & Classification Evidence
-    predicateDeviceName: string;
-    predicateDeviceNumber: string;
-    hsCode: string;
-    // Meta
-    classificationLocked: boolean;
-    lockedAt?: Date;
-    completionPct: number;
-    lastUpdated: Date;
-  };
+
   qms?: {
     iso13485: {
       managementResponsibility: number;
@@ -165,26 +144,7 @@ const CompanySchema = new Schema<CompanyDocument>(
       },
       default: {},
     },
-    deviceClassification: {
-      type: {
-        deviceName: { type: String, default: '' },
-        intendedUse: { type: String, default: '' },
-        isIVD: { type: Boolean, default: false },
-        isSoftware: { type: Boolean, default: false },
-        isImplantable: { type: Boolean, default: false },
-        mdrClass: { type: String, enum: ['A', 'B', 'C', 'D', ''], default: '' },
-        mdrClassRationale: { type: String, default: '' },
-        targetRegulations: { type: [String], default: [] },
-        predicateDeviceName: { type: String, default: '' },
-        predicateDeviceNumber: { type: String, default: '' },
-        hsCode: { type: String, default: '' },
-        classificationLocked: { type: Boolean, default: false },
-        lockedAt: { type: Date },
-        completionPct: { type: Number, default: 0 },
-        lastUpdated: { type: Date, default: Date.now },
-      },
-      default: {},
-    },
+
     qms: {
       type: {
         iso13485: {

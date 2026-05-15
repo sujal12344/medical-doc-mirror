@@ -106,6 +106,45 @@ export type ProductDocument = {
   countries: string[];
   status: "draft" | "active" | "archived";
   uploadedDocs: UploadedDoc[];
+  classification?: {
+    genericName: string;
+    tradeName: string;
+    intendedUseClaims: string;
+    patientPopulation: string;
+    anatomicalSite: string;
+    contactDuration: 'transient' | 'short-term' | 'long-term' | 'na';
+    reuseType: 'single-use' | 'reusable' | 'na';
+    isActive: boolean;
+    isInvasive: boolean;
+    invasionType: 'body-orifice' | 'surgically-invasive' | 'na';
+    isSterile: boolean;
+    isImplantable: boolean;
+    hasSoftware: boolean;
+    isIVD: boolean;
+    isDrugDeviceCombo: boolean;
+    containsAnimalTissue: boolean;
+    isContraceptive: boolean;
+    directCNSContact: boolean;
+    directHeartContact: boolean;
+    lifeSupporting: boolean;
+    ionizingRadiation: boolean;
+
+    confirmedClass: 'A' | 'B' | 'C' | 'D' | '';
+    appliedRule: string;
+    classificationRationale: string;
+    classConfirmedBy: 'ai' | 'manual' | '';
+    confidence: 'high' | 'medium' | 'low' | '';
+    aiWarnings: string[];
+
+    hasPredicate: boolean;
+    predicateDeviceName: string;
+    predicateLicenceNumber: string;
+    isNovel: boolean;
+
+    wizardCompleted: boolean;
+    overallCompletionPct: number;
+    lastUpdated: Date;
+  };
   technicalDossier?: TechnicalDossier;
   createdAt: Date;
   updatedAt: Date;
@@ -122,6 +161,48 @@ const productSchema = new Schema<ProductDocument>(
     intendedUse: { type: String, trim: true, maxlength: 3000, default: "" },
     countries: { type: [String], default: ["IN"] },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft" },
+    classification: {
+      type: {
+        genericName: { type: String, default: "" },
+        tradeName: { type: String, default: "" },
+        intendedUseClaims: { type: String, default: "" },
+        patientPopulation: { type: String, default: "" },
+        anatomicalSite: { type: String, default: "" },
+        contactDuration: { type: String, enum: ['transient', 'short-term', 'long-term', 'na'], default: 'na' },
+        reuseType: { type: String, enum: ['single-use', 'reusable', 'na'], default: 'na' },
+        isActive: { type: Boolean, default: false },
+        isInvasive: { type: Boolean, default: false },
+        invasionType: { type: String, enum: ['body-orifice', 'surgically-invasive', 'na'], default: 'na' },
+        isSterile: { type: Boolean, default: false },
+        isImplantable: { type: Boolean, default: false },
+        hasSoftware: { type: Boolean, default: false },
+        isIVD: { type: Boolean, default: false },
+        isDrugDeviceCombo: { type: Boolean, default: false },
+        containsAnimalTissue: { type: Boolean, default: false },
+        isContraceptive: { type: Boolean, default: false },
+        directCNSContact: { type: Boolean, default: false },
+        directHeartContact: { type: Boolean, default: false },
+        lifeSupporting: { type: Boolean, default: false },
+        ionizingRadiation: { type: Boolean, default: false },
+
+        confirmedClass: { type: String, enum: ['A', 'B', 'C', 'D', ''], default: '' },
+        appliedRule: { type: String, default: "" },
+        classificationRationale: { type: String, default: "" },
+        classConfirmedBy: { type: String, enum: ['ai', 'manual', ''], default: '' },
+        confidence: { type: String, enum: ['high', 'medium', 'low', ''], default: '' },
+        aiWarnings: { type: [String], default: [] },
+
+        hasPredicate: { type: Boolean, default: false },
+        predicateDeviceName: { type: String, default: "" },
+        predicateLicenceNumber: { type: String, default: "" },
+        isNovel: { type: Boolean, default: false },
+
+        wizardCompleted: { type: Boolean, default: false },
+        overallCompletionPct: { type: Number, default: 0 },
+        lastUpdated: { type: Date, default: Date.now },
+      },
+      default: {},
+    },
     uploadedDocs: { type: [{
       fileId: { type: String, required: true },
       originalName: { type: String, required: true },

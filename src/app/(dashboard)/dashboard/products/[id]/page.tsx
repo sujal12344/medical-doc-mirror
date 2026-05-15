@@ -52,6 +52,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </div>
           <div className="flex items-center gap-2">
             <Link
+              href={`/dashboard/products/${id}/classify`}
+              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-blue-500 text-blue-600 hover:bg-blue-50 transition"
+            >
+              🔬 Classify Device
+            </Link>
+            <Link
               href={`/dashboard/products/${id}/dossier`}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-violet-500 text-violet-600 hover:bg-violet-50 transition"
             >
