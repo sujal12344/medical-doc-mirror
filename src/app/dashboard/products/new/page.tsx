@@ -4,6 +4,11 @@ import { useState, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { REGION_GROUPS } from "@/lib/frameworks";
+import Phase1MiniFlowchart from "./Phase1MiniFlowchart";
+import DeviceCharacterisation from "./DeviceCharacterisation";
+import IVDCharacterisation from "./IVDCharacterisation";
+import PredicatePathway from "./PredicatePathway";
+import ClassificationLock from "./ClassificationLock";
 
 type UploadedFile = { fileId: string; originalName: string; charCount: number; status: "done" | "uploading" | "error" };
 
@@ -20,19 +25,78 @@ export default function NewProductPage() {
     deviceClass: "B" as "A" | "B" | "C" | "D",
     deviceType: "ivd" as "ivd" | "medical-device",
     countries: ["IN"] as string[],
-    // New characterisation fields
     patientPopulation: "",
     isSterile: false,
     hasSoftware: false,
+    // Part I fields
     isActive: false,
+    activeType: "" as "therapeutic" | "diagnostic" | "other" | "",
     isInvasive: false,
+    invasionType: "" as "non-invasive" | "body-orifice" | "surgically-invasive" | "",
+    contactDuration: "" as "transient" | "short-term" | "long-term" | "",
+    // Special risk flags
+    directCNSContact: false,
+    directHeartContact: false,
+    lifeSupporting: false,
+    isImplantable: false,
+    ionizingRadiation: false,
+    isDrugDeviceCombo: false,
+    containsAnimalTissue: false,
+    isContraceptive: false,
+    absorbed: false,
+    reusableSurgicalInstrument: false,
+    oralCavityOrEarOrNasal: false,
+    mucousMembraneAbsorption: false,
+    drugAdministration: false,
+    // IVD Part II fields
+    ivdSelfTest: false,
+    ivdNearPatient: false,
+    ivdBloodDonorScreening: false,
+    ivdBloodGrouping: false,
+    ivdForKnownCondition: false,
+    ivdTargetsHIV: false,
+    ivdTargetsHBV: false,
+    ivdTargetsHCV: false,
+    ivdTargetsHTLV: false,
+    ivdTargetsMalaria: false,
+    ivdTargetsSyphilis: false,
+    ivdTargetsCMV: false,
+    ivdTargetsSTI: false,
+    ivdGeneticTesting: false,
+    ivdDrugMonitoring: false,
+    ivdHLATyping: false,
+    ivdCongenitalScreening: false,
+    ivdCancerMarkers: false,
+    ivdFertility: false,
+    // Predicate device & novel pathway (Step 1.5)
+    predicateExists: null as null | boolean,
+    predicateName: "",
+    predicateManufacturer: "",
+    predicateRegNo: "",
+    predicateBasis: "",
+    predicateClass: "" as "A" | "B" | "C" | "D" | "",
+    // Novel pathway (when predicateExists === false)
+    md26Status: "not-filed" as "not-filed" | "filed" | "approved",
+    md26RefNo: "",
+    md27Status: "not-filed" as "not-filed" | "filed" | "approved",
+    md27RefNo: "",
+    clinicalSiteCount: "",
+    novelPathwayAcknowledged: false,
+    // Step 1.6 — Classification confirmation
+    classificationConfirmed: false,
+    classificationOverride: "" as "A" | "B" | "C" | "D" | "",
+    classificationNote: "",
+    classificationConfirmedBy: "",
+    // Step 1.8 — Lock
+    classificationLocked: false,
+    classificationLockedBy: "",
   });
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [autofilling, setAutofilling] = useState(false);
-  const [autofillDoc, setAutofillDoc] = useState("");
   const [autofillDocName, setAutofillDocName] = useState("");
+  const [autofillDone, setAutofillDone] = useState(false);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -41,18 +105,22 @@ export default function NewProductPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autofillInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [specialOpen, setSpecialOpen] = useState(false);
 
-  function upd(field: string, value: string | boolean | string[]) {
+  function upd(field: string, value: string | boolean | string[] | null) {
     setForm((p) => ({ ...p, [field]: value }));
   }
 
-  // ── Autofill via RAG ────────────────────────────────────────────────────────
+  // ── Autofill via RAG — upload triggers chunk → embed → upsert → query → fill ──
   const handleAutofillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setAutofillDocName(file.name);
+    setAutofilling(true);
+    setError("");
+    setAutofillDone(false);
 
-    // Extract text from file
+    // Step 1: Extract text
     let text = "";
     const formData = new FormData();
     formData.append("file", file);
@@ -67,21 +135,16 @@ export default function NewProductPage() {
         reader.readAsText(file);
       });
     }
-    setAutofillDoc(text);
-  };
 
-  const handleRunAutofill = async () => {
-    if (!autofillDoc.trim()) { setError("Upload a document first to autofill."); return; }
-    setError(""); setAutofilling(true);
+    // Step 2: Send to autofill API (chunk → embed → upsert → RAG query → GPT)
     try {
       const res = await fetch("/api/products/autofill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentText: autofillDoc }),
+        body: JSON.stringify({ documentText: text }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Autofill failed");
-      // Merge AI output into form
       setForm((prev) => ({
         ...prev,
         name: data.name || prev.name,
@@ -94,8 +157,45 @@ export default function NewProductPage() {
         isSterile: data.isSterile ?? prev.isSterile,
         hasSoftware: data.hasSoftware ?? prev.hasSoftware,
         isActive: data.isActive ?? prev.isActive,
+        activeType: data.activeType || prev.activeType,
         isInvasive: data.isInvasive ?? prev.isInvasive,
+        invasionType: data.invasionType || prev.invasionType,
+        contactDuration: data.contactDuration || prev.contactDuration,
+        directCNSContact: data.directCNSContact ?? prev.directCNSContact,
+        directHeartContact: data.directHeartContact ?? prev.directHeartContact,
+        lifeSupporting: data.lifeSupporting ?? prev.lifeSupporting,
+        isImplantable: data.isImplantable ?? prev.isImplantable,
+        ionizingRadiation: data.ionizingRadiation ?? prev.ionizingRadiation,
+        isDrugDeviceCombo: data.isDrugDeviceCombo ?? prev.isDrugDeviceCombo,
+        containsAnimalTissue: data.containsAnimalTissue ?? prev.containsAnimalTissue,
+        isContraceptive: data.isContraceptive ?? prev.isContraceptive,
+        absorbed: data.absorbed ?? prev.absorbed,
+        reusableSurgicalInstrument: data.reusableSurgicalInstrument ?? prev.reusableSurgicalInstrument,
+        oralCavityOrEarOrNasal: data.oralCavityOrEarOrNasal ?? prev.oralCavityOrEarOrNasal,
+        mucousMembraneAbsorption: data.mucousMembraneAbsorption ?? prev.mucousMembraneAbsorption,
+        drugAdministration: data.drugAdministration ?? prev.drugAdministration,
+        // IVD Part II
+        ivdSelfTest:             data.ivdSelfTest             ?? prev.ivdSelfTest,
+        ivdNearPatient:          data.ivdNearPatient          ?? prev.ivdNearPatient,
+        ivdBloodDonorScreening:  data.ivdBloodDonorScreening  ?? prev.ivdBloodDonorScreening,
+        ivdBloodGrouping:        data.ivdBloodGrouping        ?? prev.ivdBloodGrouping,
+        ivdForKnownCondition:    data.ivdForKnownCondition    ?? prev.ivdForKnownCondition,
+        ivdTargetsHIV:           data.ivdTargetsHIV           ?? prev.ivdTargetsHIV,
+        ivdTargetsHBV:           data.ivdTargetsHBV           ?? prev.ivdTargetsHBV,
+        ivdTargetsHCV:           data.ivdTargetsHCV           ?? prev.ivdTargetsHCV,
+        ivdTargetsHTLV:          data.ivdTargetsHTLV          ?? prev.ivdTargetsHTLV,
+        ivdTargetsMalaria:       data.ivdTargetsMalaria       ?? prev.ivdTargetsMalaria,
+        ivdTargetsSyphilis:      data.ivdTargetsSyphilis      ?? prev.ivdTargetsSyphilis,
+        ivdTargetsCMV:           data.ivdTargetsCMV           ?? prev.ivdTargetsCMV,
+        ivdTargetsSTI:           data.ivdTargetsSTI           ?? prev.ivdTargetsSTI,
+        ivdGeneticTesting:       data.ivdGeneticTesting       ?? prev.ivdGeneticTesting,
+        ivdDrugMonitoring:       data.ivdDrugMonitoring       ?? prev.ivdDrugMonitoring,
+        ivdHLATyping:            data.ivdHLATyping            ?? prev.ivdHLATyping,
+        ivdCongenitalScreening:  data.ivdCongenitalScreening  ?? prev.ivdCongenitalScreening,
+        ivdCancerMarkers:        data.ivdCancerMarkers        ?? prev.ivdCancerMarkers,
+        ivdFertility:            data.ivdFertility            ?? prev.ivdFertility,
       }));
+      setAutofillDone(true);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -203,26 +303,18 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="p-6 md:p-8 max-w-3xl mx-auto">
+    <div className="p-6 md:p-8 max-w-6xl mx-auto">
       <Link href="/dashboard/products" className="text-sm text-muted hover:text-foreground transition mb-4 inline-block">← Back to products</Link>
       <h1 className="text-2xl font-bold text-foreground mb-1">Register New Product</h1>
       <p className="text-sm text-muted mb-6">Add your medical device or IVD product for Phase 2 Technical Dossier generation.</p>
 
-      <form onSubmit={productId ? (e) => { e.preventDefault(); router.push(`/dashboard/products/${productId}`); } : handleCreateAndContinue} className="space-y-6">
-        {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
+      <div className="flex gap-6 items-start">
+        {/* Form column */}
+        <div className="flex-1 min-w-0">
+        <form onSubmit={productId ? (e) => { e.preventDefault(); router.push(`/dashboard/products/${productId}`); } : handleCreateAndContinue} className="space-y-6">
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
 
-        {/* Step indicator */}
-        <div className="flex items-center gap-3 text-xs text-muted">
-          <span className={`flex items-center gap-1.5 ${!productId ? "text-[var(--accent)] font-semibold" : "text-green-600"}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${!productId ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-green-100 text-green-700"}`}>{productId ? "✓" : "1"}</span>
-            Product Details
-          </span>
-          <span className="w-8 h-px bg-border" />
-          <span className={`flex items-center gap-1.5 ${productId ? "text-[var(--accent)] font-semibold" : ""}`}>
-            <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold ${productId ? "bg-[var(--accent)]/15 text-[var(--accent)]" : "bg-surface2 text-muted"}`}>2</span>
-            Upload Documents
-          </span>
-        </div>
+
 
         {/* Product Info */}
         <div className={`bg-surface border border-border rounded-2xl p-6 space-y-5 ${productId ? "opacity-60 pointer-events-none" : ""}`}>
@@ -234,30 +326,29 @@ export default function NewProductPage() {
 
             {/* Autofill zone */}
             <div className="shrink-0">
-              {!autofillDoc ? (
-                <button type="button" onClick={() => autofillInputRef.current?.click()}
-                  className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
-                  🪄 Autofill from Document
-                </button>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-accent font-medium truncate max-w-[120px]">📄 {autofillDocName}</span>
-                  <button type="button" onClick={handleRunAutofill} disabled={autofilling}
-                    className="flex items-center gap-1 px-3 py-2 text-xs font-semibold text-white bg-accent rounded-xl hover:bg-accent-hover transition disabled:opacity-60">
-                    {autofilling ? <><span className="w-3 h-3 border border-white/40 border-t-white rounded-full animate-spin" /> Filling…</> : "✨ Fill Fields"}
-                  </button>
-                </div>
-              )}
-              <input ref={autofillInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={handleAutofillUpload} />
-            </div>
-          </div>
 
-          {autofilling && (
-            <div className="bg-accent/5 border border-accent/20 rounded-xl px-4 py-3 flex items-center gap-2 text-sm text-accent font-medium">
-              <span className="w-4 h-4 border-2 border-accent/40 border-t-accent rounded-full animate-spin" />
-              AI is reading the document and filling fields…
+            {autofillDone ? (
+              <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
+                ✅ Autofilled from {autofillDocName}
+                <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); autofillInputRef.current && (autofillInputRef.current.value = ""); }}
+                  className="ml-1 text-muted hover:text-foreground">
+                  ✕
+                </button>
+              </div>
+            ) : autofilling ? (
+              <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent bg-accent/5 border border-accent/20 rounded-xl">
+                <span className="w-3 h-3 border border-accent/40 border-t-accent rounded-full animate-spin" />
+                {autofillDocName ? `Processing ${autofillDocName}…` : "Processing…"}
+              </div>
+            ) : (
+              <button type="button" onClick={() => autofillInputRef.current?.click()}
+                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
+                🪄 Autofill from Document
+              </button>
+            )}
+            <input ref={autofillInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={handleAutofillUpload} />
             </div>
-          )}
+          </div>{/* end flex items-start justify-between */}
 
           {/* Name + Manufacturer */}
           <div className="grid md:grid-cols-2 gap-4">
@@ -294,6 +385,30 @@ export default function NewProductPage() {
               className={FIELD_INPUT_CLASS} placeholder="e.g. Adults ≥18 years, pregnant women, neonates" />
           </div>
 
+          {/* isSterile + hasSoftware — inline compact toggles */}
+          <div className="grid md:grid-cols-2 gap-3">
+            <div className="flex items-start justify-between gap-3 px-3 py-2.5 border border-border rounded-xl">
+              <div>
+                <div className="text-xs font-semibold text-foreground">Supplied sterile</div>
+                <div className="text-[10px] text-muted leading-tight">Affects labelling (MDR 2017 Rule 44) — not used for classification</div>
+              </div>
+              <button type="button" onClick={() => upd("isSterile", !form.isSterile)}
+                className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${form.isSterile ? "bg-accent" : "bg-surface2 border border-border"}`}>
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.isSterile ? "left-[18px]" : "left-0.5"}`} />
+              </button>
+            </div>
+            <div className="flex items-start justify-between gap-3 px-3 py-2.5 border border-border rounded-xl">
+              <div>
+                <div className="text-xs font-semibold text-foreground">Has embedded software</div>
+                <div className="text-[10px] text-muted leading-tight">Software inherits class of parent device (First Schedule Basic Principle iii)</div>
+              </div>
+              <button type="button" onClick={() => upd("hasSoftware", !form.hasSoftware)}
+                className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${form.hasSoftware ? "bg-accent" : "bg-surface2 border border-border"}`}>
+                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.hasSoftware ? "left-[18px]" : "left-0.5"}`} />
+              </button>
+            </div>
+          </div>
+
           {/* Device Class + Type */}
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -315,22 +430,28 @@ export default function NewProductPage() {
             </div>
           </div>
 
-          {/* Characterisation toggles */}
-          <div className="border border-border rounded-xl overflow-hidden">
-            <div className="px-4 py-3 bg-surface2 border-b border-border">
-              <div className="text-xs font-semibold text-foreground uppercase tracking-wide">Device Characterisation</div>
-              <div className="text-xs text-muted mt-0.5">These are used by the AI Classification engine in Phase 1.</div>
-            </div>
-            <div className="px-4">
-              <BoolToggle label="Sterile" field="isSterile" hint="Is the device supplied in a sterile state?" />
-              <BoolToggle label="Software-Enabled" field="hasSoftware" hint="Does the device include embedded or companion software?" />
-              <BoolToggle label="Active Device" field="isActive" hint="Does the device transform or use energy (electrical, thermal, etc.)?" />
-              <BoolToggle label="Invasive" field="isInvasive" hint="Does the device penetrate the body through an orifice or surgically?" />
-            </div>
-          </div>
+          {/* Device Characterisation — Part I for medical-device, Part II for IVD */}
+          {form.deviceType === "medical-device" ? (
+            <DeviceCharacterisation form={form} upd={upd} specialOpen={specialOpen} setSpecialOpen={setSpecialOpen} />
+          ) : (
+            <IVDCharacterisation form={form} upd={(f, v) => upd(f, v)} />
+          )}
         </div>
 
+        {/* Step 1.5 — Predicate Device & Regulatory Pathway */}
+        <div className={`bg-surface border border-border rounded-2xl p-6 ${productId ? "opacity-60 pointer-events-none" : ""}`}>
+          <PredicatePathway form={form} upd={upd} />
+        </div>
+
+        {/* Step 1.6 / 1.8 / 1.9 — Classification Confirmation & Lock */}
+        {form.predicateExists !== null && (
+          <div className={`bg-surface border border-border rounded-2xl p-6 ${productId ? "opacity-60 pointer-events-none" : ""}`}>
+            <ClassificationLock form={form} upd={upd} />
+          </div>
+        )}
+
         {/* Target Markets */}
+
         <div className="bg-surface border border-border rounded-2xl p-6">
           <div className="flex items-center justify-between mb-1">
             <div>
@@ -401,58 +522,19 @@ export default function NewProductPage() {
           </div>
         </div>
 
-        {/* Document Upload — visible after product created */}
-        {productId && (
-          <div className="bg-surface border border-border rounded-2xl p-6 space-y-4">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Upload Product Documents</h2>
-              <p className="text-xs text-muted mt-1">Upload COA, IFU, clinical reports, SDS. The AI will use these during Phase 1 classification and Phase 2 dossier generation.</p>
-            </div>
-
-            <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)}
-              onDrop={handleDrop} onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition ${dragOver ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-border hover:border-[var(--accent)]/40 hover:bg-surface2"}`}>
-              <input ref={fileInputRef} type="file" multiple accept=".pdf,.txt,.csv,.xml,.json,.md,.doc,.docx" className="hidden"
-                onChange={(e) => { if (e.target.files?.length) uploadFiles(productId, e.target.files); e.target.value = ""; }} />
-              <div className="mb-2">
-                <svg className="mx-auto w-10 h-10 text-muted" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" /></svg>
-              </div>
-              <p className="text-sm font-medium text-foreground">{uploading ? "Uploading & extracting text..." : "Drop files here or click to browse"}</p>
-              <p className="text-xs text-muted mt-1">PDF, TXT, CSV, XML, JSON, MD — up to 50MB each</p>
-            </div>
-
-            {uploadedFiles.length > 0 && (
-              <div className="space-y-2">
-                <p className="text-xs font-semibold text-foreground">{uploadedFiles.filter((f) => f.status === "done").length} document{uploadedFiles.length !== 1 ? "s" : ""} uploaded</p>
-                {uploadedFiles.map((f) => (
-                  <div key={f.fileId} className="flex items-center gap-3 bg-surface2 border border-border rounded-lg px-3 py-2">
-                    <svg className="w-4 h-4 text-muted shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" /></svg>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{f.originalName}</p>
-                      <p className="text-[10px] text-muted">
-                        {f.status === "uploading" && "Extracting text..."}
-                        {f.status === "done" && `${f.charCount.toLocaleString()} characters extracted`}
-                        {f.status === "error" && "Failed to process"}
-                      </p>
-                    </div>
-                    {f.status === "uploading" && <span className="w-4 h-4 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />}
-                    {f.status === "done" && <span className="text-green-600 text-xs">✓</span>}
-                    {f.status === "error" && <span className="text-red-500 text-xs">✗</span>}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Submit */}
-        <button type="submit" disabled={loading || uploading}
+        <button type="submit" disabled={loading}
           className="w-full py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-semibold rounded-xl text-sm transition disabled:opacity-50">
-          {loading ? "Creating..." :
-            productId ? (uploading ? "Uploading..." : `Continue to Product →`) :
-              `Create Product & Upload Docs (${form.countries.length} market${form.countries.length !== 1 ? "s" : ""})`}
+          {loading ? "Creating..." : productId ? "Continue to Product →" : `Save & Continue (${form.countries.length} market${form.countries.length !== 1 ? "s" : ""})`}
         </button>
-      </form>
+
+        </form>
+        </div>{/* end form column */}
+
+        {/* Phase 1 Mini Flowchart sidebar */}
+        <Phase1MiniFlowchart form={form} />
+      </div>
     </div>
   );
 }

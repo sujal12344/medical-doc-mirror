@@ -44,34 +44,6 @@ export interface CompanyDocument extends Document {
     lastUpdated: Date;
   };
 
-  qms?: {
-    iso13485: {
-      managementResponsibility: number;
-      resourceManagement: number;
-      productRealization: number;
-      measurementAnalysis: number;
-    };
-    sops: Array<{
-      id: string;
-      title: string;
-      status: 'draft' | 'in-review' | 'approved';
-      version: string;
-      effectiveDate?: Date;
-      documentUrl?: string;
-    }>;
-    capas: Array<{
-      id: string;
-      title: string;
-      description: string;
-      status: 'open' | 'investigating' | 'implemented' | 'closed';
-      rootCause?: string;
-      actionTaken?: string;
-      openedDate: Date;
-      closedDate?: Date;
-    }>;
-    completionPct: number;
-    lastUpdated: Date;
-  };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -140,44 +112,6 @@ const CompanySchema = new Schema<CompanyDocument>(
           targetCountries: { type: [String], default: [] },
         },
         overallCompletionPct: { type: Number, default: 0 },
-        lastUpdated: { type: Date, default: Date.now },
-      },
-      default: {},
-    },
-
-    qms: {
-      type: {
-        iso13485: {
-          managementResponsibility: { type: Number, default: 0 },
-          resourceManagement: { type: Number, default: 0 },
-          productRealization: { type: Number, default: 0 },
-          measurementAnalysis: { type: Number, default: 0 },
-        },
-        sops: {
-          type: [{
-            id: { type: String, required: true },
-            title: { type: String, required: true },
-            status: { type: String, enum: ['draft', 'in-review', 'approved'], default: 'draft' },
-            version: { type: String, default: '1.0' },
-            effectiveDate: { type: Date },
-            documentUrl: { type: String, default: '' },
-          }],
-          default: [],
-        },
-        capas: {
-          type: [{
-            id: { type: String, required: true },
-            title: { type: String, required: true },
-            description: { type: String, default: '' },
-            status: { type: String, enum: ['open', 'investigating', 'implemented', 'closed'], default: 'open' },
-            rootCause: { type: String, default: '' },
-            actionTaken: { type: String, default: '' },
-            openedDate: { type: Date, default: Date.now },
-            closedDate: { type: Date },
-          }],
-          default: [],
-        },
-        completionPct: { type: Number, default: 0 },
         lastUpdated: { type: Date, default: Date.now },
       },
       default: {},

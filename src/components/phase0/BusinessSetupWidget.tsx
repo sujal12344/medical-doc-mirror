@@ -7,7 +7,7 @@ export default function BusinessSetupWidget({ initialSetup }: { initialSetup: an
   const requirements = [
     initialSetup?.secA?.gst?.status === 'complete',
     initialSetup?.secA?.msme?.status === 'complete',
-    initialSetup?.secA?.iec?.status === 'complete',
+    initialSetup?.secA?.iec?.status === 'complete', 
     initialSetup?.secB?.entityType !== '' && initialSetup?.secB?.entityType !== undefined,
     initialSetup?.secB?.cin !== '' && initialSetup?.secB?.cin !== undefined,
     initialSetup?.secB?.pan !== '' && initialSetup?.secB?.pan !== undefined,

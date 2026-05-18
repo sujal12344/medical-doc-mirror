@@ -1,0 +1,13 @@
+{
+  // Tailwind v4 uses @theme, @source, @utility — suppress false-positive CSS lint warnings
+  "css.lint.unknownAtRules": "ignore",
+  "css.validate": false,
+
+  // Use Tailwind IntelliSense for CSS class autocomplete
+  "editor.quickSuggestions": {
+    "strings": "on"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    ["className\\s*=\\s*[`'\"]([^`'\"]*)[`'\"]"]
+  ]
+}

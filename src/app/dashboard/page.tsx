@@ -3,10 +3,8 @@ import { getSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { RegulatoryDocument } from "@/models/Document";
-import BusinessSetupWidget from "@/components/BusinessSetupWidget";
-import ClassificationWidget from "@/components/ClassificationWidget";
-import TechnicalDossierWidget from "@/components/TechnicalDossierWidget";
-import QMSWidget from "@/components/QMSWidget";
+import BusinessSetupWidget from "@/components/phase0/BusinessSetupWidget";
+import ClassificationWidget from "@/components/phase1/ClassificationWidget";
 
 export default async function DashboardPage() {
   const user = await getSession();
@@ -50,12 +48,6 @@ export default async function DashboardPage() {
           </div>
           <div>
             <ClassificationWidget initialData={initialClassification} />
-          </div>
-          <div>
-            <TechnicalDossierWidget productCount={productCount} docCount={docCount} />
-          </div>
-          <div>
-            <QMSWidget initialData={(user as any).qms || {}} />
           </div>
         </div>
       </div>
@@ -137,7 +129,7 @@ export default async function DashboardPage() {
       )}
 
       {/* Main Grid: Quick Actions */}
-      <div className="mb-8 space-y-4">
+      {/* <div className="mb-8 space-y-4">
         <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">Quick Actions</h2>
         <div className="grid sm:grid-cols-3 gap-3">
           <Link href="/dashboard/products/new" className="bg-surface border border-border rounded-xl p-4 hover:border-[var(--accent)]/40 hover:shadow-sm transition group flex items-start gap-3">
@@ -170,7 +162,7 @@ export default async function DashboardPage() {
             </div>
           </Link>
         </div>
-      </div>
+      </div> */}
 
       {/* Recent activity — only when data exists */}
       {!isEmpty && (

@@ -7,7 +7,6 @@ import { Product } from "@/models/Product";
 import { RegulatoryDocument } from "@/models/Document";
 import { FRAMEWORKS, REGION_GROUPS } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
-import ProductDocsUpload from "./ProductDocsUpload";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -52,12 +51,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </div>
           <div className="flex items-center gap-2">
             <Link
-              href={`/dashboard/products/${id}/classify`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-blue-500 text-blue-600 hover:bg-blue-50 transition"
-            >
-              🔬 Classify Device
-            </Link>
-            <Link
               href={`/dashboard/products/${id}/dossier`}
               className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-violet-500 text-violet-600 hover:bg-violet-50 transition"
             >
@@ -81,13 +74,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
         </div>
       </div>
 
-      {/* Uploaded Product Documents */}
-      <div className="mb-6">
-        <ProductDocsUpload
-          productId={String(product._id)}
-          initialDocs={uploadedDocs.map((d) => ({ fileId: d.fileId, originalName: d.originalName, charCount: d.extractedText?.length || 0 }))}
-        />
-      </div>
 
       {/* Generate Regulatory Documents — grouped by country */}
       <div className="mb-8">

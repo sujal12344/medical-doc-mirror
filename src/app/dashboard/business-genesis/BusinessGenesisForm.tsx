@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Phase0MiniFlowchart from "./Phase0MiniFlowchart";
 
 const SECTIONS = [
   { id: "A", label: "A. Statutory Registrations" },
@@ -187,7 +188,9 @@ export default function BusinessGenesisForm({ initialData }: { initialData: any 
   };
 
   return (
-    <div className="bg-surface border border-border rounded-xl overflow-hidden flex flex-col md:flex-row">
+    <div className="flex gap-5 items-start">
+      {/* Main form card */}
+      <div className="flex-1 min-w-0 bg-surface border border-border rounded-xl overflow-hidden flex flex-col md:flex-row">
       {/* Sidebar Tabs */}
       <div className="w-full md:w-64 border-r border-border bg-surface2/50 flex flex-col p-4 gap-2">
         {SECTIONS.map((sec) => (
@@ -394,6 +397,11 @@ export default function BusinessGenesisForm({ initialData }: { initialData: any 
           </button>
         </div>
       </div>
+      </div>{/* end main form card */}
+
+      {/* Phase 0 Mini Flowchart sidebar */}
+      <Phase0MiniFlowchart data={data} />
     </div>
   );
 }
+
