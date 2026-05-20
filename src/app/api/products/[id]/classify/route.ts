@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { connectToDatabase } from "@/lib/mongodb";
+import { ensureClassLock } from "@/lib/productMapper";
 import { Product } from "@/models/Product";
 import { runHybridClassification } from "@/lib/classification/hybridQuery";
 
@@ -29,7 +30,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       baseDescription = pdfText || "";
     }
 
-    // Combine with existing product info for maximum context
     const fullDeviceDescription = `
       Name: ${product.name}
       Type: ${product.deviceType}
@@ -40,7 +40,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       ${baseDescription}
     `.trim();
 
-    // Call Hybrid AI Engine
     const result = await runHybridClassification({
       companyId,
       productId: id,
@@ -53,39 +52,37 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       },
     });
 
-    // Compute completion percentage
     let filledFields = 0;
     if (result.confirmedClass) filledFields++;
     if (result.appliedRule) filledFields++;
     if (result.isInvasive !== undefined) filledFields++;
-    if (result.contactDuration && result.contactDuration !== 'na') filledFields++;
-    // We'll count genericName instead of hasPredicate since hasPredicate is outside the AI output schema directly,
-    // actually hasPredicate is in our product model but AI doesn't output it directly unless we asked it to.
+    if (result.contactDuration && result.contactDuration !== "na") filledFields++;
     if (result.genericName) filledFields++;
 
     const pct = Math.round((filledFields / 5) * 100);
+    const classLock = ensureClassLock(product);
 
-    // Save back to DB
-    product.classification = {
-      ...product.classification,
+    classLock.ai = {
+      ...classLock.ai,
       ...result,
       classConfirmedBy: "ai",
-      wizardCompleted: false, // User must manually review and lock
+      wizardCompleted: false,
       overallCompletionPct: Math.min(100, pct),
       lastUpdated: new Date(),
     };
+    product.markModified("classLock");
 
-    // Keep top-level template sync working
     if (result.confirmedClass && ["A", "B", "C", "D"].includes(result.confirmedClass)) {
       product.deviceClass = result.confirmedClass as "A" | "B" | "C" | "D";
     }
 
     await product.save();
 
-    return NextResponse.json({ success: true, classification: product.classification });
-  } catch (error: any) {
+    return NextResponse.json({ success: true, classification: classLock.ai });
+  } catch (error: unknown) {
     console.error("Classification POST Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
 
@@ -98,13 +95,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     await connectToDatabase();
-    const product = await Product.findOne({ _id: id, userId: token.sub });
+    const product = await Product.findOne({ _id: id, userId: token.sub }).lean();
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    const classification = product.classification;
-    const confirmedClass = classification?.confirmedClass || product.deviceClass;
+    const ai = product.classLock?.ai as Record<string, unknown> | undefined;
+    const confirmedClass = (ai?.confirmedClass as string) || product.deviceClass;
 
     let nextStep = "Classification incomplete.";
     if (confirmedClass === "A") {
@@ -118,12 +115,13 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     }
 
     return NextResponse.json({
-      classification,
-      isClassified: !!classification?.wizardCompleted,
+      classification: ai,
+      isClassified: !!ai?.wizardCompleted,
       nextStep,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Classification GET Error:", error);
-    return NextResponse.json({ error: error.message || "Internal Server Error" }, { status: 500 });
+    const message = error instanceof Error ? error.message : "Internal Server Error";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

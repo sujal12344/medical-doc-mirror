@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
+import { flatToNestedProduct } from "@/lib/productMapper";
 import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 
@@ -28,7 +29,14 @@ export async function PUT(req: Request, ctx: Ctx) {
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     const body = await req.json();
     await connectToDatabase();
-    const product = await Product.findOneAndUpdate({ _id: id, userId: (user as Record<string, unknown>)._id }, body, { new: true }).lean();
+    const existing = await Product.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
+    if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+    const nested = flatToNestedProduct(body, existing);
+    const product = await Product.findOneAndUpdate(
+      { _id: id, userId: (user as Record<string, unknown>)._id },
+      { $set: nested },
+      { new: true },
+    ).lean();
     if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
     return NextResponse.json({ product });
   } catch (error) {

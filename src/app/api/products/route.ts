@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectToDatabase } from "@/lib/mongodb";
+import { flatToNestedProduct } from "@/lib/productMapper";
 import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 
@@ -11,9 +12,10 @@ const productSchema = z.object({
   deviceClass: z.enum(["A", "B", "C", "D"]),
   deviceType: z.enum(["medical-device", "ivd"]),
   intendedUse: z.string().trim().max(3000).optional(),
+  patientPopulation: z.string().trim().max(500).optional(),
   countries: z.array(z.string().max(10)).min(1),
   status: z.enum(["draft", "active", "archived"]).optional(),
-});
+}).passthrough();
 
 export async function GET() {
   try {
@@ -31,9 +33,14 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const user = await requireAuth();
-    const body = productSchema.parse(await req.json());
+    const raw = await req.json();
+    productSchema.parse(raw);
+    const nested = flatToNestedProduct(raw);
     await connectToDatabase();
-    const product = await Product.create({ ...body, userId: (user as Record<string, unknown>)._id });
+    const product = await Product.create({
+      ...nested,
+      userId: (user as Record<string, unknown>)._id,
+    });
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
     if ((error as Error).message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

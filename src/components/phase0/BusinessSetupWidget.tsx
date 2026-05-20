@@ -73,7 +73,7 @@ export default function BusinessSetupWidget({ initialSetup }: { initialSetup: an
       </div>
 
       <Link href="/dashboard/business-genesis" className="mt-auto inline-flex items-center justify-center gap-2 w-full px-2 py-2.5 text-sm font-semibold rounded-xl border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)]/8 transition">
-        Open Genesis Portal &rarr;
+        Genesis Portal &rarr;
       </Link>
     </div>
   );

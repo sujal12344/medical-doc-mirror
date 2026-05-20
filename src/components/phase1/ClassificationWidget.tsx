@@ -66,7 +66,7 @@ export default function ClassificationWidget({ initialData }: { initialData: any
       </div>
 
       <Link
-        href="/dashboard/classification"
+        href="/dashboard/products"
         className="mt-auto inline-flex items-center justify-center gap-2 w-full px-2 py-2.5 text-sm font-semibold rounded-xl border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)]/8 transition"
       >
         {doneCt === 4 ? "Review →" : "Classification →"}
