@@ -7,6 +7,7 @@ import { Product } from "@/models/Product";
 import { RegulatoryDocument } from "@/models/Document";
 import { FRAMEWORKS, REGION_GROUPS } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
+import ProductDetailsButton from "../../../../components/ProductDetailsButton";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,6 +22,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const availableFrameworks = FRAMEWORKS.filter((f) => product.countries.includes(f.countryCode));
   const uploadedDocs = (product.uploadedDocs || []) as { fileId: string; originalName: string; extractedText: string; uploadedAt: Date }[];
   const hasUploadedDocs = uploadedDocs.length > 0;
+
 
   const groupedByCountry = new Map<string, typeof availableFrameworks>();
   for (const fw of availableFrameworks) {
@@ -50,16 +52,20 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </p>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              href={`/dashboard/products/${id}/dossier`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-violet-500 text-violet-600 hover:bg-violet-50 transition"
-            >
-              📋 Technical File (Schedule V)
-            </Link>
-            <span className={`text-xs px-3 py-1 rounded-full font-semibold ${product.status === "active" ? "bg-green-50 text-green-600" : product.status === "archived" ? "bg-gray-100 text-gray-500" : "bg-yellow-50 text-yellow-600"}`}>
-              {product.status}
-            </span>
-          </div>
+  <ProductDetailsButton product={JSON.parse(JSON.stringify(product))} />
+
+  <span
+    className={`text-xs px-3 py-1 rounded-full font-semibold ${
+      product.status === "active"
+        ? "bg-green-50 text-green-600"
+        : product.status === "archived"
+        ? "bg-gray-100 text-gray-500"
+        : "bg-yellow-50 text-yellow-600"
+    }`}
+  >
+    {product.status}
+  </span>
+</div>
         </div>
         {product.description && <p className="text-sm text-muted mt-3 leading-relaxed">{product.description}</p>}
         <div className="flex gap-1.5 mt-3 flex-wrap">
