@@ -9,7 +9,7 @@ export const authOptions: NextAuthOptions = {
       name: "Credentials",
       credentials: {
         email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" }
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
         if (!company || !company.companyPassword) {
           throw new Error("Company not found or invalid password");
         }
-        
+
         if (credentials.password !== company.companyPassword) {
           throw new Error("Invalid email or password");
         }
@@ -29,12 +29,12 @@ export const authOptions: NextAuthOptions = {
           name: company.companyName,
           email: company.companyEmail,
         };
-      }
-    })
+      },
+    }),
   ],
   session: {
     strategy: "jwt",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 7 * 24 * 60 * 60,
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -45,11 +45,11 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (token && session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any)._id = token.id;
+        (session.user as { id?: string; _id?: string }).id = token.id as string;
+        (session.user as { id?: string; _id?: string })._id = token.id as string;
       }
       return session;
-    }
+    },
   },
   pages: {
     signIn: "/login",
