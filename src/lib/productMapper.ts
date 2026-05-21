@@ -1,6 +1,7 @@
 import type { ClassLock, IVDdevice, MedDevice, PredDevice, ProductDocument, UploadedDoc } from "@/models/Product";
 
 type AnyDoc = Record<string, unknown>;
+export type DeviceType = ProductDocument["deviceType"];
 
 const MED_DEVICE_KEYS: (keyof MedDevice)[] = [
   "isActive", "activeType", "isInvasive", "invasionType", "contactDuration",
@@ -69,13 +70,36 @@ export function defaultClassLock(): ClassLock {
   };
 }
 
-/** Map flat registration form → nested MongoDB document. */
-export function flatToNestedProduct(flat: AnyDoc, existing?: Partial<ProductDocument>): Partial<ProductDocument> {
-  const med = pick(MED_DEVICE_KEYS, flat, existing?.medDevice ?? defaultMedDevice());
-  if (flat.medDevice && typeof flat.medDevice === "object") Object.assign(med, flat.medDevice);
+export function resolveDeviceType(flat: AnyDoc, existing?: Partial<ProductDocument>): DeviceType {
+  const t = (flat.deviceType as DeviceType) ?? existing?.deviceType;
+  return t === "ivd" ? "ivd" : "medical-device";
+}
 
-  const ivd = pick(IVD_KEYS, flat, existing?.IVDdevice ?? defaultIVDdevice());
-  if (flat.IVDdevice && typeof flat.IVDdevice === "object") Object.assign(ivd, flat.IVDdevice);
+/**
+ * Keep only the characterisation object for the given deviceType.
+ * Returns MongoDB $unset paths for the section that must be removed.
+ */
+export function applyDeviceTypeSections(
+  payload: Partial<ProductDocument>,
+  deviceType: DeviceType,
+): { payload: Partial<ProductDocument>; unset: Record<string, ""> } {
+  const out = { ...payload };
+  const unset: Record<string, ""> = {};
+
+  if (deviceType === "ivd") {
+    delete out.medDevice;
+    unset.medDevice = "";
+  } else {
+    delete out.IVDdevice;
+    unset.IVDdevice = "";
+  }
+
+  return { payload: out, unset };
+}
+
+/** Map flat registration form → nested MongoDB document (type-specific sections only). */
+export function flatToNestedProduct(flat: AnyDoc, existing?: Partial<ProductDocument>): Partial<ProductDocument> {
+  const deviceType = resolveDeviceType(flat, existing);
 
   const pred = pick(PRED_KEYS, flat, existing?.predDevice ?? defaultPredDevice());
   if (flat.predDevice && typeof flat.predDevice === "object") Object.assign(pred, flat.predDevice);
@@ -90,51 +114,84 @@ export function flatToNestedProduct(flat: AnyDoc, existing?: Partial<ProductDocu
     classLock.ai = { ...classLock.ai, ...(flat.classification as Record<string, unknown>) };
   }
 
-  return {
+  const base: Partial<ProductDocument> = {
     name: (flat.name as string) ?? existing?.name,
     manufacturer: (flat.manufacturer as string) ?? existing?.manufacturer,
     description: (flat.description as string) ?? existing?.description ?? "",
     intendedUse: (flat.intendedUse as string) ?? existing?.intendedUse ?? "",
     patientPopulation: (flat.patientPopulation as string) ?? existing?.patientPopulation ?? "",
     deviceClass: (flat.deviceClass as ProductDocument["deviceClass"]) ?? existing?.deviceClass ?? "A",
-    deviceType: (flat.deviceType as ProductDocument["deviceType"]) ?? existing?.deviceType ?? "medical-device",
+    deviceType,
     countries: (flat.countries as string[]) ?? existing?.countries ?? ["IN"],
     status: (flat.status as ProductDocument["status"]) ?? existing?.status ?? "draft",
     isSterile: typeof flat.isSterile === "boolean" ? flat.isSterile : existing?.isSterile ?? false,
     hasSoftware: typeof flat.hasSoftware === "boolean" ? flat.hasSoftware : existing?.hasSoftware ?? false,
-    medDevice: med,
-    IVDdevice: ivd,
     predDevice: pred,
     classLock,
     uploadedDocs: (flat.uploadedDocs as UploadedDoc[]) ?? existing?.uploadedDocs ?? [],
   };
+
+  if (deviceType === "ivd") {
+    const ivd = pick(IVD_KEYS, flat, existing?.IVDdevice ?? defaultIVDdevice());
+    if (flat.IVDdevice && typeof flat.IVDdevice === "object") Object.assign(ivd, flat.IVDdevice);
+    base.IVDdevice = ivd;
+  } else {
+    const med = pick(MED_DEVICE_KEYS, flat, existing?.medDevice ?? defaultMedDevice());
+    if (flat.medDevice && typeof flat.medDevice === "object") Object.assign(med, flat.medDevice);
+    base.medDevice = med;
+  }
+
+  return base;
 }
 
-/** Lift legacy flat documents (pre-migration) into nested shape. */
+/** Build MongoDB update: $set nested fields + $unset irrelevant characterisation block. */
+export function buildProductWritePayload(
+  flat: AnyDoc,
+  existing?: Partial<ProductDocument>,
+): { $set: Partial<ProductDocument>; $unset?: Record<string, ""> } {
+  const nested = flatToNestedProduct(flat, existing);
+  const { payload, unset } = applyDeviceTypeSections(nested, nested.deviceType!);
+  const update: { $set: Partial<ProductDocument>; $unset?: Record<string, ""> } = { $set: payload };
+  if (Object.keys(unset).length > 0) update.$unset = unset;
+  return update;
+}
+
+/** Lift legacy flat documents into nested shape (only the block for deviceType). */
 export function normalizeProductDoc(doc: AnyDoc): AnyDoc {
   if (!doc || typeof doc !== "object") return doc;
-  if (doc.medDevice && doc.IVDdevice && doc.predDevice && doc.classLock) return doc;
 
-  doc.medDevice = pick(MED_DEVICE_KEYS, doc, defaultMedDevice());
-  doc.IVDdevice = pick(IVD_KEYS, doc, defaultIVDdevice());
-  doc.predDevice = pick(PRED_KEYS, doc, defaultPredDevice());
+  const deviceType = resolveDeviceType(doc, doc as Partial<ProductDocument>);
 
-  const classLock = pick(CLASS_LOCK_KEYS, doc, defaultClassLock());
-  if (doc.classification && typeof doc.classification === "object") {
-    classLock.ai = { ...(classLock.ai ?? {}), ...(doc.classification as Record<string, unknown>) };
+  if (!doc.predDevice) doc.predDevice = pick(PRED_KEYS, doc, defaultPredDevice());
+  if (!doc.classLock) {
+    const classLock = pick(CLASS_LOCK_KEYS, doc, defaultClassLock());
+    if (doc.classification && typeof doc.classification === "object") {
+      classLock.ai = { ...(classLock.ai ?? {}), ...(doc.classification as Record<string, unknown>) };
+    }
+    doc.classLock = classLock;
   }
-  doc.classLock = classLock;
+
+  if (deviceType === "ivd") {
+    if (!doc.IVDdevice) doc.IVDdevice = pick(IVD_KEYS, doc, defaultIVDdevice());
+    delete doc.medDevice;
+  } else {
+    if (!doc.medDevice) doc.medDevice = pick(MED_DEVICE_KEYS, doc, defaultMedDevice());
+    delete doc.IVDdevice;
+  }
 
   return doc;
 }
 
-/** Flatten nested product for forms / legacy API consumers. */
+/** Flatten nested product for forms (only the active characterisation block). */
 export function nestedToFlat(doc: AnyDoc): AnyDoc {
   const normalized = normalizeProductDoc({ ...doc });
+  const deviceType = resolveDeviceType(normalized);
+
   return {
     ...normalized,
-    ...(normalized.medDevice as object),
-    ...(normalized.IVDdevice as object),
+    ...(deviceType === "ivd"
+      ? (normalized.IVDdevice as object)
+      : (normalized.medDevice as object)),
     ...(normalized.predDevice as object),
     ...(normalized.classLock as object),
     classification: (normalized.classLock as ClassLock | undefined)?.ai,

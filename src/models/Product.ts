@@ -97,8 +97,10 @@ export type ProductDocument = {
   isSterile: boolean;
   hasSoftware: boolean;
 
-  medDevice: MedDevice;
-  IVDdevice: IVDdevice;
+  /** Present only when deviceType is "medical-device" */
+  medDevice?: MedDevice;
+  /** Present only when deviceType is "ivd" */
+  IVDdevice?: IVDdevice;
   predDevice: PredDevice;
   classLock: ClassLock;
 
@@ -204,8 +206,8 @@ const productSchema = new Schema<ProductDocument>(
     isSterile: { type: Boolean, default: false },
     hasSoftware: { type: Boolean, default: false },
 
-    medDevice: { type: medDeviceSchema, default: () => ({}) },
-    IVDdevice: { type: ivdDeviceSchema, default: () => ({}) },
+    medDevice: { type: medDeviceSchema, required: false },
+    IVDdevice: { type: ivdDeviceSchema, required: false },
     predDevice: { type: predDeviceSchema, default: () => ({}) },
     classLock: { type: classLockSchema, default: () => ({}) },
 
@@ -225,5 +227,14 @@ const productSchema = new Schema<ProductDocument>(
   },
   { timestamps: true },
 );
+
+/** Persist only the characterisation block that matches deviceType. */
+productSchema.pre("save", function () {
+  if (this.deviceType === "ivd") {
+    this.set("medDevice", undefined);
+  } else {
+    this.set("IVDdevice", undefined);
+  }
+});
 
 export const Product = models.Product || model<ProductDocument>("Product", productSchema);

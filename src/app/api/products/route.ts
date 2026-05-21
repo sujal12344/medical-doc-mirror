@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { connectToDatabase } from "@/lib/mongodb";
-import { flatToNestedProduct } from "@/lib/productMapper";
+import { applyDeviceTypeSections, flatToNestedProduct, resolveDeviceType } from "@/lib/productMapper";
 import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 
@@ -36,9 +36,11 @@ export async function POST(req: Request) {
     const raw = await req.json();
     productSchema.parse(raw);
     const nested = flatToNestedProduct(raw);
+    const deviceType = resolveDeviceType(raw);
+    const { payload } = applyDeviceTypeSections(nested, deviceType);
     await connectToDatabase();
     const product = await Product.create({
-      ...nested,
+      ...payload,
       userId: (user as Record<string, unknown>)._id,
     });
     return NextResponse.json({ product }, { status: 201 });
