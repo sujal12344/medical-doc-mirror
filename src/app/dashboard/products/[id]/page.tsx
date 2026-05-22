@@ -117,7 +117,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         />
                       );
                     })}
-                    {code === "IN" && (
+
+                    {/*{code === "IN" && (
                       <>
                         <Link
                           href={`/dashboard/products/${id}/md14`}
@@ -142,7 +143,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                           </div>
                         </Link>
                       </>
-                    )}
+                    )}*/}
+                    
                   </div>
                 </div>
               );
