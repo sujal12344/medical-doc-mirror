@@ -1,6 +1,7 @@
 "use client";
 
 type PathwayForm = {
+  intendedUse: string;
   deviceType: string;
   deviceClass: string;
   predicateExists: null | boolean;
@@ -23,9 +24,9 @@ const FIELD = "w-full px-3 py-2 border border-border rounded-xl bg-surface2 text
 const LABEL = "block text-xs font-medium text-foreground mb-1";
 
 const STATUS_OPTS = [
-  { value: "not-filed", label: "Not yet filed",  color: "bg-gray-100 text-gray-600 border-gray-200" },
-  { value: "filed",     label: "Filed / pending", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  { value: "approved",  label: "Approved",         color: "bg-green-100 text-green-700 border-green-200" },
+  { value: "not-filed", label: "Not yet filed", color: "bg-gray-100 text-gray-600 border-gray-200" },
+  { value: "filed", label: "Filed / pending", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+  { value: "approved", label: "Approved", color: "bg-green-100 text-green-700 border-green-200" },
 ];
 
 function StatusSelect({ field, value, upd }: { field: string; value: string; upd: Upd }) {
@@ -41,7 +42,7 @@ function StatusSelect({ field, value, upd }: { field: string; value: string; upd
   );
 }
 
-export default function PredicatePathway({ form, upd }: { form: PathwayForm; upd: Upd }) {
+export default function PredicatePathway({ form, upd, productId }: { form: PathwayForm; upd: Upd, productId: string | null }) {
   const { predicateExists } = form;
   const isHighRisk = ["C", "D"].includes(form.deviceClass);
 
@@ -65,14 +66,13 @@ export default function PredicatePathway({ form, upd }: { form: PathwayForm; upd
         </p>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { value: true,  label: "✅ Yes — predicate exists",    hint: "Predicate pathway → submit substantial equivalence", color: "border-green-300 bg-green-50 text-green-800" },
-            { value: false, label: "⚠️ No — novel device",          hint: "Novel pathway → MD-26 clinical investigation required", color: "border-orange-300 bg-orange-50 text-orange-800" },
+            { value: true, label: "✅ Yes — predicate exists", hint: "Predicate pathway → submit substantial equivalence", color: "border-green-300 bg-green-50 text-green-800" },
+            { value: false, label: "⚠️ No — novel device", hint: "Novel pathway → MD-26 clinical investigation required", color: "border-orange-300 bg-orange-50 text-orange-800" },
           ].map((opt) => (
             <button key={String(opt.value)} type="button"
               onClick={() => upd("predicateExists", predicateExists === opt.value ? null : opt.value)}
-              className={`text-left px-3 py-2.5 rounded-xl border-2 transition ${
-                predicateExists === opt.value ? opt.color : "border-border bg-surface2 text-muted hover:bg-surface"
-              }`}>
+              className={`text-left px-3 py-2.5 rounded-xl border-2 transition ${predicateExists === opt.value ? opt.color : "border-border bg-surface2 text-muted hover:bg-surface"
+                }`}>
               <div className="text-xs font-semibold">{opt.label}</div>
               <div className="text-[10px] mt-0.5 opacity-80">{opt.hint}</div>
             </button>
@@ -141,6 +141,65 @@ export default function PredicatePathway({ form, upd }: { form: PathwayForm; upd
           )}
         </div>
       )}
+
+      <button
+        type="button"
+        onClick={async () => {
+          // Read intendedUse from form state; fallback to localStorage draft
+          let intendedUse = form.intendedUse?.trim();
+          if (!intendedUse) {
+            try {
+              const draft = localStorage.getItem("newproduct_draft");
+              if (draft) {
+                const parsed = JSON.parse(draft);
+                intendedUse = (parsed.intendedUse || "").trim();
+              }
+            } catch {}
+          }
+
+          if (!intendedUse) {
+            alert("Please enter the Intended Use/Claims above first.");
+            return;
+          }
+
+          try {
+            const res = await fetch(
+              `/api/products/predicate`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ intendedUse }),
+              }
+            );
+
+            const data = await res.json();
+
+            if (!data.success) {
+              alert(data.message || "No match found");
+              return;
+            }
+
+            upd("predicateExists", true);
+            upd("predicateName", data.match.name);
+            upd("predicateManufacturer", data.match.manufacturer);
+            upd("predicateRegNo", data.match.regNo);
+            // deviceClass is already normalised to "A"/"B"/"C"/"D" by the API
+            upd("predicateClass", data.match.deviceClass);
+            upd(
+              "predicateBasis",
+              `Auto-matched using intended use similarity`
+            );
+
+            alert("Predicate device auto-filled");
+          } catch (error) {
+            console.error(error);
+            alert("Failed to auto-fill predicate device");
+          }
+        }}
+        className="px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition"
+      >
+        🔍 Auto Find Predicate Device
+      </button>
 
       {/* ── Branch B: Novel device — NO predicate ───────────────────────── */}
       {predicateExists === false && (
