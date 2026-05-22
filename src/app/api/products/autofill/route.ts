@@ -6,9 +6,9 @@ import { Pinecone } from "@pinecone-database/pinecone";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const pc = new Pinecone({ apiKey: process.env.PINECONE_KEY! });
 
-// Uses PINECONE_INDEX (medical-docs) — consistent with hybridQuery.ts
-// Namespace is per-user: company_{userId} so classification engine can reuse these vectors
+// Same index as hybridQuery.ts — product_{userId} and predicate_{userId} namespaces
 const INDEX_NAME = process.env.PINECONE_INDEX!;
+const MIN_SCORE = 0.1;
 const CHUNK_SIZE = 1500;
 const CHUNK_OVERLAP = 200;
 const EMBED_BATCH = 32;
@@ -43,35 +43,91 @@ export async function POST(req: NextRequest) {
     if (!token?.sub) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     const userId = token.sub;
 
-    const { documentText } = await req.json();
+    const body = await req.json();
+    const documentText = body.documentText as string;
+    const scope = (body.scope === "predicate" ? "predicate" : "product") as "product" | "predicate";
+
     if (!documentText?.trim()) return NextResponse.json({ error: "No document text provided" }, { status: 400 });
 
-    // ── 1. Chunk ──────────────────────────────────────────────────────────────
-    const chunks = chunkText(documentText);
-    const textPreview = documentText.slice(0, 200).replace(/\n/g, " ");
-    console.log(`[autofill] ${chunks.length} chunks from ${documentText.length} chars`);
-    console.log(`[autofill] Text preview: "${textPreview}"`);
-
-
-    // Namespace is per-company — matches hybridQuery.ts so classification engine reuses these vectors
-    const NAMESPACE = `company_${userId}`;
-    const index = pc.index(INDEX_NAME).namespace(NAMESPACE);
-    const docId = `autofill_${userId}_${Date.now()}`;
-
-    for (let i = 0; i < chunks.length; i += EMBED_BATCH) {
-      const batch = chunks.slice(i, i + EMBED_BATCH);
-      const embeddings = await embedBatch(batch);
-      const vectors = batch.map((text, j) => ({
-        id: `${docId}_chunk_${i + j}`,
-        values: embeddings[j],
-        metadata: { text, userId, purpose: "autofill", docId },
-      }));
-      await index.upsert({ records: vectors });
+    if (scope === "predicate") {
+      return await runPredicateAutofill(userId, documentText);
     }
-    console.log(`[autofill] Upserted ${chunks.length} vectors to namespace '${NAMESPACE}'`);
+    return await runProductAutofill(userId, documentText);
+  } catch (error: unknown) {
+    console.error("[autofill] RAG error:", error);
+    const message = error instanceof Error ? error.message : "Autofill failed";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
 
-    // ── 3. Five targeted RAG queries ─────────────────────────────────────────
-    const queries = [
+async function upsertChunks(
+  userId: string,
+  namespace: string,
+  purpose: string,
+  docId: string,
+  chunks: string[],
+) {
+  const index = pc.index(INDEX_NAME).namespace(namespace);
+  for (let i = 0; i < chunks.length; i += EMBED_BATCH) {
+    const batch = chunks.slice(i, i + EMBED_BATCH);
+    const embeddings = await embedBatch(batch);
+    const vectors = batch.map((text, j) => ({
+      id: `${docId}_chunk_${i + j}`,
+      values: embeddings[j],
+      metadata: { text, userId, purpose, docId },
+    }));
+    await index.upsert({ records: vectors });
+  }
+  console.log(`[autofill] Upserted ${chunks.length} vectors to namespace '${namespace}'`);
+  return index;
+}
+
+async function retrieveContexts(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  index: any,
+  queries: string[],
+  labels: string[],
+  userId: string,
+  purpose: string,
+  docId: string,
+) {
+  const queryEmbeds = await embedBatch(queries);
+  const contexts: string[] = [];
+
+  console.log(`\n${"─".repeat(60)}`);
+  console.log(`[autofill] ── RAG RETRIEVAL ──`);
+  console.log(`[autofill] Purpose: ${purpose} | DocId: ${docId}`);
+
+  for (let i = 0; i < queries.length; i++) {
+    const result = await index.query({
+      vector: queryEmbeds[i],
+      topK: 5,
+      includeMetadata: true,
+      filter: { userId, purpose, docId },
+    });
+
+    console.log(`\n[autofill] Query ${i + 1}: "${labels[i]}"`);
+    for (const [idx, m] of result.matches.entries()) {
+      const preview = String(m.metadata?.text ?? "").slice(0, 120).replace(/\n/g, " ");
+      const quality = (m.score ?? 0) >= MIN_SCORE ? "✓" : "✗ LOW";
+      console.log(`[autofill]   [${idx + 1}] score=${m.score?.toFixed(4)} ${quality} | "${preview}…"`);
+    }
+
+    const goodMatches = result.matches.filter((m: { score?: number }) => (m.score ?? 0) >= MIN_SCORE);
+    contexts.push(goodMatches.map((m: { metadata?: { text?: string } }) => m.metadata?.text ?? "").join("\n\n"));
+  }
+  return contexts;
+}
+
+async function runProductAutofill(userId: string, documentText: string) {
+  const chunks = chunkText(documentText);
+  console.log(`[autofill:product] ${chunks.length} chunks from ${documentText.length} chars`);
+
+  const NAMESPACE = `product_${userId}`;
+  const docId = `product_${userId}_${Date.now()}`;
+  const index = await upsertChunks(userId, NAMESPACE, "autofill", docId, chunks);
+
+  const queries = [
       "product name trade name manufacturer company name brand",
       "intended use intended purpose patient population anatomical site clinical indication",
       "sterile active invasive software drug combination IVD in-vitro diagnostic classification class",
@@ -79,48 +135,14 @@ export async function POST(req: NextRequest) {
       "blood donor screening HIV hepatitis HBsAg HCV HTLV malaria syphilis CMV blood grouping ABO Rh self-test near-patient point of care genetic testing drug monitoring tumour marker cancer HLA fertility prenatal",
     ];
 
-    const QUERY_LABELS = ["Identity (name/manufacturer)", "Intended Use / Patient Pop", "Classification characteristics", "Invasion / Risk flags", "IVD Part II context"];
+  const QUERY_LABELS = ["Identity (name/manufacturer)", "Intended Use / Patient Pop", "Classification characteristics", "Invasion / Risk flags", "IVD Part II context"];
+  const contexts = await retrieveContexts(index, queries, QUERY_LABELS, userId, "autofill", docId);
 
-    const queryEmbeds = await embedBatch(queries);
-    const contexts: string[] = [];
+  const contextBlock = contexts
+    .map((c, i) => `[Context ${i + 1} — ${QUERY_LABELS[i]}]\n${c}`)
+    .join("\n\n---\n\n");
 
-    console.log(`\n${"─".repeat(60)}`);
-    console.log(`[autofill] ── RAG RETRIEVAL ──`);
-    console.log(`[autofill] Namespace: ${NAMESPACE} | DocId: ${docId}`);
-
-    const MIN_SCORE = 0.10; // docId filter already isolates current doc — low threshold just drops empty/null vectors
-
-    for (let i = 0; i < queries.length; i++) {
-      const result = await index.query({
-        vector: queryEmbeds[i],
-        topK: 5,
-        includeMetadata: true,
-        filter: { userId, purpose: "autofill", docId },
-      });
-
-      console.log(`\n[autofill] Query ${i + 1}: "${QUERY_LABELS[i]}"`);
-      console.log(`[autofill]   Matches: ${result.matches.length}`);
-
-      result.matches.forEach((m, idx) => {
-        const preview = String(m.metadata?.text ?? "").slice(0, 120).replace(/\n/g, " ");
-        const quality = (m.score ?? 0) >= MIN_SCORE ? "✓" : "✗ LOW";
-        console.log(`[autofill]   [${idx + 1}] score=${m.score?.toFixed(4)} ${quality} | "${preview}…"`);
-      });
-
-      const goodMatches = result.matches.filter((m) => (m.score ?? 0) >= MIN_SCORE);
-      console.log(`[autofill]   Using ${goodMatches.length}/${result.matches.length} matches above score threshold`);
-
-      const text = goodMatches.map((m) => m.metadata?.text ?? "").join("\n\n");
-      contexts.push(text);
-    }
-
-
-    // ── 4. GPT extraction ─────────────────────────────────────────────────────
-    const contextBlock = contexts
-      .map((c, i) => `[Context ${i + 1} — ${QUERY_LABELS[i]}]\n${c}`)
-      .join("\n\n---\n\n");
-
-    console.log(`\n[autofill] ── GPT EXTRACTION ──`);
+  console.log(`\n[autofill:product] ── GPT EXTRACTION ──`);
     console.log(`[autofill] Context block length: ${contextBlock.length} chars`);
     console.log(`[autofill] Calling ${process.env.OPENAI_MODEL || "gpt-4o-mini"}…`);
 
@@ -304,13 +326,88 @@ IVD PART II FIELDS (First Schedule Part II, MDR 2017 — only set for deviceType
     console.log(`[autofill]   ivdSpecial Drug/Cancer             : ${parsed.ivdDrugMonitoring}/${parsed.ivdCancerMarkers}`);
     console.log(`[autofill]   intendedUse        : ${(parsed.intendedUse || "(not found)").slice(0, 100)}…`);
     console.log(`[autofill]   description        : ${(parsed.description || "(not found)").slice(0, 100)}…`);
-    console.log(`[autofill]   chunksIndexed      : ${chunks.length}`);
-    console.log(`${"─".repeat(60)}\n`);
+  console.log(`[autofill:product]   chunksIndexed: ${chunks.length}`);
+  console.log(`${"─".repeat(60)}\n`);
 
-    return NextResponse.json({ ...parsed, chunksIndexed: chunks.length });
+  return NextResponse.json({ ...parsed, chunksIndexed: chunks.length, scope: "product" });
+}
 
-  } catch (error: any) {
-    console.error("[autofill] RAG error:", error);
-    return NextResponse.json({ error: error.message || "Autofill failed" }, { status: 500 });
-  }
+async function runPredicateAutofill(userId: string, documentText: string) {
+  const chunks = chunkText(documentText);
+  console.log(`[autofill:predicate] ${chunks.length} chunks from ${documentText.length} chars`);
+
+  const NAMESPACE = `predicate_${userId}`;
+  const docId = `predicate_${userId}_${Date.now()}`;
+  const index = await upsertChunks(userId, NAMESPACE, "predicate-autofill", docId, chunks);
+
+  const queries = [
+    "predicate device reference substantial equivalence similar legally marketed device",
+    "predicate manufacturer company name brand trade name",
+    "CDSCO registration licence number import license MD registration certificate",
+    "predicate device class risk classification A B C D India MDR",
+    "clinical investigation MD-26 MD-27 novel device pathway equivalence basis",
+  ];
+  const QUERY_LABELS = [
+    "Predicate identity",
+    "Predicate manufacturer",
+    "Registration / licence no.",
+    "Predicate class",
+    "Pathway / equivalence basis",
+  ];
+
+  const contexts = await retrieveContexts(index, queries, QUERY_LABELS, userId, "predicate-autofill", docId);
+  const contextBlock = contexts
+    .map((c, i) => `[Context ${i + 1} — ${QUERY_LABELS[i]}]\n${c}`)
+    .join("\n\n---\n\n");
+
+  console.log(`\n[autofill:predicate] ── GPT EXTRACTION ──`);
+
+  const completion = await openai.chat.completions.create({
+    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are a senior CDSCO / India MDR 2017 regulatory affairs expert.
+Extract predicate device and regulatory pathway fields from the provided document excerpts (predicate IFU, 510(k) summary, CDSCO approval letter, equivalence statement, etc.).
+Return ONLY valid raw JSON with exactly these keys (use empty string or false if not found):
+{
+  "predicateExists": boolean,
+  "predicateName": string,
+  "predicateManufacturer": string,
+  "predicateRegNo": string,
+  "predicateBasis": string,
+  "predicateClass": "A" | "B" | "C" | "D" | "",
+  "md26Status": "not-filed" | "filed" | "approved" | "",
+  "md26RefNo": string,
+  "md27Status": "not-filed" | "filed" | "approved" | "",
+  "md27RefNo": string,
+  "clinicalSiteCount": string,
+  "novelPathwayAcknowledged": boolean
+}
+
+predicateExists: true if the document describes a reference/predicate/substantially equivalent device already on the market.
+predicateBasis: short text on why this predicate supports the pathway (same intended use, same technology, same or lower class).
+predicateClass: risk class of the predicate device under India MDR 2017 if stated.
+md26Status / md27Status: only set if document mentions MD-26 or MD-27 filing status; otherwise leave "".
+novelPathwayAcknowledged: true only if document explicitly states novel device / no predicate / clinical investigation required.`,
+      },
+      {
+        role: "user",
+        content: `Extract predicate pathway fields from these document excerpts:\n\n${contextBlock}`,
+      },
+    ],
+    response_format: { type: "json_object" },
+    temperature: 0.1,
+  });
+
+  const parsed = JSON.parse(completion.choices[0].message.content || "{}");
+
+  console.log(`[autofill:predicate]   predicateExists   : ${parsed.predicateExists}`);
+  console.log(`[autofill:predicate]   predicateName       : ${parsed.predicateName || "(not found)"}`);
+  console.log(`[autofill:predicate]   predicateManufacturer: ${parsed.predicateManufacturer || "(not found)"}`);
+  console.log(`[autofill:predicate]   predicateRegNo      : ${parsed.predicateRegNo || "(not found)"}`);
+  console.log(`[autofill:predicate]   predicateClass      : ${parsed.predicateClass || "(not found)"}`);
+  console.log(`${"─".repeat(60)}\n`);
+
+  return NextResponse.json({ ...parsed, chunksIndexed: chunks.length, scope: "predicate" });
 }

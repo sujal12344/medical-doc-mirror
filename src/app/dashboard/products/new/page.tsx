@@ -97,6 +97,9 @@ export default function NewProductPage() {
   const [autofilling, setAutofilling] = useState(false);
   const [autofillDocName, setAutofillDocName] = useState("");
   const [autofillDone, setAutofillDone] = useState(false);
+  const [predicateAutofilling, setPredicateAutofilling] = useState(false);
+  const [predicateAutofillDocName, setPredicateAutofillDocName] = useState("");
+  const [predicateAutofillDone, setPredicateAutofillDone] = useState(false);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -104,8 +107,10 @@ export default function NewProductPage() {
   const [productId, setProductId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autofillInputRef = useRef<HTMLInputElement>(null);
+  const predicateAutofillInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
+  const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
 
   function upd(field: string, value: string | boolean | string[] | null) {
     setForm((p) => ({ ...p, [field]: value }));
@@ -141,7 +146,7 @@ export default function NewProductPage() {
       const res = await fetch("/api/products/autofill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentText: text }),
+        body: JSON.stringify({ documentText: text, scope: "product" }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Autofill failed");
@@ -200,6 +205,61 @@ export default function NewProductPage() {
       setError(err.message);
     } finally {
       setAutofilling(false);
+    }
+  };
+
+  const handlePredicateAutofillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPredicateAutofillDocName(file.name);
+    setPredicateAutofilling(true);
+    setError("");
+    setPredicateAutofillDone(false);
+
+    let text = "";
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const res = await fetch("/api/extract-text", { method: "POST", body: formData });
+      if (res.ok) { const d = await res.json(); text = d.text; }
+    } catch { /* fallback below */ }
+    if (!text) {
+      const reader = new FileReader();
+      await new Promise<void>((resolve) => {
+        reader.onload = (ev) => { text = ev.target?.result as string ?? ""; resolve(); };
+        reader.readAsText(file);
+      });
+    }
+
+    try {
+      const res = await fetch("/api/products/autofill", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentText: text, scope: "predicate" }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Predicate autofill failed");
+
+      setForm((prev) => ({
+        ...prev,
+        predicateExists: data.predicateExists === true ? true : data.predicateExists === false ? false : prev.predicateExists,
+        predicateName: data.predicateName || prev.predicateName,
+        predicateManufacturer: data.predicateManufacturer || prev.predicateManufacturer,
+        predicateRegNo: data.predicateRegNo || prev.predicateRegNo,
+        predicateBasis: data.predicateBasis || prev.predicateBasis,
+        predicateClass: data.predicateClass || prev.predicateClass,
+        md26Status: data.md26Status || prev.md26Status,
+        md26RefNo: data.md26RefNo || prev.md26RefNo,
+        md27Status: data.md27Status || prev.md27Status,
+        md27RefNo: data.md27RefNo || prev.md27RefNo,
+        clinicalSiteCount: data.clinicalSiteCount || prev.clinicalSiteCount,
+        novelPathwayAcknowledged: data.novelPathwayAcknowledged ?? prev.novelPathwayAcknowledged,
+      }));
+      setPredicateAutofillDone(true);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Predicate autofill failed");
+    } finally {
+      setPredicateAutofilling(false);
     }
   };
 
@@ -306,7 +366,105 @@ export default function NewProductPage() {
     <div className="p-6 md:p-8 max-w-6xl mx-auto">
       <Link href="/dashboard/products" className="text-sm text-muted hover:text-foreground transition mb-4 inline-block">← Back to products</Link>
       <h1 className="text-2xl font-bold text-foreground mb-1">Register New Product</h1>
-      <p className="text-sm text-muted mb-6">Add your medical device or IVD product for Phase 2 Technical Dossier generation.</p>
+      <p className="text-sm text-muted mb-4">Add your medical device or IVD product for Phase 2 Technical Dossier generation.</p>
+
+      {/* Knowledge base — product + predicate document uploads for RAG autofill */}
+      <div className={`mb-6 border border-border rounded-2xl bg-surface overflow-hidden ${productId ? "opacity-60 pointer-events-none" : ""}`}>
+        <div className="flex items-center justify-between gap-3 px-4 py-3">
+          <button
+            type="button"
+            onClick={() => setKnowledgeBaseOpen((o) => !o)}
+            className="flex items-center gap-2 min-w-0 text-left hover:opacity-80 transition"
+          >
+            <span className="text-sm font-semibold text-foreground">Knowledge Base</span>
+            {(autofillDone || predicateAutofillDone) && (
+              <span className="text-[10px] font-medium text-muted px-2 py-0.5 rounded-full bg-surface2 border border-border">
+                {[autofillDone, predicateAutofillDone].filter(Boolean).length} doc{[autofillDone, predicateAutofillDone].filter(Boolean).length !== 1 ? "s" : ""}
+              </span>
+            )}
+            <span className={`text-muted text-xs transition-transform ${knowledgeBaseOpen ? "rotate-180" : ""}`}>▼</span>
+          </button>
+          {!knowledgeBaseOpen ? (
+            <button
+              type="button"
+              onClick={() => setKnowledgeBaseOpen(true)}
+              className="text-xs font-semibold text-accent px-3 py-1.5 border border-accent/40 bg-accent/5 rounded-lg hover:bg-accent/10 transition shrink-0"
+            >
+              + Add knowledge
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setKnowledgeBaseOpen(false)}
+              className="text-xs text-muted hover:text-foreground shrink-0"
+            >
+              Collapse
+            </button>
+          )}
+        </div>
+
+        {knowledgeBaseOpen && (
+          <div className="px-4 pb-4 pt-1 border-t border-border space-y-4">
+            <p className="text-xs text-muted">
+              Upload documents to index for AI autofill. Product docs fill Step 1 fields; predicate docs fill Step 1.5.
+            </p>
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground">Product document</p>
+                <p className="text-[10px] text-muted mt-0.5">IFU, brochure, or technical file → product namespace</p>
+              </div>
+              <div className="shrink-0">
+                {autofillDone ? (
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
+                    ✅ {autofillDocName}
+                    <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); if (autofillInputRef.current) autofillInputRef.current.value = ""; }}
+                      className="ml-1 text-muted hover:text-foreground">✕</button>
+                  </div>
+                ) : autofilling ? (
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent bg-accent/5 border border-accent/20 rounded-xl">
+                    <span className="w-3 h-3 border border-accent/40 border-t-accent rounded-full animate-spin" />
+                    {autofillDocName ? `Processing ${autofillDocName}…` : "Processing…"}
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => autofillInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
+                    🪄 Autofill Product from Document
+                  </button>
+                )}
+                <input ref={autofillInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={handleAutofillUpload} />
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
+              <div className="min-w-0">
+                <p className="text-xs font-semibold text-foreground">Predicate document</p>
+                <p className="text-[10px] text-muted mt-0.5">Predicate IFU, CDSCO letter, or equivalence doc → predicate namespace</p>
+              </div>
+              <div className="shrink-0">
+                {predicateAutofillDone ? (
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
+                    ✅ {predicateAutofillDocName}
+                    <button type="button" onClick={() => { setPredicateAutofillDone(false); setPredicateAutofillDocName(""); if (predicateAutofillInputRef.current) predicateAutofillInputRef.current.value = ""; }}
+                      className="ml-1 text-muted hover:text-foreground">✕</button>
+                  </div>
+                ) : predicateAutofilling ? (
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 bg-violet-50 border border-violet-200 rounded-xl">
+                    <span className="w-3 h-3 border border-violet-400 border-t-violet-600 rounded-full animate-spin" />
+                    {predicateAutofillDocName ? `Processing ${predicateAutofillDocName}…` : "Processing…"}
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => predicateAutofillInputRef.current?.click()}
+                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-700 border border-violet-300 bg-violet-50 rounded-xl hover:bg-violet-100 transition">
+                    📄 Autofill Predicate from Document
+                  </button>
+                )}
+                <input ref={predicateAutofillInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={handlePredicateAutofillUpload} />
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div className="flex gap-6 items-start">
         {/* Form column */}
@@ -318,37 +476,10 @@ export default function NewProductPage() {
 
         {/* Product Info */}
         <div className={`bg-surface border border-border rounded-2xl p-6 space-y-5 ${productId ? "opacity-60 pointer-events-none" : ""}`}>
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Product Information</h2>
-              <p className="text-xs text-muted mt-0.5">Upload an IFU or brochure to autofill all fields using AI.</p>
-            </div>
-
-            {/* Autofill zone */}
-            <div className="shrink-0">
-
-            {autofillDone ? (
-              <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
-                ✅ Autofilled from {autofillDocName}
-                <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); autofillInputRef.current && (autofillInputRef.current.value = ""); }}
-                  className="ml-1 text-muted hover:text-foreground">
-                  ✕
-                </button>
-              </div>
-            ) : autofilling ? (
-              <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent bg-accent/5 border border-accent/20 rounded-xl">
-                <span className="w-3 h-3 border border-accent/40 border-t-accent rounded-full animate-spin" />
-                {autofillDocName ? `Processing ${autofillDocName}…` : "Processing…"}
-              </div>
-            ) : (
-              <button type="button" onClick={() => autofillInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
-                🪄 Autofill from Document
-              </button>
-            )}
-            <input ref={autofillInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={handleAutofillUpload} />
-            </div>
-          </div>{/* end flex items-start justify-between */}
+          <div>
+            <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Product Information</h2>
+            <p className="text-xs text-muted mt-0.5">Core identity and characterisation fields for your device.</p>
+          </div>
 
           {/* Name + Manufacturer */}
           <div className="grid md:grid-cols-2 gap-4">

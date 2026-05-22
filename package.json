@@ -16,6 +16,7 @@
     "docxtemplater": "^3.68.6",
     "dotenv": "^17.4.2",
     "jszip": "^3.10.1",
+    "lucide-react": "^1.16.0",
     "mongodb": "^7.1.1",
     "mongoose": "^9.3.2",
     "next": "^16.2.4",

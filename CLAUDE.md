@@ -127,7 +127,7 @@ nextjs-mongo-professional/
 |---------|------|------|---------|
 | GET, POST | `/api/products` | `products/route.ts` | List / create (`flatToNestedProduct`) |
 | GET, PUT, DELETE | `/api/products/[id]` | `products/[id]/route.ts` | CRUD; PUT uses `buildProductWritePayload` |
-| POST | `/api/products/autofill` | `products/autofill/route.ts` | RAG extract fields → JSON (Pinecone namespace `company_{userId}`) |
+| POST | `/api/products/autofill` | `products/autofill/route.ts` | RAG extract fields → JSON (`scope`: `product` → `product_{userId}`, `predicate` → `predicate_{userId}`) |
 | POST | `/api/products/[id]/upload` | `products/[id]/upload/route.ts` | Append `uploadedDocs` (multipart **or** JSON text) |
 | GET, POST | `/api/products/[id]/classify` | `products/[id]/classify/route.ts` | AI class → `classLock.ai` |
 | POST | `/api/products/[id]/classify/confirm` | `products/[id]/classify/confirm/route.ts` | Lock AI classification |

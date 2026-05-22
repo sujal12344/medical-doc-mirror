@@ -46,33 +46,52 @@ export async function runHybridClassification(input: {
     });
     const queryVector = embedRes.data[0].embedding;
 
-    // 2. Query 1 — Company namespace (User's uploaded PDFs)
+    // 2. Query product + predicate namespaces (registration autofill uploads)
     let deviceContext = "";
-    if (productId) {
-      try {
-        const companyNs = index.namespace(`company_${companyId}`);
-        const companyMatches = await companyNs.query({
-          vector: queryVector,
-          topK: 5,
-          filter: { productId },
-          includeMetadata: true,
-        });
-        
-        if (companyMatches.matches.length > 0) {
-          deviceContext = companyMatches.matches
-            .map((m) => m.metadata?.text || "")
-            .join("\n\n");
-        }
-      } catch (err) {
-        console.warn("Could not fetch company product context, skipping.", err);
+    const contextParts: string[] = [];
+
+    try {
+      const productNs = index.namespace(`product_${companyId}`);
+      const productMatches = await productNs.query({
+        vector: queryVector,
+        topK: 5,
+        includeMetadata: true,
+      });
+      if (productMatches.matches.length > 0) {
+        contextParts.push(
+          "Product document context:\n" +
+            productMatches.matches.map((m) => m.metadata?.text || "").join("\n\n"),
+        );
       }
+    } catch (err) {
+      console.warn("Could not fetch product namespace context, skipping.", err);
     }
 
-    // Fallback if no PDF context was found
+    try {
+      const predicateNs = index.namespace(`predicate_${companyId}`);
+      const predicateMatches = await predicateNs.query({
+        vector: queryVector,
+        topK: 5,
+        includeMetadata: true,
+      });
+      if (predicateMatches.matches.length > 0) {
+        contextParts.push(
+          "Predicate document context:\n" +
+            predicateMatches.matches.map((m) => m.metadata?.text || "").join("\n\n"),
+        );
+      }
+    } catch (err) {
+      console.warn("Could not fetch predicate namespace context, skipping.", err);
+    }
+
+    if (contextParts.length > 0) {
+      deviceContext = contextParts.join("\n\n---\n\n");
+    }
+
     if (!deviceContext.trim()) {
       deviceContext = deviceDescription;
     } else {
-      deviceContext = `User Description: ${deviceDescription}\n\nExtracted PDF Context:\n${deviceContext}`;
+      deviceContext = `User Description: ${deviceDescription}\n\n${deviceContext}`;
     }
 
     // 3. Query 2 — Knowledge namespace (MDR 2017 Rules)
