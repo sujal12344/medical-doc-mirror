@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { REGION_GROUPS } from "@/lib/frameworks";
@@ -16,6 +16,15 @@ const INDIA_ONLY_NOTICE = "India is pre-selected and required for MDR 2017 regis
 
 const FIELD_INPUT_CLASS = "w-full px-3.5 py-2.5 border border-border rounded-xl bg-surface2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition";
 const LABEL_CLASS = "block text-sm font-medium mb-1.5 text-foreground";
+
+const DRAFT_KEY = "newproduct_draft";
+
+/** Normalise any deviceClass string to just the letter A/B/C/D */
+function normalizeDeviceClass(raw: string | undefined): "A" | "B" | "C" | "D" | "" {
+  if (!raw) return "";
+  const m = raw.toUpperCase().match(/\b([ABCD])\b/);
+  return m ? (m[1] as "A" | "B" | "C" | "D") : "";
+}
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -107,6 +116,24 @@ export default function NewProductPage() {
   const [dragOver, setDragOver] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
 
+  // ── Persist draft to localStorage ─────────────────────────────────────────
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        setForm((prev) => ({ ...prev, ...parsed }));
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    } catch {}
+  }, [form]);
+
   function upd(field: string, value: string | boolean | string[] | null) {
     setForm((p) => ({ ...p, [field]: value }));
   }
@@ -152,7 +179,7 @@ export default function NewProductPage() {
         description: data.description || prev.description,
         intendedUse: data.intendedUse || prev.intendedUse,
         patientPopulation: data.patientPopulation || prev.patientPopulation,
-        deviceClass: data.deviceClass || prev.deviceClass,
+        deviceClass: normalizeDeviceClass(data.deviceClass) || prev.deviceClass,
         deviceType: data.deviceType || prev.deviceType,
         isSterile: data.isSterile ?? prev.isSterile,
         hasSoftware: data.hasSoftware ?? prev.hasSoftware,
@@ -440,7 +467,7 @@ export default function NewProductPage() {
 
         {/* Step 1.5 — Predicate Device & Regulatory Pathway */}
         <div className={`bg-surface border border-border rounded-2xl p-6 ${productId ? "opacity-60 pointer-events-none" : ""}`}>
-          <PredicatePathway form={form} upd={upd} />
+          <PredicatePathway form={form} upd={upd} productId={productId} />
         </div>
 
         {/* Step 1.6 / 1.8 / 1.9 — Classification Confirmation & Lock */}
