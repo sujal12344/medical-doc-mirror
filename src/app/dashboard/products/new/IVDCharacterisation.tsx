@@ -181,7 +181,7 @@ export default function IVDCharacterisation({ form, upd }: { form: IVDForm; upd:
         </div>
 
         {/* Group D: Preview */}
-        <div className="border border-border rounded-xl p-4">
+        {/* <div className="border border-border rounded-xl p-4">
           <div className="text-[11px] font-bold text-muted uppercase tracking-wider mb-2">D — Preliminary Classification (Part II)</div>
           {!preview ? (
             <div className="space-y-1">
@@ -207,15 +207,15 @@ export default function IVDCharacterisation({ form, upd }: { form: IVDForm; upd:
               </div>
             </div>
           )}
-        </div>
+        </div> */}
 
         {/* Reminder: general chemistry goes Class A */}
-        <div className="flex items-start gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
+        {/* <div className="flex items-start gap-2 bg-green-50 border border-green-200 rounded-xl px-3 py-2.5">
           <span className="text-sm">ℹ️</span>
           <div className="text-[11px] text-green-800">
             <strong>General chemistry reagents</strong> (albumin, glucose, cholesterol, urea, enzymes, electrolytes) are <strong>Class A — Rule 2(v)</strong> by default. Only toggle fields above if they genuinely apply.
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

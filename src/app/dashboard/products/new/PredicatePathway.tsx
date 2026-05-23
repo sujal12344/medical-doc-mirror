@@ -57,6 +57,65 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
         <span className="shrink-0 text-[10px] px-2 py-1 rounded-lg bg-surface2 border border-border text-muted font-semibold">1.5</span>
       </div>
 
+      <button
+        type="button"
+        onClick={async () => {
+          // Read intendedUse from form state; fallback to localStorage draft
+          let intendedUse = form.intendedUse?.trim();
+          if (!intendedUse) {
+            try {
+              const draft = localStorage.getItem("newproduct_draft");
+              if (draft) {
+                const parsed = JSON.parse(draft);
+                intendedUse = (parsed.intendedUse || "").trim();
+              }
+            } catch {}
+          }
+
+          if (!intendedUse) {
+            alert("Please enter the Intended Use/Claims above first.");
+            return;
+          }
+
+          try {
+            const res = await fetch(
+              `/api/products/predicate`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ intendedUse }),
+              }
+            );
+
+            const data = await res.json();
+
+            if (!data.success) {
+              alert(data.message || "No match found");
+              return;
+            }
+
+            upd("predicateExists", true);
+            upd("predicateName", data.match.name);
+            upd("predicateManufacturer", data.match.manufacturer);
+            upd("predicateRegNo", data.match.regNo);
+            // deviceClass is already normalised to "A"/"B"/"C"/"D" by the API
+            upd("predicateClass", data.match.deviceClass);
+            upd(
+              "predicateBasis",
+              `Auto-matched using intended use similarity`
+            );
+
+            alert("Predicate device auto-filled");
+          } catch (error) {
+            console.error(error);
+            alert("Failed to auto-fill predicate device");
+          }
+        }}
+        className="px-4 py-2 rounded-xl bg-surface2 text-gray-500 text-xs font-semibold hover:bg-white border border-gray-400 transition"
+      >
+        🔍 Auto Find Predicate Device
+      </button>
+
       {/* Decision */}
       <div className="space-y-2">
         <div className="text-xs font-medium text-foreground">Does a predicate device exist?</div>
@@ -142,64 +201,6 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={async () => {
-          // Read intendedUse from form state; fallback to localStorage draft
-          let intendedUse = form.intendedUse?.trim();
-          if (!intendedUse) {
-            try {
-              const draft = localStorage.getItem("newproduct_draft");
-              if (draft) {
-                const parsed = JSON.parse(draft);
-                intendedUse = (parsed.intendedUse || "").trim();
-              }
-            } catch {}
-          }
-
-          if (!intendedUse) {
-            alert("Please enter the Intended Use/Claims above first.");
-            return;
-          }
-
-          try {
-            const res = await fetch(
-              `/api/products/predicate`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ intendedUse }),
-              }
-            );
-
-            const data = await res.json();
-
-            if (!data.success) {
-              alert(data.message || "No match found");
-              return;
-            }
-
-            upd("predicateExists", true);
-            upd("predicateName", data.match.name);
-            upd("predicateManufacturer", data.match.manufacturer);
-            upd("predicateRegNo", data.match.regNo);
-            // deviceClass is already normalised to "A"/"B"/"C"/"D" by the API
-            upd("predicateClass", data.match.deviceClass);
-            upd(
-              "predicateBasis",
-              `Auto-matched using intended use similarity`
-            );
-
-            alert("Predicate device auto-filled");
-          } catch (error) {
-            console.error(error);
-            alert("Failed to auto-fill predicate device");
-          }
-        }}
-        className="px-4 py-2 rounded-xl bg-violet-600 text-white text-xs font-semibold hover:bg-violet-700 transition"
-      >
-        🔍 Auto Find Predicate Device
-      </button>
 
       {/* ── Branch B: Novel device — NO predicate ───────────────────────── */}
       {predicateExists === false && (

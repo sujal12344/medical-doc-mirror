@@ -6,7 +6,7 @@ import { Pinecone } from "@pinecone-database/pinecone";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const pc = new Pinecone({ apiKey: process.env.PINECONE_KEY! });
 
-// Same index as hybridQuery.ts — product_{userId} and predicate_{userId} namespaces
+// Same index as hybridQuery.ts — product_{userId} namespace
 const INDEX_NAME = process.env.PINECONE_INDEX!;
 const MIN_SCORE = 0.1;
 const CHUNK_SIZE = 1500;
@@ -45,13 +45,9 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const documentText = body.documentText as string;
-    const scope = (body.scope === "predicate" ? "predicate" : "product") as "product" | "predicate";
 
     if (!documentText?.trim()) return NextResponse.json({ error: "No document text provided" }, { status: 400 });
 
-    if (scope === "predicate") {
-      return await runPredicateAutofill(userId, documentText);
-    }
     return await runProductAutofill(userId, documentText);
   } catch (error: unknown) {
     console.error("[autofill] RAG error:", error);
@@ -329,85 +325,5 @@ IVD PART II FIELDS (First Schedule Part II, MDR 2017 — only set for deviceType
   console.log(`[autofill:product]   chunksIndexed: ${chunks.length}`);
   console.log(`${"─".repeat(60)}\n`);
 
-  return NextResponse.json({ ...parsed, chunksIndexed: chunks.length, scope: "product" });
-}
-
-async function runPredicateAutofill(userId: string, documentText: string) {
-  const chunks = chunkText(documentText);
-  console.log(`[autofill:predicate] ${chunks.length} chunks from ${documentText.length} chars`);
-
-  const NAMESPACE = `predicate_${userId}`;
-  const docId = `predicate_${userId}_${Date.now()}`;
-  const index = await upsertChunks(userId, NAMESPACE, "predicate-autofill", docId, chunks);
-
-  const queries = [
-    "predicate device reference substantial equivalence similar legally marketed device",
-    "predicate manufacturer company name brand trade name",
-    "CDSCO registration licence number import license MD registration certificate",
-    "predicate device class risk classification A B C D India MDR",
-    "clinical investigation MD-26 MD-27 novel device pathway equivalence basis",
-  ];
-  const QUERY_LABELS = [
-    "Predicate identity",
-    "Predicate manufacturer",
-    "Registration / licence no.",
-    "Predicate class",
-    "Pathway / equivalence basis",
-  ];
-
-  const contexts = await retrieveContexts(index, queries, QUERY_LABELS, userId, "predicate-autofill", docId);
-  const contextBlock = contexts
-    .map((c, i) => `[Context ${i + 1} — ${QUERY_LABELS[i]}]\n${c}`)
-    .join("\n\n---\n\n");
-
-  console.log(`\n[autofill:predicate] ── GPT EXTRACTION ──`);
-
-  const completion = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL || "gpt-4o-mini",
-    messages: [
-      {
-        role: "system",
-        content: `You are a senior CDSCO / India MDR 2017 regulatory affairs expert.
-Extract predicate device and regulatory pathway fields from the provided document excerpts (predicate IFU, 510(k) summary, CDSCO approval letter, equivalence statement, etc.).
-Return ONLY valid raw JSON with exactly these keys (use empty string or false if not found):
-{
-  "predicateExists": boolean,
-  "predicateName": string,
-  "predicateManufacturer": string,
-  "predicateRegNo": string,
-  "predicateBasis": string,
-  "predicateClass": "A" | "B" | "C" | "D" | "",
-  "md26Status": "not-filed" | "filed" | "approved" | "",
-  "md26RefNo": string,
-  "md27Status": "not-filed" | "filed" | "approved" | "",
-  "md27RefNo": string,
-  "clinicalSiteCount": string,
-  "novelPathwayAcknowledged": boolean
-}
-
-predicateExists: true if the document describes a reference/predicate/substantially equivalent device already on the market.
-predicateBasis: short text on why this predicate supports the pathway (same intended use, same technology, same or lower class).
-predicateClass: risk class of the predicate device under India MDR 2017 if stated.
-md26Status / md27Status: only set if document mentions MD-26 or MD-27 filing status; otherwise leave "".
-novelPathwayAcknowledged: true only if document explicitly states novel device / no predicate / clinical investigation required.`,
-      },
-      {
-        role: "user",
-        content: `Extract predicate pathway fields from these document excerpts:\n\n${contextBlock}`,
-      },
-    ],
-    response_format: { type: "json_object" },
-    temperature: 0.1,
-  });
-
-  const parsed = JSON.parse(completion.choices[0].message.content || "{}");
-
-  console.log(`[autofill:predicate]   predicateExists   : ${parsed.predicateExists}`);
-  console.log(`[autofill:predicate]   predicateName       : ${parsed.predicateName || "(not found)"}`);
-  console.log(`[autofill:predicate]   predicateManufacturer: ${parsed.predicateManufacturer || "(not found)"}`);
-  console.log(`[autofill:predicate]   predicateRegNo      : ${parsed.predicateRegNo || "(not found)"}`);
-  console.log(`[autofill:predicate]   predicateClass      : ${parsed.predicateClass || "(not found)"}`);
-  console.log(`${"─".repeat(60)}\n`);
-
-  return NextResponse.json({ ...parsed, chunksIndexed: chunks.length, scope: "predicate" });
+  return NextResponse.json({ ...parsed, chunksIndexed: chunks.length });
 }

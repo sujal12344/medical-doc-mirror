@@ -106,9 +106,6 @@ export default function NewProductPage() {
   const [autofilling, setAutofilling] = useState(false);
   const [autofillDocName, setAutofillDocName] = useState("");
   const [autofillDone, setAutofillDone] = useState(false);
-  const [predicateAutofilling, setPredicateAutofilling] = useState(false);
-  const [predicateAutofillDocName, setPredicateAutofillDocName] = useState("");
-  const [predicateAutofillDone, setPredicateAutofillDone] = useState(false);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -116,7 +113,6 @@ export default function NewProductPage() {
   const [productId, setProductId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autofillInputRef = useRef<HTMLInputElement>(null);
-  const predicateAutofillInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
   const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
@@ -235,61 +231,6 @@ export default function NewProductPage() {
     }
   };
 
-  const handlePredicateAutofillUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setPredicateAutofillDocName(file.name);
-    setPredicateAutofilling(true);
-    setError("");
-    setPredicateAutofillDone(false);
-
-    let text = "";
-    const formData = new FormData();
-    formData.append("file", file);
-    try {
-      const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-      if (res.ok) { const d = await res.json(); text = d.text; }
-    } catch { /* fallback below */ }
-    if (!text) {
-      const reader = new FileReader();
-      await new Promise<void>((resolve) => {
-        reader.onload = (ev) => { text = ev.target?.result as string ?? ""; resolve(); };
-        reader.readAsText(file);
-      });
-    }
-
-    try {
-      const res = await fetch("/api/products/autofill", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentText: text, scope: "predicate" }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Predicate autofill failed");
-
-      setForm((prev) => ({
-        ...prev,
-        predicateExists: data.predicateExists === true ? true : data.predicateExists === false ? false : prev.predicateExists,
-        predicateName: data.predicateName || prev.predicateName,
-        predicateManufacturer: data.predicateManufacturer || prev.predicateManufacturer,
-        predicateRegNo: data.predicateRegNo || prev.predicateRegNo,
-        predicateBasis: data.predicateBasis || prev.predicateBasis,
-        predicateClass: data.predicateClass || prev.predicateClass,
-        md26Status: data.md26Status || prev.md26Status,
-        md26RefNo: data.md26RefNo || prev.md26RefNo,
-        md27Status: data.md27Status || prev.md27Status,
-        md27RefNo: data.md27RefNo || prev.md27RefNo,
-        clinicalSiteCount: data.clinicalSiteCount || prev.clinicalSiteCount,
-        novelPathwayAcknowledged: data.novelPathwayAcknowledged ?? prev.novelPathwayAcknowledged,
-      }));
-      setPredicateAutofillDone(true);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Predicate autofill failed");
-    } finally {
-      setPredicateAutofilling(false);
-    }
-  };
-
   // ── Country helpers ─────────────────────────────────────────────────────────
   function toggleCountry(code: string) {
     if (code === "IN") return; // India locked
@@ -395,7 +336,7 @@ export default function NewProductPage() {
       <h1 className="text-2xl font-bold text-foreground mb-1">Register New Product</h1>
       <p className="text-sm text-muted mb-4">Add your medical device or IVD product for Phase 2 Technical Dossier generation.</p>
 
-      {/* Knowledge base — product + predicate document uploads for RAG autofill */}
+      {/* Knowledge base — product document upload for RAG autofill */}
       <div className={`mb-6 border border-border rounded-2xl bg-surface overflow-hidden ${productId ? "opacity-60 pointer-events-none" : ""}`}>
         <div className="flex items-center justify-between gap-3 px-4 py-3">
           <button
@@ -404,9 +345,9 @@ export default function NewProductPage() {
             className="flex items-center gap-2 min-w-0 text-left hover:opacity-80 transition"
           >
             <span className="text-sm font-semibold text-foreground">Knowledge Base</span>
-            {(autofillDone || predicateAutofillDone) && (
+            {autofillDone && (
               <span className="text-[10px] font-medium text-muted px-2 py-0.5 rounded-full bg-surface2 border border-border">
-                {[autofillDone, predicateAutofillDone].filter(Boolean).length} doc{[autofillDone, predicateAutofillDone].filter(Boolean).length !== 1 ? "s" : ""}
+                1 doc
               </span>
             )}
             <span className={`text-muted text-xs transition-transform ${knowledgeBaseOpen ? "rotate-180" : ""}`}>▼</span>
@@ -433,7 +374,7 @@ export default function NewProductPage() {
         {knowledgeBaseOpen && (
           <div className="px-4 pb-4 pt-1 border-t border-border space-y-4">
             <p className="text-xs text-muted">
-              Upload documents to index for AI autofill. Product docs fill Step 1 fields; predicate docs fill Step 1.5.
+              Upload an IFU or brochure to index for AI autofill of Step 1 product fields.
             </p>
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
@@ -460,33 +401,6 @@ export default function NewProductPage() {
                   </button>
                 )}
                 <input ref={autofillInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={handleAutofillUpload} />
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-foreground">Predicate document</p>
-                <p className="text-[10px] text-muted mt-0.5">Predicate IFU, CDSCO letter, or equivalence doc → predicate namespace</p>
-              </div>
-              <div className="shrink-0">
-                {predicateAutofillDone ? (
-                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
-                    ✅ {predicateAutofillDocName}
-                    <button type="button" onClick={() => { setPredicateAutofillDone(false); setPredicateAutofillDocName(""); if (predicateAutofillInputRef.current) predicateAutofillInputRef.current.value = ""; }}
-                      className="ml-1 text-muted hover:text-foreground">✕</button>
-                  </div>
-                ) : predicateAutofilling ? (
-                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-600 bg-violet-50 border border-violet-200 rounded-xl">
-                    <span className="w-3 h-3 border border-violet-400 border-t-violet-600 rounded-full animate-spin" />
-                    {predicateAutofillDocName ? `Processing ${predicateAutofillDocName}…` : "Processing…"}
-                  </div>
-                ) : (
-                  <button type="button" onClick={() => predicateAutofillInputRef.current?.click()}
-                    className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-violet-700 border border-violet-300 bg-violet-50 rounded-xl hover:bg-violet-100 transition">
-                    📄 Autofill Predicate from Document
-                  </button>
-                )}
-                <input ref={predicateAutofillInputRef} type="file" accept=".pdf,.txt,.doc,.docx" className="hidden" onChange={handlePredicateAutofillUpload} />
               </div>
             </div>
           </div>

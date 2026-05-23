@@ -192,7 +192,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
 
                 <div className="flex items-center gap-2 bg-surface2 border border-border rounded-xl px-3 py-2 text-[11px] text-muted">
                   <span>✅</span>
-                  Phase 1 Classification complete. Product can now proceed to <strong className="text-foreground">Phase 2 — Technical Dossier generation</strong>.
+                  Phase 1 Classification complete.
                 </div>
               </div>
             </>

@@ -46,9 +46,8 @@ export async function runHybridClassification(input: {
     });
     const queryVector = embedRes.data[0].embedding;
 
-    // 2. Query product + predicate namespaces (registration autofill uploads)
+    // 2. Query product namespace (registration autofill uploads)
     let deviceContext = "";
-    const contextParts: string[] = [];
 
     try {
       const productNs = index.namespace(`product_${companyId}`);
@@ -58,34 +57,12 @@ export async function runHybridClassification(input: {
         includeMetadata: true,
       });
       if (productMatches.matches.length > 0) {
-        contextParts.push(
+        deviceContext =
           "Product document context:\n" +
-            productMatches.matches.map((m) => m.metadata?.text || "").join("\n\n"),
-        );
+          productMatches.matches.map((m) => m.metadata?.text || "").join("\n\n");
       }
     } catch (err) {
       console.warn("Could not fetch product namespace context, skipping.", err);
-    }
-
-    try {
-      const predicateNs = index.namespace(`predicate_${companyId}`);
-      const predicateMatches = await predicateNs.query({
-        vector: queryVector,
-        topK: 5,
-        includeMetadata: true,
-      });
-      if (predicateMatches.matches.length > 0) {
-        contextParts.push(
-          "Predicate document context:\n" +
-            predicateMatches.matches.map((m) => m.metadata?.text || "").join("\n\n"),
-        );
-      }
-    } catch (err) {
-      console.warn("Could not fetch predicate namespace context, skipping.", err);
-    }
-
-    if (contextParts.length > 0) {
-      deviceContext = contextParts.join("\n\n---\n\n");
     }
 
     if (!deviceContext.trim()) {
