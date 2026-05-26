@@ -134,12 +134,21 @@ async function runProductAutofill(userId: string, documentText: string) {
   const QUERY_LABELS = ["Identity (name/manufacturer)", "Intended Use / Patient Pop", "Classification characteristics", "Invasion / Risk flags", "IVD Part II context"];
   const contexts = await retrieveContexts(index, queries, QUERY_LABELS, userId, "autofill", docId);
 
-  const contextBlock = contexts
+  const ragBlock = contexts
     .map((c, i) => `[Context ${i + 1} — ${QUERY_LABELS[i]}]\n${c}`)
     .join("\n\n---\n\n");
 
+  // With 1–3 chunks, every RAG query returns the same snippet — always include full doc for intendedUse/description
+  const injectFullDoc = chunks.length <= 3 || documentText.length < 8000;
+  const contextBlock = injectFullDoc
+    ? `[Full document — use for intendedUse, description, patientPopulation]\n${documentText.trim()}\n\n---\n\n[Retrieved excerpts]\n${ragBlock}`
+    : ragBlock;
+
   console.log(`\n[autofill:product] ── GPT EXTRACTION ──`);
-    console.log(`[autofill] Context block length: ${contextBlock.length} chars`);
+    console.log(
+      `[autofill] Context block length: ${contextBlock.length} chars` +
+        (injectFullDoc ? ` (full doc ${documentText.length} chars + RAG)` : ""),
+    );
     console.log(`[autofill] Calling ${process.env.OPENAI_MODEL || "gpt-4o-mini"}…`);
 
     const completion = await openai.chat.completions.create({
@@ -149,6 +158,9 @@ async function runProductAutofill(userId: string, documentText: string) {
           role: "system",
           content: `You are a senior medical device regulatory affairs expert specialising in India MDR 2017 and CDSCO classification rules.
 Extract product registration fields from the provided IFU / brochure document excerpts.
+You MUST populate "intendedUse" and "description" when any indication, purpose, principle, or product summary appears in the document.
+intendedUse = clinical/indication statement (what the test detects, specimen, setting).
+description = short technical summary (kit type, method e.g. ELISA/CLIA, analyte e.g. HBsAg).
 Return ONLY valid raw JSON with exactly these keys (use empty string or false if not found):
 {
   "name": string,

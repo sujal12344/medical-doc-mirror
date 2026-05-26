@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
+import { extractDocumentText } from "@/lib/documentExtract";
+
+export const runtime = "nodejs";
+export const maxDuration = 120;
 
 export async function POST(req: NextRequest) {
   try {
@@ -10,37 +14,33 @@ export async function POST(req: NextRequest) {
     const file = formData.get("file") as File | null;
     if (!file) return NextResponse.json({ error: "No file provided" }, { status: 400 });
 
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-    const fileName = file.name.toLowerCase();
+    const buffer = Buffer.from(await file.arrayBuffer());
+    const result = await extractDocumentText(buffer, file.name);
 
-    let text = "";
+    if (!result.text.trim()) {
+      return NextResponse.json(
+        {
+          error:
+            "Could not extract text from file. If this is a scanned PDF, ensure OPENAI_API_KEY is set for OCR.",
+        },
+        { status: 422 },
+      );
+    }
 
-    // ── PDF extraction ──────────────────────────────────────────────────────
-    if (fileName.endsWith(".pdf")) {
-      // Import from lib path directly — avoids pdf-parse's test file loader
-      // which crashes in Next.js with ENOENT: test/data/05-versions-space.pdf
-      const pdfParse = (await import("pdf-parse/lib/pdf-parse.js" as any)).default;
-      const result = await pdfParse(buffer);
-      text = result.text;
-      console.log(`[extract-text] PDF: ${result.numpages} pages → ${text.length} chars`);
-      console.log(`[extract-text] Preview: "${text.slice(0, 150).replace(/\n/g, " ")}"`);
-
-
-    // ── Plain text / doc fallback ────────────────────────────────────────────
+    return NextResponse.json({
+      text: result.text,
+      charCount: result.charCount,
+      method: result.method,
+      pageCount: result.pageCount,
+      ocrPages: result.ocrPages,
+    });
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Extraction failed";
+    if (error instanceof Error && error.stack) {
+      console.error("[extract-text] Error:", message, "\n", error.stack.split("\n").slice(0, 5).join("\n"));
     } else {
-      text = buffer.toString("utf-8");
-      console.log(`[extract-text] Text file: ${text.length} chars`);
+      console.error("[extract-text] Error:", message);
     }
-
-    if (!text.trim()) {
-      return NextResponse.json({ error: "Could not extract text from file" }, { status: 422 });
-    }
-
-    return NextResponse.json({ text, charCount: text.length });
-
-  } catch (error: any) {
-    console.error("[extract-text] Error:", error.message);
-    return NextResponse.json({ error: error.message || "Extraction failed" }, { status: 500 });
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }

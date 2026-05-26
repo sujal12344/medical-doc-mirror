@@ -112,6 +112,12 @@ export default function NewProductPage() {
   const [autofilling, setAutofilling] = useState(false);
   const [autofillDocName, setAutofillDocName] = useState("");
   const [autofillDone, setAutofillDone] = useState(false);
+  const [extractMeta, setExtractMeta] = useState<{
+    method: string;
+    charCount: number;
+    pageCount?: number;
+    ocrPages?: number;
+  } | null>(null);
   const [search, setSearch] = useState("");
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
@@ -153,15 +159,32 @@ export default function NewProductPage() {
     setAutofilling(true);
     setError("");
     setAutofillDone(false);
+    setExtractMeta(null);
 
-    // Step 1: Extract text
+    // Step 1: Extract text (pdf text layer, or Vision OCR for scanned PDFs)
     let text = "";
     const formData = new FormData();
     formData.append("file", file);
     try {
       const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-      if (res.ok) { const d = await res.json(); text = d.text; }
-    } catch {}
+      const d = await res.json();
+      if (res.ok) {
+        text = d.text;
+        setExtractMeta({
+          method: d.method ?? "pdf-text",
+          charCount: d.charCount ?? d.text?.length ?? 0,
+          pageCount: d.pageCount,
+          ocrPages: d.ocrPages,
+        });
+      } else if (d.error) {
+        throw new Error(d.error);
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Text extraction failed";
+      setError(msg);
+      setAutofilling(false);
+      return;
+    }
     if (!text) {
       const reader = new FileReader();
       await new Promise<void>((resolve) => {
@@ -381,7 +404,20 @@ export default function NewProductPage() {
           <div className="px-4 pb-4 pt-1 border-t border-border space-y-4">
             <p className="text-xs text-muted">
               Upload an IFU or brochure to index for AI autofill of Step 1 product fields.
+              Scanned/image PDFs use Vision OCR automatically when little text is detected.
             </p>
+            {extractMeta && (
+              <div className="text-[11px] px-3 py-2 rounded-lg border border-border bg-surface2 text-muted">
+                Last extraction:{" "}
+                <strong className="text-foreground">
+                  {extractMeta.method === "ocr-vision" ? "OCR (Vision)" : "PDF text layer"}
+                </strong>
+                {" · "}
+                {extractMeta.charCount.toLocaleString()} chars
+                {extractMeta.pageCount != null && ` · ${extractMeta.pageCount} pages`}
+                {extractMeta.ocrPages != null && extractMeta.method === "ocr-vision" && ` · OCR ${extractMeta.ocrPages} pages`}
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
               <div className="min-w-0">
@@ -392,7 +428,7 @@ export default function NewProductPage() {
                 {autofillDone ? (
                   <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
                     ✅ {autofillDocName}
-                    <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); if (autofillInputRef.current) autofillInputRef.current.value = ""; }}
+                    <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); setExtractMeta(null); if (autofillInputRef.current) autofillInputRef.current.value = ""; }}
                       className="ml-1 text-muted hover:text-foreground">✕</button>
                   </div>
                 ) : autofilling ? (
