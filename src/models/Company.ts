@@ -17,7 +17,13 @@ export interface CompanyDocument extends Document {
       esicEpfo: { status: 'pending' | 'in-progress' | 'complete'; documentUrl: string };
     };
     secB: {
+      legalEntityExists: boolean | null;
       entityType: 'pvt-ltd' | 'llp' | 'opc' | 'partnership' | 'sole-prop' | '';
+      runNameApproval: boolean;
+      dscDinObtained: boolean;
+      moaAoaDrafted: boolean;
+      moaIncludesMedicalDeviceObject: boolean;
+      spicePlusFiled: boolean;
       cin: string;
       pan: string;
       tan: string;
@@ -26,21 +32,38 @@ export interface CompanyDocument extends Document {
     };
     secC: {
       bankAccountOpened: boolean;
+      bankName: string;
+      accountNumber: string;
       adCodeObtained: boolean;
+      signatories: { name: string; designation: string }[];
     };
     secD: {
       trademarkStatus: 'not-filed' | 'filed' | 'registered' | '';
       trademarkNumber: string;
+      trademarkDocUrl: string;
       domainRegistered: boolean;
+      domainName: string;
       patentFiled: boolean;
+      designFiled: boolean;
+      ndaTemplateUrl: string;
     };
     secE: {
       tamAnalysisDone: boolean;
+      reimbursementLandscapeDone: boolean;
+      reimbursementNotes: string;
       competitorScanDone: boolean;
+      patentLandscapeDone: boolean;
+      patentLandscapeNotes: string;
+      pathwayIndia: boolean;
+      pathwayCE: boolean;
+      pathwayFDA: boolean;
       regulatoryPathwayChosen: boolean;
+      pathwayNotes: string;
       targetCountries: string[];
+      trademarkPlanningDone: boolean;
     };
     overallCompletionPct: number;
+    phase0Complete: boolean;
     lastUpdated: Date;
   };
 
@@ -88,7 +111,13 @@ const CompanySchema = new Schema<CompanyDocument>(
           },
         },
         secB: {
+          legalEntityExists: { type: Boolean, default: null },
           entityType: { type: String, enum: ['pvt-ltd', 'llp', 'opc', 'partnership', 'sole-prop', ''], default: '' },
+          runNameApproval: { type: Boolean, default: false },
+          dscDinObtained: { type: Boolean, default: false },
+          moaAoaDrafted: { type: Boolean, default: false },
+          moaIncludesMedicalDeviceObject: { type: Boolean, default: false },
+          spicePlusFiled: { type: Boolean, default: false },
           cin: { type: String, default: "" },
           pan: { type: String, default: "" },
           tan: { type: String, default: "" },
@@ -97,21 +126,42 @@ const CompanySchema = new Schema<CompanyDocument>(
         },
         secC: {
           bankAccountOpened: { type: Boolean, default: false },
+          bankName: { type: String, default: "" },
+          accountNumber: { type: String, default: "" },
           adCodeObtained: { type: Boolean, default: false },
+          signatories: {
+            type: [{ name: { type: String, default: "" }, designation: { type: String, default: "" } }],
+            default: [],
+            _id: false,
+          },
         },
         secD: {
           trademarkStatus: { type: String, enum: ['not-filed', 'filed', 'registered', ''], default: '' },
           trademarkNumber: { type: String, default: "" },
+          trademarkDocUrl: { type: String, default: "" },
           domainRegistered: { type: Boolean, default: false },
+          domainName: { type: String, default: "" },
           patentFiled: { type: Boolean, default: false },
+          designFiled: { type: Boolean, default: false },
+          ndaTemplateUrl: { type: String, default: "" },
         },
         secE: {
           tamAnalysisDone: { type: Boolean, default: false },
+          reimbursementLandscapeDone: { type: Boolean, default: false },
+          reimbursementNotes: { type: String, default: "" },
           competitorScanDone: { type: Boolean, default: false },
+          patentLandscapeDone: { type: Boolean, default: false },
+          patentLandscapeNotes: { type: String, default: "" },
+          pathwayIndia: { type: Boolean, default: true },
+          pathwayCE: { type: Boolean, default: false },
+          pathwayFDA: { type: Boolean, default: false },
           regulatoryPathwayChosen: { type: Boolean, default: false },
-          targetCountries: { type: [String], default: [] },
+          pathwayNotes: { type: String, default: "" },
+          targetCountries: { type: [String], default: ["IN"] },
+          trademarkPlanningDone: { type: Boolean, default: false },
         },
         overallCompletionPct: { type: Number, default: 0 },
+        phase0Complete: { type: Boolean, default: false },
         lastUpdated: { type: Date, default: Date.now },
       },
       default: {},

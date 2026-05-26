@@ -5,14 +5,21 @@ import { Product } from "@/models/Product";
 import { RegulatoryDocument } from "@/models/Document";
 import BusinessSetupWidget from "@/components/phase0/BusinessSetupWidget";
 import ClassificationWidget from "@/components/phase1/ClassificationWidget";
+import { normalizeBusinessGenesis } from "@/lib/businessGenesis";
+
+function toPlainJson(value: unknown): Record<string, unknown> {
+  if (value === null || value === undefined) return {};
+  return JSON.parse(JSON.stringify(value)) as Record<string, unknown>;
+}
 
 export default async function DashboardPage() {
   const user = await getSession();
   await connectToDatabase();
 
   const userId = (user as Record<string, unknown>)._id;
-  const initialSetup = (user as any).businessGenesis || {};
-  const initialClassification = (user as any).deviceClassification || {};
+  const rawGenesis = (user as Record<string, unknown>).businessGenesis;
+  const initialSetup = normalizeBusinessGenesis(rawGenesis ? toPlainJson(rawGenesis) : null);
+  const initialClassification = toPlainJson((user as Record<string, unknown>).deviceClassification);
 
   const [productCount, docCount, draftCount, submittedCount] = await Promise.all([
     Product.countDocuments({ userId }),

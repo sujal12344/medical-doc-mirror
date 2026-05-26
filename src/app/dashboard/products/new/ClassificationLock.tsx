@@ -9,6 +9,11 @@ type LockForm = {
   classificationOverride: "A" | "B" | "C" | "D" | "";
   classificationNote: string;
   classificationConfirmedBy: string;
+  cdscoListStatus: "" | "listed" | "ambiguous";
+  claClarificationStatus: "not-submitted" | "submitted" | "clarified";
+  claClarificationRefNo: string;
+  claClarificationNotes: string;
+  claClarificationSubmittedAt: string;
   classificationLocked: boolean;
   classificationLockedBy: string;
 };
@@ -28,6 +33,8 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
   const finalClass = (form.classificationOverride || form.deviceClass) as "A" | "B" | "C" | "D";
   const meta = CLASS_META[finalClass] || CLASS_META["A"];
   const isHighRisk = ["C", "D"].includes(finalClass);
+  const cdscoReady =
+    form.cdscoListStatus === "listed" || (form.cdscoListStatus === "ambiguous" && form.claClarificationStatus === "clarified");
 
   return (
     <div className="space-y-5">
@@ -35,7 +42,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
       <div className="flex items-start justify-between gap-4">
         <div>
           <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Classification Confirmation &amp; Lock</h2>
-          <p className="text-xs text-muted mt-0.5">Steps 1.6 → 1.8 → 1.9 — Confirm, lock, and record final MDR 2017 device class</p>
+          <p className="text-xs text-muted mt-0.5">Steps 1.6 → 1.7 (if needed) → 1.8 → 1.9 — Confirm per CDSCO list, clarify with CLA if ambiguous, then lock</p>
         </div>
         <span className="shrink-0 text-[10px] px-2 py-1 rounded-lg bg-surface2 border border-border text-muted font-semibold">1.6 → 1.9</span>
       </div>
@@ -128,6 +135,148 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
         <>
           <div className="border-t border-dashed border-border" />
 
+          {/* Step 1.6 — CDSCO list decision */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="w-5 h-5 rounded-sm bg-orange-100 text-orange-700 text-[9px] font-black flex items-center justify-center border border-orange-300 rotate-45 shrink-0" />
+              <span className="text-xs font-bold text-foreground">1.6 · Class confirmed per CDSCO published list?</span>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  upd("cdscoListStatus", "listed");
+                  upd("claClarificationStatus", "not-submitted");
+                  upd("claClarificationRefNo", "");
+                  upd("claClarificationNotes", "");
+                  upd("claClarificationSubmittedAt", "");
+                }}
+                className={`px-3 py-2.5 rounded-xl border text-left transition ${
+                  form.cdscoListStatus === "listed"
+                    ? "bg-green-50 border-green-300"
+                    : "bg-surface2 border-border hover:bg-surface"
+                }`}
+              >
+                <div className="text-xs font-bold text-foreground">Yes — Listed</div>
+                <div className="text-[11px] text-muted mt-0.5">
+                  Proceed directly to <strong>1.8 Lock classification</strong>.
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  upd("cdscoListStatus", "ambiguous");
+                  if (!form.claClarificationStatus) upd("claClarificationStatus", "not-submitted");
+                }}
+                className={`px-3 py-2.5 rounded-xl border text-left transition ${
+                  form.cdscoListStatus === "ambiguous"
+                    ? "bg-yellow-50 border-yellow-300"
+                    : "bg-surface2 border-border hover:bg-surface"
+                }`}
+              >
+                <div className="text-xs font-bold text-foreground">No — Ambiguous</div>
+                <div className="text-[11px] text-muted mt-0.5">
+                  Requires <strong>1.7 CLA clarification</strong> (typ. 30–60 days) before locking.
+                </div>
+              </button>
+            </div>
+
+            {!form.cdscoListStatus && (
+              <div className="text-[11px] text-muted bg-surface2 border border-border rounded-xl px-3 py-2">
+                Select one option to continue.
+              </div>
+            )}
+          </div>
+
+          {/* Step 1.7 — CLA clarification (only if ambiguous) */}
+          {form.cdscoListStatus === "ambiguous" && (
+            <>
+              <div className="border-t border-dashed border-border" />
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black flex items-center justify-center border border-blue-300">1.7</span>
+                  <span className="text-xs font-bold text-foreground">Classification clarification to CLA</span>
+                </div>
+
+                <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
+                  <span className="text-sm shrink-0">⏱</span>
+                  <div className="text-[11px] text-blue-800">
+                    Track your clarification request to the Central Licensing Authority (CLA). Typical cycle time: <strong>30–60 days</strong>.
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="text-[11px] font-medium text-muted">Status</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {([
+                      { v: "not-submitted", label: "Not submitted", cls: "bg-surface2 text-muted border-border" },
+                      { v: "submitted", label: "Submitted", cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
+                      { v: "clarified", label: "Clarified", cls: "bg-green-100 text-green-700 border-green-200" },
+                    ] as const).map((o) => (
+                      <button
+                        key={o.v}
+                        type="button"
+                        onClick={() => {
+                          upd("claClarificationStatus", o.v);
+                          if (o.v === "submitted" && !form.claClarificationSubmittedAt) {
+                            upd("claClarificationSubmittedAt", new Date().toISOString().slice(0, 10));
+                          }
+                        }}
+                        className={`text-[10px] font-semibold px-2.5 py-1.5 rounded-lg border transition ${
+                          form.claClarificationStatus === o.v ? o.cls + " ring-1 ring-current" : "bg-surface2 text-muted border-border hover:bg-surface"
+                        }`}
+                      >
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="grid md:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1">CLA reference / file no. (if any)</label>
+                    <input
+                      type="text"
+                      value={form.claClarificationRefNo}
+                      onChange={(e) => upd("claClarificationRefNo", e.target.value)}
+                      className={FIELD}
+                      placeholder="e.g. CLA/MD/CLAR/2026/____"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-medium text-foreground mb-1">Submitted on</label>
+                    <input
+                      type="date"
+                      value={form.claClarificationSubmittedAt}
+                      onChange={(e) => upd("claClarificationSubmittedAt", e.target.value)}
+                      className={FIELD}
+                      disabled={form.claClarificationStatus === "not-submitted"}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-foreground mb-1">Rationale / notes</label>
+                  <textarea
+                    rows={3}
+                    value={form.claClarificationNotes}
+                    onChange={(e) => upd("claClarificationNotes", e.target.value)}
+                    className={FIELD}
+                    placeholder="Summarize ambiguity, mapped rules, CDSCO list references searched, and the question sent to CLA."
+                  />
+                </div>
+
+                {form.claClarificationStatus !== "clarified" && (
+                  <div className="text-[11px] text-muted bg-surface2 border border-border rounded-xl px-3 py-2">
+                    You can lock classification only after CLA clarification is marked <strong>Clarified</strong>.
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+
           {/* Step 1.8 — Lock classification */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -151,7 +300,16 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
                 className={FIELD} placeholder="Name of authorised person locking this classification" />
             </div>
 
-            <button type="button" disabled={!form.classificationLockedBy}
+            {!cdscoReady && (
+              <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2.5">
+                <span className="text-sm shrink-0">⛔</span>
+                <div className="text-[11px] text-yellow-800">
+                  Complete <strong>1.6</strong> (and <strong>1.7</strong> if ambiguous) before locking classification.
+                </div>
+              </div>
+            )}
+
+            <button type="button" disabled={!form.classificationLockedBy || !cdscoReady}
               onClick={() => upd("classificationLocked", !form.classificationLocked)}
               className={`w-full py-2.5 rounded-xl text-xs font-bold border-2 transition ${
                 form.classificationLocked

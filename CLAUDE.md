@@ -165,7 +165,7 @@ nextjs-mongo-professional/
 
 ### `Company.ts`
 - `companyName`, `companyEmail`, `companyPassword` (plaintext in current code)
-- `businessGenesis` — Phase 0 nested sections (secA–secE)
+- `businessGenesis` — Phase 0 nested sections (secA–secE): secB `incorporationDate`; secC `bankName`, `accountNumber`; secD `trademarkDocUrl`, `designFiled`
 - Legacy optional `deviceClassification` — still read by dashboard widget & some forms
 
 ### `Product.ts`
@@ -374,8 +374,19 @@ Summary of work done in this iteration — use this when continuing sessions.
 
 - NextAuth route corrected to `src/app/api/auth/[...nextauth]/route.ts` (was typo `[...nxtAuth]` → session 404s).
 
+### Phase 0 UI (`/dashboard/business-genesis`)
+
+- Tabs follow MDR flowchart order: **E** (0.1–0.3 market), **B** (0.4–0.6 incorporation), **C** (0.7 bank), **A** (0.8 statutory), **D** (0.9 IP).
+- **0.4** `legalEntityExists` Yes/No — skip incorporation when Yes.
+- **0.6** MCA checklist: RUN, DSC/DIN, MoA medical-device object, SPICe+, COI upload.
+- **0.7** Bank name, AD Code callout, **authorised signatories** list.
+- **secE**: reimbursement + patent landscape, pathway IN/CE/FDA, `targetCountries`, pathway notes.
+- **secD**: NDA template upload, domain name.
+- Shared logic: `src/lib/businessGenesis.ts` (`computePhase0Completion`, `isPhase0Complete`).
+
 ### Phase 1 UI (`/dashboard/products/new`)
 
+- **Phase 0** (`/dashboard/business-genesis`): flowchart-aligned tabs **E→B→C→A→D** (steps 0.1–0.9), `computePhase0Completion`, `phase0Complete` on save.
 - **Knowledge Base** panel (collapsible): **+ Add knowledge** → upload product IFU/brochure → **Autofill Product from Document** only.
 - Product Information / Predicate sections no longer duplicate upload buttons.
 - **PredicatePathway**: **Auto Find Predicate Device** calls `/api/products/predicate` (intended use → CDSCO scrape → AI best match → fills `predDevice` fields).

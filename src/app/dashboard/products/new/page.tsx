@@ -96,6 +96,12 @@ export default function NewProductPage() {
     classificationOverride: "" as "A" | "B" | "C" | "D" | "",
     classificationNote: "",
     classificationConfirmedBy: "",
+    // Step 1.6 / 1.7 — CDSCO list & CLA clarification
+    cdscoListStatus: "" as "" | "listed" | "ambiguous",
+    claClarificationStatus: "not-submitted" as "not-submitted" | "submitted" | "clarified",
+    claClarificationRefNo: "",
+    claClarificationNotes: "",
+    claClarificationSubmittedAt: "" as string,
     // Step 1.8 — Lock
     classificationLocked: false,
     classificationLockedBy: "",
@@ -559,10 +565,10 @@ export default function NewProductPage() {
                     </button>
                     <div className="flex items-center gap-2">
                       {selectedInRegion > 0 && (
-                        <span className="text-[10px] px-2 py-0.5 bg-[var(--accent)]/10 text-[var(--accent)] rounded-full font-semibold">{selectedInRegion} selected</span>
+                        <span className="text-[10px] px-2 py-0.5 bg-accent/10 text-accent rounded-full font-semibold">{selectedInRegion} selected</span>
                       )}
                       <button type="button" onClick={() => selectAllInRegion(regionCodes)}
-                        className="text-[10px] px-2 py-0.5 text-muted hover:text-[var(--accent)] font-medium transition">
+                        className="text-[10px] px-2 py-0.5 text-muted hover:text-accent font-medium transition">
                         {regionCodes.filter(c => c !== "IN").every((c) => form.countries.includes(c)) ? "Deselect all" : "Select all"}
                       </button>
                     </div>
@@ -597,7 +603,7 @@ export default function NewProductPage() {
 
         {/* Submit */}
         <button type="submit" disabled={loading}
-          className="w-full py-3 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-semibold rounded-xl text-sm transition disabled:opacity-50">
+          className="w-full py-3 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition disabled:opacity-50">
           {loading ? "Creating..." : productId ? "Continue to Product →" : `Save & Continue (${form.countries.length} market${form.countries.length !== 1 ? "s" : ""})`}
         </button>
 

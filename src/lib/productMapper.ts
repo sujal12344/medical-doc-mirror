@@ -28,6 +28,11 @@ const PRED_KEYS: (keyof PredDevice)[] = [
 const CLASS_LOCK_KEYS: (keyof Omit<ClassLock, "ai">)[] = [
   "classificationConfirmed", "classificationOverride", "classificationNote",
   "classificationConfirmedBy", "classificationLocked", "classificationLockedBy",
+  "cdscoListStatus",
+  "claClarificationStatus",
+  "claClarificationRefNo",
+  "claClarificationNotes",
+  "claClarificationSubmittedAt",
 ];
 
 function pick<T extends Record<string, unknown>>(keys: (keyof T)[], src: AnyDoc, fallback: T): T {
@@ -66,6 +71,11 @@ export function defaultClassLock(): ClassLock {
   return {
     classificationConfirmed: false, classificationOverride: "", classificationNote: "",
     classificationConfirmedBy: "", classificationLocked: false, classificationLockedBy: "",
+    cdscoListStatus: "",
+    claClarificationStatus: "not-submitted",
+    claClarificationRefNo: "",
+    claClarificationNotes: "",
+    claClarificationSubmittedAt: undefined,
     ai: {},
   };
 }

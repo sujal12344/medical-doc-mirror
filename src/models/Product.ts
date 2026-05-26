@@ -76,6 +76,13 @@ export type ClassLock = {
   classificationOverride: "A" | "B" | "C" | "D" | "";
   classificationNote: string;
   classificationConfirmedBy: string;
+  /** Step 1.6 — confirmed per CDSCO published list? */
+  cdscoListStatus: "listed" | "ambiguous" | "";
+  /** Step 1.7 — clarification to CLA (30–60 days) */
+  claClarificationStatus: "not-submitted" | "submitted" | "clarified";
+  claClarificationRefNo: string;
+  claClarificationNotes: string;
+  claClarificationSubmittedAt?: Date;
   classificationLocked: boolean;
   classificationLockedBy: string;
   ai?: Record<string, unknown>;
@@ -183,6 +190,11 @@ const classLockSchema = new Schema<ClassLock>(
     classificationOverride: { type: String, enum: ["A", "B", "C", "D", ""], default: "" },
     classificationNote: { type: String, default: "" },
     classificationConfirmedBy: { type: String, default: "" },
+    cdscoListStatus: { type: String, enum: ["listed", "ambiguous", ""], default: "" },
+    claClarificationStatus: { type: String, enum: ["not-submitted", "submitted", "clarified"], default: "not-submitted" },
+    claClarificationRefNo: { type: String, default: "" },
+    claClarificationNotes: { type: String, default: "" },
+    claClarificationSubmittedAt: { type: Date, required: false },
     classificationLocked: { type: Boolean, default: false },
     classificationLockedBy: { type: String, default: "" },
     ai: { type: Schema.Types.Mixed, default: {} },

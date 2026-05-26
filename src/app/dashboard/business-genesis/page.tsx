@@ -1,7 +1,13 @@
 import { getSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
+import { normalizeBusinessGenesis } from "@/lib/businessGenesis";
 import { redirect } from "next/navigation";
 import BusinessGenesisForm from "./BusinessGenesisForm";
+
+/** Strip Mongoose ObjectIds / buffers for Client Component props */
+function toPlainJson<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
 
 export const metadata = {
   title: "Phase 0: Business Genesis - SwayamSutra",
@@ -15,8 +21,10 @@ export default async function BusinessGenesisPage() {
 
   await connectToDatabase();
   
-  // Extract businessGenesis data
-  const businessGenesis = (user as any).businessGenesis || {};
+  const rawGenesis = (user as Record<string, unknown>).businessGenesis;
+  const businessGenesis = normalizeBusinessGenesis(
+    rawGenesis ? toPlainJson(rawGenesis) : null,
+  );
 
   return (
     <div className="p-6 md:p-8 max-w-6xl mx-auto space-y-6">

@@ -1,34 +1,57 @@
+"use client";
+
+import {
+  type BusinessGenesisData,
+  computePhase0Completion,
+  isPhase0Complete,
+  normalizeBusinessGenesis,
+} from "@/lib/businessGenesis";
+
 type Status = "done" | "active" | "pending";
 
 const DOT: Record<Status, string> = {
-  done:    "bg-green-500 ring-green-200",
-  active:  "bg-yellow-400 ring-yellow-200 animate-pulse",
+  done: "bg-green-500 ring-green-200",
+  active: "bg-yellow-400 ring-yellow-200 animate-pulse",
   pending: "bg-gray-300 ring-gray-100",
 };
 const STEP_BG: Record<Status, string> = {
-  done:    "bg-green-50 border-green-200",
-  active:  "bg-yellow-50 border-yellow-300",
+  done: "bg-green-50 border-green-200",
+  active: "bg-yellow-50 border-yellow-300",
   pending: "bg-surface2 border-border",
 };
 const DECISION_BG: Record<Status, string> = {
-  done:    "bg-orange-50 border-orange-300",
-  active:  "bg-orange-50 border-orange-400",
+  done: "bg-orange-50 border-orange-300",
+  active: "bg-orange-50 border-orange-400",
   pending: "bg-surface2 border-border",
 };
 const ARROW_COLOR: Record<Status, string> = {
-  done: "bg-green-400", active: "bg-yellow-400", pending: "bg-border",
+  done: "bg-green-400",
+  active: "bg-yellow-400",
+  pending: "bg-border",
 };
 
 function Arrow({ from }: { from: Status }) {
   return (
     <div className="flex flex-col items-center py-0.5">
       <div className={`w-px h-3 ${ARROW_COLOR[from]}`} />
-      <div className={`w-1.5 h-1.5 rotate-45 border-b border-r ${from === "done" ? "border-green-500" : from === "active" ? "border-yellow-500" : "border-border"}`} />
+      <div
+        className={`w-1.5 h-1.5 rotate-45 border-b border-r ${from === "done" ? "border-green-500" : from === "active" ? "border-yellow-500" : "border-border"}`}
+      />
     </div>
   );
 }
 
-function MiniStep({ id, label, status, ticks }: { id: string; label: string; status: Status; ticks?: { label: string; done: boolean }[] }) {
+function MiniStep({
+  id,
+  label,
+  status,
+  ticks,
+}: {
+  id: string;
+  label: string;
+  status: Status;
+  ticks?: { label: string; done: boolean }[];
+}) {
   return (
     <div className={`rounded-lg border px-2.5 py-2 text-xs w-full transition-all ${STEP_BG[status]}`}>
       <div className="flex items-center gap-1.5 mb-0.5">
@@ -37,12 +60,18 @@ function MiniStep({ id, label, status, ticks }: { id: string; label: string; sta
         {status === "done" && <span className="ml-auto text-[9px] text-green-700 font-bold">✓</span>}
         {status === "active" && <span className="ml-auto text-[9px] text-yellow-700 font-bold">…</span>}
       </div>
-      <div className={`font-semibold text-[11px] leading-tight ${status === "pending" ? "text-muted" : "text-foreground"}`}>{label}</div>
-      {ticks && status !== "pending" && (
+      <div
+        className={`font-semibold text-[11px] leading-tight ${status === "pending" ? "text-muted" : "text-foreground"}`}
+      >
+        {label}
+      </div>
+      {ticks && ticks.length > 0 && (
         <div className="mt-1 space-y-0.5">
           {ticks.map((t, i) => (
             <div key={i} className="flex items-center gap-1">
-              <span className={`text-[9px] font-bold ${t.done ? "text-green-600" : "text-muted"}`}>{t.done ? "✓" : "·"}</span>
+              <span className={`text-[9px] font-bold ${t.done ? "text-green-600" : "text-muted"}`}>
+                {t.done ? "✓" : "·"}
+              </span>
               <span className={`text-[9px] ${t.done ? "text-foreground" : "text-muted"}`}>{t.label}</span>
             </div>
           ))}
@@ -52,29 +81,32 @@ function MiniStep({ id, label, status, ticks }: { id: string; label: string; sta
   );
 }
 
-function MiniDecision({ id, label, status, badge }: { id: string; label: string; status: Status; badge?: string }) {
+function MiniDecision({
+  id,
+  label,
+  status,
+  badge,
+}: {
+  id: string;
+  label: string;
+  status: Status;
+  badge?: string;
+}) {
   return (
-    <div className={`rounded-lg border-2 border-dashed px-2.5 py-2 text-xs w-full transition-all ${DECISION_BG[status]}`}>
+    <div
+      className={`rounded-lg border-2 border-dashed px-2.5 py-2 text-xs w-full transition-all ${DECISION_BG[status]}`}
+    >
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className={`w-1.5 h-1.5 rounded-sm ring-2 rotate-45 shrink-0 ${DOT[status]}`} />
         <span className="font-bold text-[9px] text-muted uppercase tracking-wide">{id} · ?</span>
       </div>
-      <div className={`font-semibold text-[11px] ${status === "pending" ? "text-muted" : "text-foreground"}`}>{label}</div>
-      {badge && status === "done" && (
-        <span className="inline-block mt-0.5 text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold border border-orange-200">{badge}</span>
-      )}
+      <div className={`font-semibold text-[11px] ${status === "pending" ? "text-muted" : "text-foreground"}`}>
+        {label}
+      </div>
+      {badge && <span className="inline-block mt-0.5 text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold border border-orange-200">{badge}</span>}
     </div>
   );
 }
-
-type BgData = {
-  secA?: { gst?: { status?: string }; msme?: { status?: string }; iec?: { status?: string }; shopEstablishment?: { status?: string } };
-  secB?: { entityType?: string; cin?: string; pan?: string };
-  secC?: { bankAccountOpened?: boolean };
-  secD?: { trademarkStatus?: string; domainRegistered?: boolean; patentFiled?: boolean };
-  secE?: { tamAnalysisDone?: boolean; competitorScanDone?: boolean; regulatoryPathwayChosen?: boolean };
-  overallCompletionPct?: number;
-};
 
 function calcStatus(checks: unknown[]): Status {
   const mapped = checks.map((v) => {
@@ -88,135 +120,190 @@ function calcStatus(checks: unknown[]): Status {
   return "pending";
 }
 
-export default function Phase0MiniFlowchart({ data }: { data: BgData }) {
-  const secA = data.secA || {};
-  const secB = data.secB || {};
-  const secC = data.secC || {};
-  const secD = data.secD || {};
-  const secE = data.secE || {};
-  const pct = data.overallCompletionPct ?? 0;
+export default function Phase0MiniFlowchart({
+  data,
+}: {
+  data: BusinessGenesisData | Partial<BusinessGenesisData>;
+}) {
+  const normalized = normalizeBusinessGenesis(data);
+  const pct = data.overallCompletionPct ?? computePhase0Completion(normalized);
+  const complete = data.phase0Complete ?? isPhase0Complete(normalized);
 
-  const s01 = calcStatus([secE.tamAnalysisDone, secE.competitorScanDone, secE.regulatoryPathwayChosen]);
-  const s02 = calcStatus([secE.competitorScanDone]);
-  const s03 = calcStatus([secE.regulatoryPathwayChosen]);
-  const s04: Status = (secB.entityType && secB.entityType !== "") ? "done" : "pending";
-  const entityExists = s04 === "done";
-  const s05 = calcStatus([secB.entityType]);
-  const s06 = calcStatus([secB.cin, secB.pan]);
-  const s07 = calcStatus([secC.bankAccountOpened]);
-  const s08 = calcStatus([secA.gst?.status, secA.msme?.status, secA.iec?.status, secA.shopEstablishment?.status]);
-  const s09 = calcStatus([secD.trademarkStatus, secD.domainRegistered, secD.patentFiled]);
-  const allDone = [s01, s02, s03, s04, s08, s09].every((s) => s === "done");
+  const e = normalized.secE;
+  const b = normalized.secB;
+  const c = normalized.secC;
+  const a = normalized.secA;
+  const d = normalized.secD;
+
+  const s01 = calcStatus([e.tamAnalysisDone, e.reimbursementLandscapeDone]);
+  const s02 = calcStatus([e.competitorScanDone, e.patentLandscapeDone]);
+  const s03 = calcStatus([
+    e.pathwayIndia || e.pathwayCE || e.pathwayFDA,
+    e.regulatoryPathwayChosen,
+    e.trademarkPlanningDone,
+  ]);
+  const s04: Status = b.legalEntityExists !== null ? "done" : "pending";
+  const skipIncorp = b.legalEntityExists === true;
+  const s05 = skipIncorp ? "done" : calcStatus([b.entityType]);
+  const s06 = skipIncorp
+    ? "done"
+    : calcStatus([
+        b.runNameApproval,
+        b.dscDinObtained,
+        b.moaAoaDrafted,
+        b.moaIncludesMedicalDeviceObject,
+        b.cin,
+        b.pan,
+        b.incorporationDocUrl,
+      ]);
+  const s07 = calcStatus([
+    c.bankAccountOpened,
+    c.bankName,
+    c.adCodeObtained,
+    c.signatories.some((s) => s.name.trim()),
+  ]);
+  const s08 = calcStatus([
+    a.gst.status,
+    a.msme.status,
+    a.iec.status,
+    a.shopEstablishment.status,
+  ]);
+  const s09 = calcStatus([
+    d.trademarkStatus,
+    d.domainRegistered,
+    d.ndaTemplateUrl || d.trademarkStatus === "not-filed",
+  ]);
 
   return (
     <div className="w-52 shrink-0 sticky top-4 self-start">
       <div className="bg-surface border border-border rounded-2xl p-3 space-y-0.5">
-
-        {/* Header */}
         <div className="flex items-center gap-1.5 mb-2">
-          <span className="w-5 h-5 rounded-full bg-violet-600 text-white text-[9px] font-black flex items-center justify-center">0</span>
+        
           <div>
             <div className="text-[11px] font-bold text-foreground">Phase 0 Progress</div>
             <div className="text-[9px] text-muted">30–90 days</div>
           </div>
           <div className="ml-auto text-right">
-            <div className="text-sm font-black text-violet-600">{pct}%</div>
+            <div className="text-sm font-black">{pct}%</div>
           </div>
         </div>
 
-        {/* Progress bar */}
         <div className="w-full bg-surface2 rounded-full h-1 mb-2">
-          <div className="h-1 rounded-full bg-violet-500 transition-all duration-700" style={{ width: `${pct}%` }} />
+          <div className="h-1 rounded-full bg-green-700 border-black transition-all duration-700" style={{ width: `${pct}%` }} />
         </div>
 
-        {/* Start */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-700 text-white text-[9px] font-bold">💡 Device Idea</span>
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-800 text-white text-[9px] font-bold">
+            Device Idea
+          </span>
         </div>
         <Arrow from="done" />
 
-        {/* 0.1 */}
-        <MiniStep id="0.1" label="Business Need" status={s01} ticks={[
-          { label: "TAM/SAM analysis", done: !!secE.tamAnalysisDone },
-          { label: "Competitor scan", done: !!secE.competitorScanDone },
-          { label: "Regulatory path", done: !!secE.regulatoryPathwayChosen },
-        ]} />
+        <MiniStep
+          id="0.1"
+          label="Business Need"
+          status={s01}
+          ticks={[
+            { label: "TAM/SAM/SOM", done: e.tamAnalysisDone },
+            { label: "Reimbursement", done: e.reimbursementLandscapeDone },
+          ]}
+        />
         <Arrow from={s01} />
 
-        {/* 0.2 */}
-        <MiniStep id="0.2" label="Competitor Scan" status={s02} ticks={[
-          { label: "CDSCO DB reviewed", done: !!secE.competitorScanDone },
-        ]} />
+        <MiniStep
+          id="0.2"
+          label="Competitor landscape"
+          status={s02}
+          ticks={[
+            { label: "Market / competitors", done: e.competitorScanDone },
+            { label: "Patent landscape", done: e.patentLandscapeDone },
+          ]}
+        />
         <Arrow from={s02} />
 
-        {/* 0.3 */}
-        <MiniStep id="0.3" label="Regulatory Pathway" status={s03} ticks={[
-          { label: "MDR 2017 confirmed", done: !!secE.regulatoryPathwayChosen },
-        ]} />
+        <MiniStep
+          id="0.3"
+          label="Regulatory Pathway"
+          status={s03}
+          ticks={[
+            {
+              label: `Markets: ${[e.pathwayIndia && "IN", e.pathwayCE && "CE", e.pathwayFDA && "FDA"].filter(Boolean).join("+") || "—"}`,
+              done: e.pathwayIndia || e.pathwayCE || e.pathwayFDA,
+            },
+            { label: "Path frozen", done: e.regulatoryPathwayChosen },
+            { label: "TM planning", done: e.trademarkPlanningDone },
+          ]}
+        />
         <Arrow from={s03} />
 
-        {/* 0.4 Decision */}
-        <MiniDecision id="0.4" label="Entity exists?" status={s04}
-          badge={entityExists ? `→ Skip to 0.8` : ""} />
+        <MiniDecision
+          id="0.4"
+          label="Entity exists?"
+          status={s04}
+          badge={skipIncorp ? "Yes → skip 0.5–0.6" : b.legalEntityExists === false ? "No → incorporate" : undefined}
+        />
 
-        {/* Branch: show active branch */}
-        {s04 === "pending" && (
-          <div className="grid grid-cols-2 gap-1 mt-0.5">
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="w-px h-2 bg-border" />
-              <span className="text-[8px] text-green-700 bg-green-100 px-1 rounded-full font-bold">Yes</span>
-              <div className="text-[9px] text-muted italic text-center">→ 0.8</div>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <div className="w-px h-2 bg-border" />
-              <span className="text-[8px] text-orange-700 bg-orange-100 px-1 rounded-full font-bold">No</span>
-              <div className="text-[9px] text-muted italic text-center">0.5-0.7</div>
-            </div>
-          </div>
-        )}
-
-        {/* Incorporation steps — only shown if no entity yet */}
-        {!entityExists && (
+        {!skipIncorp && b.legalEntityExists === false && (
           <>
             <Arrow from={s05} />
-            <MiniStep id="0.5" label="Choose Entity Type" status={s05} ticks={[
-              { label: secB.entityType || "Not selected", done: !!(secB.entityType && secB.entityType !== "") },
-            ]} />
-            <Arrow from={s06} />
-            <MiniStep id="0.6" label="Incorporation" status={s06} ticks={[
-              { label: "CIN obtained", done: !!(secB.cin && secB.cin.length > 0) },
-              { label: "PAN obtained", done: !!(secB.pan && secB.pan.length > 0) },
-            ]} />
-            <Arrow from={s07} />
-            <MiniStep id="0.7" label="Bank Account" status={s07} ticks={[
-              { label: "Current account opened", done: !!secC.bankAccountOpened },
-            ]} />
+            <MiniStep id="0.5" label="Entity Type" status={s05 as Status} ticks={[{ label: b.entityType || "—", done: !!b.entityType }]} />
+            <Arrow from={s06 as Status} />
+            <MiniStep
+              id="0.6"
+              label="Incorporation"
+              status={s06 as Status}
+              ticks={[
+                { label: "RUN / name", done: b.runNameApproval },
+                { label: "DSC + DIN", done: b.dscDinObtained },
+                { label: "MoA med-device object", done: b.moaIncludesMedicalDeviceObject },
+                { label: "COI uploaded", done: !!b.incorporationDocUrl },
+              ]}
+            />
           </>
         )}
 
-        {entityExists && <Arrow from={s04} />}
+        {(skipIncorp || b.legalEntityExists === false) && <Arrow from={skipIncorp ? s04 : (s06 as Status)} />}
 
-        {/* 0.8 */}
-        <MiniStep id="0.8" label="Statutory Regs" status={s08} ticks={[
-          { label: `GST — ${secA.gst?.status || "pending"}`, done: secA.gst?.status === "complete" },
-          { label: `MSME — ${secA.msme?.status || "pending"}`, done: secA.msme?.status === "complete" },
-          { label: `IEC — ${secA.iec?.status || "pending"}`, done: secA.iec?.status === "complete" },
-          { label: `Shop Est — ${secA.shopEstablishment?.status || "pending"}`, done: secA.shopEstablishment?.status === "complete" },
-        ]} />
+        <MiniStep
+          id="0.7"
+          label="Bank Account"
+          status={s07}
+          ticks={[
+            { label: "Account opened", done: c.bankAccountOpened },
+            { label: "AD Code", done: c.adCodeObtained },
+            { label: "Signatories", done: c.signatories.some((s) => s.name.trim()) },
+          ]}
+        />
+        <Arrow from={s07} />
+
+        <MiniStep
+          id="0.8"
+          label="Statutory Regs"
+          status={s08}
+          ticks={[
+            { label: `GST — ${a.gst.status}`, done: a.gst.status === "complete" },
+            { label: `IEC — ${a.iec.status}`, done: a.iec.status === "complete" },
+          ]}
+        />
         <Arrow from={s08} />
 
-        {/* 0.9 */}
-        <MiniStep id="0.9" label="IP & Brand" status={s09} ticks={[
-          { label: `TM: ${secD.trademarkStatus || "not filed"}`, done: secD.trademarkStatus === "registered" || secD.trademarkStatus === "filed" },
-          { label: "Domain", done: !!secD.domainRegistered },
-          { label: "Patent", done: !!secD.patentFiled },
-        ]} />
+        <MiniStep
+          id="0.9"
+          label="IP & Brand"
+          status={s09}
+          ticks={[
+            { label: `TM: ${d.trademarkStatus || "—"}`, done: !!d.trademarkStatus },
+            { label: "Domain", done: d.domainRegistered },
+            { label: "NDA template", done: !!d.ndaTemplateUrl },
+          ]}
+        />
         <Arrow from={s09} />
 
-        {/* End */}
         <div className="text-center">
-          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${allDone ? "bg-green-700 text-white" : "bg-surface2 text-muted border border-border"}`}>
-            {allDone ? "✅ Phase 0 Complete" : "○ Phase 0 Complete"}
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${complete ? "bg-green-700 text-white" : "bg-surface2 text-muted border border-border"}`}
+          >
+            {complete ? "✅ Phase 0 Complete" : "In-progress"}
           </span>
         </div>
       </div>

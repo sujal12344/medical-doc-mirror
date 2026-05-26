@@ -27,6 +27,8 @@ type FormState = {
   md27Status: string;
   classificationConfirmed: boolean;
   classificationOverride: string;
+  cdscoListStatus: "" | "listed" | "ambiguous";
+  claClarificationStatus: "not-submitted" | "submitted" | "clarified";
   classificationLocked: boolean;
   classificationLockedBy: string;
 };
@@ -140,7 +142,7 @@ export default function Phase1MiniFlowchart({ form }: { form: FormState }) {
     ivdBloodDonorScreening, ivdBloodGrouping, ivdSelfTest, ivdNearPatient,
     ivdTargetsHIV, ivdTargetsHBV, ivdTargetsHCV,
     predicateExists, predicateName, md26Status, md27Status,
-    classificationConfirmed, classificationOverride, classificationLocked, classificationLockedBy } = form;
+    classificationConfirmed, classificationOverride, cdscoListStatus, claClarificationStatus, classificationLocked, classificationLockedBy } = form;
 
   // Step 1.1 — core text fields
   const char11done = !!(name && description && intendedUse && patientPopulation);
@@ -175,15 +177,29 @@ export default function Phase1MiniFlowchart({ form }: { form: FormState }) {
   const s15done: Status = predicateExists === false && md26Status === "approved" && md27Status === "approved"
     ? "done" : predicateExists === true && predicateName ? "done" : s15;
 
-  // Step 1.6 — classification confirmed
-  const s16: Status = s15done === "done"
+  // Step 1.6 — class confirmed (human)
+  const s16confirm: Status = s15done === "done"
     ? (classificationConfirmed ? "done" : "active")
     : s15done === "active" ? "active" : "pending";
 
+  // Step 1.6 (flowchart branch) — confirmed per CDSCO list? (listed vs ambiguous)
+  const s16list: Status = s16confirm === "done"
+    ? (cdscoListStatus ? "done" : "active")
+    : s16confirm === "active" ? "active" : "pending";
+
+  // Step 1.7 — CLA clarification only when ambiguous
+  const needsClarification = cdscoListStatus === "ambiguous";
+  const s17: Status = s16list === "done" && needsClarification
+    ? (claClarificationStatus === "clarified" ? "done" : "active")
+    : needsClarification ? "pending" : "pending";
+
+  const cdscoReady =
+    cdscoListStatus === "listed" || (cdscoListStatus === "ambiguous" && claClarificationStatus === "clarified");
+
   // Step 1.8 — locked
-  const s18: Status = s16 === "done"
+  const s18: Status = s16list === "done" && cdscoReady
     ? (classificationLocked ? "done" : "active")
-    : "pending";
+    : s16list === "active" ? "active" : "pending";
 
   // Step 1.9 — final class known when locked
   const s19: Status = s18 === "done" ? "done" : s18 === "active" ? "active" : "pending";
@@ -205,7 +221,6 @@ export default function Phase1MiniFlowchart({ form }: { form: FormState }) {
       <div className="bg-surface border border-border rounded-2xl p-4 space-y-1">
         {/* Header */}
         <div className="flex items-center gap-2 mb-3">
-          <span className="w-6 h-6 rounded-full bg-yellow-400 text-yellow-900 text-[10px] font-black flex items-center justify-center">1</span>
           <div>
             <div className="text-xs font-bold text-foreground">Phase 1 — Classification</div>
             <div className="text-[10px] text-muted">Fill form to progress</div>
@@ -306,11 +321,31 @@ export default function Phase1MiniFlowchart({ form }: { form: FormState }) {
         )}
 
         <Arrow status={sLater} />
-        <DecisionBox id="1.6" label="Classification confirmed?" status={s16}
+        <DecisionBox id="1.6" label="Class confirmed?" status={s16confirm}
           options={classificationConfirmed ? [`→ Class ${finalClass} confirmed`] : []} />
+        <Arrow status={s16list} />
+        <DecisionBox id="1.6" label="Confirmed per CDSCO list?" status={s16list}
+          options={
+            cdscoListStatus === "listed"
+              ? ["→ Listed → 1.8"]
+              : cdscoListStatus === "ambiguous"
+              ? ["→ Ambiguous → 1.7"]
+              : []
+          } />
+
+        {needsClarification && (
+          <>
+            <Arrow status={s17} />
+            <StepBox id="1.7" label="CLA clarification" status={s17}
+              bullets={[
+                claClarificationStatus === "clarified" ? "✓ Clarified (30–60d)" : claClarificationStatus === "submitted" ? "⏳ Submitted (30–60d)" : "Not submitted",
+              ]} />
+          </>
+        )}
+
         <Arrow status={s18} />
         <StepBox id="1.8" label="Lock Classification" status={s18}
-          bullets={classificationLocked ? [`Locked by: ${classificationLockedBy}`] : undefined} />
+          bullets={classificationLocked ? [`Locked by: ${classificationLockedBy}`] : (cdscoReady ? undefined : ["Blocked until 1.6/1.7 complete"])} />
         <Arrow status={s19} />
         <DecisionBox id="1.9" label={`Final Class ${s19 === "done" ? finalClass : "A / B / C / D"}`} status={s19}
           options={s19 === "done" ? [`Class ${finalClass}`, form.deviceType === "ivd" ? "Part II" : "Part I"] : []} />

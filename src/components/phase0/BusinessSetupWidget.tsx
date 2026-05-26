@@ -1,79 +1,100 @@
 import Link from "next/link";
+import {
+  computePhase0Completion,
+  normalizeBusinessGenesis,
+  type BusinessGenesisData,
+} from "@/lib/businessGenesis";
 
-export default function BusinessSetupWidget({ initialSetup }: { initialSetup: any }) {
-  // Compute completion percentage based on the deeply nested fields
-  
-  // Define required fields to count for completion
-  const requirements = [
-    initialSetup?.secA?.gst?.status === 'complete',
-    initialSetup?.secA?.msme?.status === 'complete',
-    initialSetup?.secA?.iec?.status === 'complete', 
-    initialSetup?.secB?.entityType !== '' && initialSetup?.secB?.entityType !== undefined,
-    initialSetup?.secB?.cin !== '' && initialSetup?.secB?.cin !== undefined,
-    initialSetup?.secB?.pan !== '' && initialSetup?.secB?.pan !== undefined,
-    initialSetup?.secC?.bankAccountOpened === true,
-    initialSetup?.secD?.trademarkStatus === 'filed' || initialSetup?.secD?.trademarkStatus === 'registered',
-    initialSetup?.secD?.domainRegistered === true,
-    initialSetup?.secE?.tamAnalysisDone === true,
-    initialSetup?.secE?.competitorScanDone === true,
-    initialSetup?.secE?.regulatoryPathwayChosen === true,
+export default function BusinessSetupWidget({ initialSetup }: { initialSetup?: Partial<BusinessGenesisData> }) {
+  const bg = normalizeBusinessGenesis(initialSetup);
+  const progressPercent = computePhase0Completion(bg);
+
+  const secA = bg.secA;
+  const secB = bg.secB;
+  const secC = bg.secC;
+  const secD = bg.secD;
+  const secE = bg.secE;
+
+  const items = [
+    {
+      done: !!(secE?.tamAnalysisDone && secE?.reimbursementLandscapeDone),
+      label: "0.1 Market need",
+    },
+    {
+      done: !!(secE?.competitorScanDone && secE?.patentLandscapeDone),
+      label: "0.2 Market / patent scan",
+    },
+    {
+      done: !!(secE?.regulatoryPathwayChosen && (secE?.targetCountries?.length ?? 0) > 0),
+      label: "0.3 Pathway frozen",
+    },
+    {
+      done: secB?.legalEntityExists !== null && secB?.legalEntityExists !== undefined,
+      label: "0.4 Entity decision",
+    },
+    {
+      done: !!(secC?.bankAccountOpened && secC?.adCodeObtained),
+      label: "0.7 Bank & AD Code",
+    },
+    {
+      done: secA?.gst?.status === "complete" && secA?.iec?.status === "complete",
+      label: "0.8 GST + IEC",
+    },
+    {
+      done: !!(secD?.domainRegistered || secD?.trademarkStatus),
+      label: "0.9 IP & brand",
+    },
   ];
 
-  const completedCount = requirements.filter(Boolean).length;
-  const totalCount = requirements.length;
-  const progressPercent = Math.round((completedCount / totalCount) * 100);
-
   return (
-    <div className="bg-surface border border-border rounded-xl p-6 relative overflow-hidden h-full flex flex-col">
-      {/* Decorative background element */}
-      <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)]/5 rounded-bl-full -mr-16 -mt-16 pointer-events-none" />
+    <div className="bg-surface border border-border rounded-xl p-5 relative overflow-hidden h-full flex flex-col">
+      <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full -mr-16 -mt-16 pointer-events-none" />
 
       <div className="relative z-10 flex-1">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
           <div>
-            <h2 className="text-base font-bold text-foreground">Phase 0: Business Genesis</h2>
-            <p className="text-xs text-muted mt-1">Prerequisites before starting the medical device registration.</p>
+            <h2 className="text-sm font-semibold text-foreground tracking-tight">Business Genesis </h2>
+            <p className="text-[11px] text-muted mt-0.5 leading-snug">
+              Legal entity and statutory prerequisites before device registration.
+            </p>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-semibold text-[var(--accent)]">{progressPercent}%</span>
-          </div>
+          <span className="text-xs font-semibold tabular-nums text-accent shrink-0">{progressPercent}%</span>
         </div>
 
-        {/* Progress Bar */}
-        <div className="w-full bg-surface2 rounded-full h-1.5 mb-6">
-          <div 
-            className="bg-[var(--accent)] h-1.5 rounded-full transition-all duration-500 ease-out"
+        <div className="w-full bg-surface2 rounded-full h-1 mb-4">
+          <div
+            className="bg-accent h-1 rounded-full transition-all duration-500 ease-out"
             style={{ width: `${progressPercent}%` }}
           />
         </div>
 
-        {/* Summary List */}
-        <ul className="space-y-3 mb-6 text-sm">
-          <li className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${initialSetup?.secA?.gst?.status === 'complete' ? 'bg-green-500' : 'bg-slate-300'}`}></div>
-            <span className={initialSetup?.secA?.gst?.status === 'complete' ? 'text-foreground' : 'text-muted'}>Statutory Registrations</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${initialSetup?.secB?.entityType ? 'bg-green-500' : 'bg-slate-300'}`}></div>
-            <span className={initialSetup?.secB?.entityType ? 'text-foreground' : 'text-muted'}>Company Incorporation</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${initialSetup?.secC?.bankAccountOpened ? 'bg-green-500' : 'bg-slate-300'}`}></div>
-            <span className={initialSetup?.secC?.bankAccountOpened ? 'text-foreground' : 'text-muted'}>Bank Details</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${initialSetup?.secD?.domainRegistered ? 'bg-green-500' : 'bg-slate-300'}`}></div>
-            <span className={initialSetup?.secD?.domainRegistered ? 'text-foreground' : 'text-muted'}>IP & Brand</span>
-          </li>
-          <li className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${initialSetup?.secE?.regulatoryPathwayChosen ? 'bg-green-500' : 'bg-slate-300'}`}></div>
-            <span className={initialSetup?.secE?.regulatoryPathwayChosen ? 'text-foreground' : 'text-muted'}>Market Research</span>
-          </li>
+        <ul className="space-y-1.5 mb-5">
+          {items.map((item) => {
+            const [step, ...rest] = item.label.split(" ");
+            const title = rest.join(" ");
+            return (
+              <li key={item.label} className="flex items-center gap-2 min-h-[1.25rem]">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 ${item.done ? "bg-emerald-500" : "bg-border"}`}
+                  aria-hidden
+                />
+                <span className="text-[11px] leading-tight tracking-tight">
+                  <span className={`font-medium tabular-nums ${item.done ? "text-muted" : "text-muted/80"}`}>
+                    {step}
+                  </span>{" "}
+                  <span className={item.done ? "text-foreground font-medium" : "text-muted"}>{title}</span>
+                </span>
+              </li>
+            );
+          })}
         </ul>
       </div>
 
-      <Link href="/dashboard/business-genesis" className="mt-auto inline-flex items-center justify-center gap-2 w-full px-2 py-2.5 text-sm font-semibold rounded-xl border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)]/8 transition">
-        Genesis Portal &rarr;
+      <Link
+        href="/dashboard/business-genesis"
+        className="mt-auto inline-flex items-center justify-center w-full px-3 py-2 text-[11px] font-semibold tracking-wide uppercase rounded-lg border border-border text-foreground hover:border-accent hover:text-accent hover:bg-accent/5 transition"
+      >
+        Open Genesis Portal
       </Link>
     </div>
   );
