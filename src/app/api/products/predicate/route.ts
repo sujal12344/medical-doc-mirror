@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
                 if (cols[0].toLowerCase().includes("no data")) continue;
 
                 devices.push({
-                    name: cols[0],
+                    name: cols[3],
                     manufacturer: cols[1],
                     regNo: cols[2],
                     intendedUse: cols[3],

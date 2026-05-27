@@ -34,6 +34,8 @@ export default async function DashboardPage() {
   const userName = (user as Record<string, unknown>).companyName as string;
   const isEmpty = productCount === 0;
 
+  const latestProduct = recentProducts.length > 0 ? toPlainJson(recentProducts[0]) : {};
+
   return (
     <div className="p-6 md:p-8 max-w-5xl mx-auto space-y-8">
       {/* Header */}
@@ -54,7 +56,7 @@ export default async function DashboardPage() {
             <BusinessSetupWidget initialSetup={initialSetup} />
           </div>
           <div>
-            <ClassificationWidget initialData={initialClassification} />
+            <ClassificationWidget initialData={latestProduct} />
           </div>
         </div>
       </div>
@@ -107,7 +109,7 @@ export default async function DashboardPage() {
               href="/dashboard/products/new"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-semibold rounded-xl text-sm transition"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" strokeLinecap="round"/></svg>
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" strokeLinecap="round" /></svg>
               Register Your First Product
             </Link>
             <span className="text-xs text-muted ml-3">Takes ~2 minutes</span>
@@ -194,7 +196,7 @@ export default async function DashboardPage() {
                       ))}
                       {p.countries.length > 3 && <span className="text-[10px] text-muted">+{p.countries.length - 3}</span>}
                     </div>
-                    <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   </div>
                 </Link>
               ))}
@@ -221,13 +223,12 @@ export default async function DashboardPage() {
                       <p className="text-xs text-muted">{d.countryCode} &middot; v{d.version}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${
-                        d.status === "submitted" ? "bg-green-50 text-green-700"
-                        : d.status === "approved" ? "bg-blue-50 text-blue-700"
-                        : d.status === "in-review" ? "bg-purple-50 text-purple-700"
-                        : "bg-yellow-50 text-yellow-700"
-                      }`}>{d.status}</span>
-                      <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${d.status === "submitted" ? "bg-green-50 text-green-700"
+                          : d.status === "approved" ? "bg-blue-50 text-blue-700"
+                            : d.status === "in-review" ? "bg-purple-50 text-purple-700"
+                              : "bg-yellow-50 text-yellow-700"
+                        }`}>{d.status}</span>
+                      <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>
                   </Link>
                 ))}
