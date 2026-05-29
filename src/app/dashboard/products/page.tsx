@@ -15,7 +15,7 @@ export default async function ProductsPage() {
           <h1 className="text-2xl font-bold text-foreground">Products</h1>
           <p className="text-sm text-muted mt-1">Manage your medical devices and IVD products</p>
         </div>
-        <Link href="/dashboard/products/new" className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition">
+        <Link href="/dashboard/products/new?fresh=1" className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition">
           + New Product
         </Link>
       </div>
@@ -25,7 +25,7 @@ export default async function ProductsPage() {
           <div className="w-14 h-14 bg-accent/10 rounded-2xl flex items-center justify-center text-accent text-2xl mx-auto mb-4">+</div>
           <h2 className="text-lg font-semibold text-foreground mb-2">No products yet</h2>
           <p className="text-sm text-muted mb-5">Register your first medical device or IVD product to start generating regulatory documents.</p>
-          <Link href="/dashboard/products/new" className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition inline-block">
+          <Link href="/dashboard/products/new?fresh=1" className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition inline-block">
             Create your first product
           </Link>
         </div>

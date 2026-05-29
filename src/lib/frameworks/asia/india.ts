@@ -2,7 +2,7 @@ import type { RegulatoryFramework } from "../types";
 
 export const IN_FRAMEWORKS: RegulatoryFramework[] = [
   {
-    id: "IN_DMF", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (IVD)",
+    id: "IN_DMF", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (IVD)", deviceType: "ivd",
     sections: [
       { id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
         { id: "1.1a", label: "Product Name", hint: "Full commercial name of the IVD medical device" },
@@ -100,7 +100,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
     ],
   },
   {
-    id: "IN_DMF_MD", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (Medical Device)",
+    id: "IN_DMF_MD", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (Medical Device)", deviceType: "medical-device",
     sections: [
       { id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
         { id: "1.1a", label: "Product Name", hint: "Full commercial name of the medical device" },

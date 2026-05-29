@@ -43,7 +43,9 @@ import { KE_FRAMEWORKS } from "./africa/kenya";
 import { PK_FRAMEWORKS } from "./south-asia/pakistan";
 import { BD_FRAMEWORKS } from "./south-asia/bangladesh";
 
-import type { RegulatoryFramework, RegionGroup } from "./types";
+import type { FrameworkDeviceType, RegulatoryFramework, RegionGroup } from "./types";
+
+export type { FrameworkDeviceType };
 
 export const FRAMEWORKS: RegulatoryFramework[] = [
   ...IN_FRAMEWORKS,
@@ -167,6 +169,52 @@ export function getFramework(id: string) {
 
 export function getFrameworksByCountry(countryCode: string) {
   return FRAMEWORKS.filter((f) => f.countryCode === countryCode);
+}
+
+/** Resolve IVD vs medical-device when framework has no explicit deviceType tag */
+function inferFrameworkDeviceType(fw: RegulatoryFramework): FrameworkDeviceType | "both" {
+  if (fw.deviceType) return fw.deviceType;
+
+  const id = fw.id.toUpperCase();
+  const doc = fw.documentType.toLowerCase();
+
+  if (
+    id.includes("IVDR") ||
+    /_IVD$/.test(id) ||
+    id.endsWith("_IVD") ||
+    doc.includes("(ivd)") ||
+    doc.includes("ivd registration") ||
+    (doc.includes("ivd") && !doc.includes("medical device"))
+  ) {
+    return "ivd";
+  }
+
+  if (
+    id.includes("_MDR") ||
+    id === "IN_DMF_MD" ||
+    doc.includes("(medical device)") ||
+    doc.includes("medical device registration")
+  ) {
+    return "medical-device";
+  }
+
+  return "both";
+}
+
+export function frameworkMatchesDeviceType(
+  fw: RegulatoryFramework,
+  productDeviceType: FrameworkDeviceType,
+): boolean {
+  const category = inferFrameworkDeviceType(fw);
+  if (category === "both") return productDeviceType === "medical-device";
+  return category === productDeviceType;
+}
+
+export function filterFrameworksByDeviceType(
+  frameworks: RegulatoryFramework[],
+  productDeviceType: FrameworkDeviceType,
+): RegulatoryFramework[] {
+  return frameworks.filter((fw) => frameworkMatchesDeviceType(fw, productDeviceType));
 }
 
 export function getAllCountryCodes(): string[] {

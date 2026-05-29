@@ -106,7 +106,7 @@ export default async function DashboardPage() {
 
           <div className="mt-6 pt-5 border-t border-border">
             <Link
-              href="/dashboard/products/new"
+              href="/dashboard/products/new?fresh=1"
               className="inline-flex items-center gap-2 px-5 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white font-semibold rounded-xl text-sm transition"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" strokeLinecap="round" /></svg>
@@ -141,7 +141,7 @@ export default async function DashboardPage() {
       {/* <div className="mb-8 space-y-4">
         <h2 className="text-sm font-semibold text-muted uppercase tracking-wide mb-3">Quick Actions</h2>
         <div className="grid sm:grid-cols-3 gap-3">
-          <Link href="/dashboard/products/new" className="bg-surface border border-border rounded-xl p-4 hover:border-[var(--accent)]/40 hover:shadow-sm transition group flex items-start gap-3">
+          <Link href="/dashboard/products/new?fresh=1" className="bg-surface border border-border rounded-xl p-4 hover:border-[var(--accent)]/40 hover:shadow-sm transition group flex items-start gap-3">
             <div className="w-10 h-10 bg-[var(--accent)]/10 rounded-lg flex items-center justify-center text-[var(--accent)] shrink-0 group-hover:bg-[var(--accent)]/20 transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 5v14m-7-7h14" strokeLinecap="round"/></svg>
             </div>

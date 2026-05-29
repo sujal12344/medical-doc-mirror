@@ -109,6 +109,11 @@ export async function POST(req: Request) {
       ...payload,
       userId: (user as Record<string, unknown>)._id,
     });
+    // Ensure every product has a stable namespace id.
+    if (!product.vectorNamespaceId) {
+      product.vectorNamespaceId = String(product._id);
+      await product.save();
+    }
     return NextResponse.json({ product }, { status: 201 });
   } catch (error) {
     if ((error as Error).message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

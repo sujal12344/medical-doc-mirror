@@ -94,7 +94,7 @@ export default function ClassificationWidget({ initialData }: { initialData: Rec
       </div>
 
       <Link
-        href="/dashboard/products/new"
+        href="/dashboard/products/new?fresh=1"
         className="mt-auto inline-flex items-center justify-center w-full px-3 py-2 text-[11px] font-semibold tracking-wide uppercase rounded-lg border border-border text-foreground hover:border-accent hover:text-accent hover:bg-accent/5 transition"
       >
         {doneCt === steps.length ? "Review registration" : "Register product"}

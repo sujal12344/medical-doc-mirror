@@ -29,7 +29,7 @@
 | Styling | Tailwind CSS **4** |
 | Path alias | `@/*` → `src/*` (`tsconfig.json`) |
 
-**Key dependencies:** `@pinecone-database/pinecone`, `openai`, `@google-cloud/storage`, `docxtemplater`, `pdf-parse`, `three-globe`.
+**Key dependencies:** `@pinecone-database/pinecone`, `openai`, `@google-cloud/storage`, `docxtemplater`, `pdf-parse`, `pdfjs-dist`, `@napi-rs/canvas`, `three-globe`.
 
 ---
 
@@ -180,7 +180,7 @@ nextjs-mongo-professional/
 | `medDevice` | `deviceType === "medical-device"` only | Part I: `isInvasive`, `invasionType`, `contactDuration`, risk flags, … |
 | `IVDdevice` | `deviceType === "ivd"` only | Part II: `ivdSelfTest`, `ivdTargetsHIV`, … |
 | `predDevice` | Always | Predicate / novel pathway: `predicateExists`, `md26Status`, … |
-| `classLock` | Always | Human lock: `classificationConfirmed`, `classificationLocked`, … + `classLock.ai` for RAG |
+| `classLock` | Always | Human lock + branch state: `classificationConfirmed`, `cdscoListStatus`, `claClarificationStatus`, `classificationLocked`, … + `classLock.ai` for RAG |
 
 **Rules:**
 - Never persist **both** `medDevice` and `IVDdevice` on one product.
@@ -200,6 +200,7 @@ nextjs-mongo-professional/
 | `mongodb.ts` | Cached Mongoose connection |
 | `env.ts` | `MONGODB_URI`, optional `OPENAI_API_KEY` |
 | `auth.ts` | `getSession()`, `requireAuth()` |
+| `documentExtract.ts` | PDF text extraction + OCR fallback (pdf-parse → pdfjs render → OpenAI Vision) |
 | `productMapper.ts` | Flat form ↔ nested Product; `$unset` wrong device section |
 | `classification/hybridQuery.ts` | Pinecone `product_{companyId}` + MDR rules + GPT classification |
 | `compliance-knowledge/` | Static country data (`data.ts`, `types.ts`, `index.ts`) |
@@ -250,12 +251,14 @@ southeast-asia/  singapore, thailand, indonesia, malaysia, philippines, vietnam,
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ Phase 1: /dashboard/products/new                                │
-│   1. Knowledge Base (optional): upload IFU → extract-text →     │
+│   1. Knowledge Base (optional): upload IFU → extract-text        │
+│      (pdf-parse text layer, OCR fallback for sparse/image PDFs)  │
 │      POST /api/products/autofill → Pinecone product_{userId}    │
 │   2. Product form: medDevice OR IVDdevice (by deviceType)       │
 │   3. Step 1.5 PredicatePathway: manual OR Auto Find Predicate   │
 │      → POST /api/products/predicate (CDSCO list + AI pick)      │
-│   4. ClassificationLock → confirm / lock classLock              │
+│   4. ClassificationLock: 1.6 listed/ambiguous →                 │
+│      1.7 CLA clarification (if ambiguous) → 1.8 lock            │
 │   5. POST /api/products (+ uploadedDocs when wired on create)   │
 │   6. Optional: POST /api/products/[id]/upload                     │
 └─────────────────────────────────────────────────────────────────┘
@@ -314,6 +317,16 @@ PINECONE_KEY
 PINECONE_INDEX          # product autofill (`product_{userId}`)
 PINECONE_INDEX2         # hybrid classification (`product_{userId}` + MDR rules index)
 PINECONE_EMBED_MODEL
+OPENAI_OCR_MODEL        # optional; defaults to OPENAI_MODEL
+PDF_OCR_ENABLED         # optional flag for OCR fallback
+OCR_MAX_PAGES           # optional OCR page cap
+OCR_RENDER_SCALE        # optional OCR render scale
+OCR_MAX_EDGE            # optional max OCR image dimension
+OCR_MAX_IMAGE_BYTES     # optional safety cap per OCR image
+PDF_MIN_TEXT_CHARS
+PDF_MIN_CHARS_PER_PAGE
+PDF_MIN_TEXT_MULTI_PAGE
+PDF_MIN_CHARS_PER_PAGE_MULTI
 # GCS vars used by upload-url / upload routes
 ```
 
@@ -388,8 +401,10 @@ Summary of work done in this iteration — use this when continuing sessions.
 
 - **Phase 0** (`/dashboard/business-genesis`): flowchart-aligned tabs **E→B→C→A→D** (steps 0.1–0.9), `computePhase0Completion`, `phase0Complete` on save.
 - **Knowledge Base** panel (collapsible): **+ Add knowledge** → upload product IFU/brochure → **Autofill Product from Document** only.
+- **Extract-text OCR fallback**: sparse/image PDFs now auto-run Vision OCR (`src/lib/documentExtract.ts`) with per-page retries and partial-page tolerance.
 - Product Information / Predicate sections no longer duplicate upload buttons.
 - **PredicatePathway**: **Auto Find Predicate Device** calls `/api/products/predicate` (intended use → CDSCO scrape → AI best match → fills `predDevice` fields).
+- **ClassificationLock branch parity with flowchart**: explicit **1.6 listed vs ambiguous**; if ambiguous then **1.7 CLA clarification** before **1.8 lock**.
 
 ### RAG / Pinecone
 

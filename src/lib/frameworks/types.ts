@@ -12,6 +12,8 @@ export type FrameworkSection = {
   fields: FrameworkField[];
 };
 
+export type FrameworkDeviceType = "ivd" | "medical-device";
+
 export type RegulatoryFramework = {
   id: string;
   countryCode: string;
@@ -19,6 +21,8 @@ export type RegulatoryFramework = {
   flag: string;
   authority: string;
   documentType: string;
+  /** When set, framework is only offered for matching product.deviceType */
+  deviceType?: FrameworkDeviceType;
   sections: FrameworkSection[];
 };
 

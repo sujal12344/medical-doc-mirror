@@ -132,6 +132,7 @@ export function flatToNestedProduct(flat: AnyDoc, existing?: Partial<ProductDocu
     patientPopulation: (flat.patientPopulation as string) ?? existing?.patientPopulation ?? "",
     deviceClass: (flat.deviceClass as ProductDocument["deviceClass"]) ?? existing?.deviceClass ?? "A",
     deviceType,
+    vectorNamespaceId: (flat.vectorNamespaceId as string) ?? existing?.vectorNamespaceId ?? "",
     countries: (flat.countries as string[]) ?? existing?.countries ?? ["IN"],
     status: (flat.status as ProductDocument["status"]) ?? existing?.status ?? "draft",
     isSterile: typeof flat.isSterile === "boolean" ? flat.isSterile : existing?.isSterile ?? false,

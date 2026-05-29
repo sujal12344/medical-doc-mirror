@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { REGION_GROUPS } from "@/lib/frameworks";
 import Phase1MiniFlowchart from "./Phase1MiniFlowchart";
@@ -12,12 +12,30 @@ import ClassificationLock from "./ClassificationLock";
 
 type UploadedFile = { fileId: string; originalName: string; charCount: number; status: "done" | "uploading" | "error" };
 
-const INDIA_ONLY_NOTICE = "India is pre-selected and required for MDR 2017 registration. Other markets can be added later once Phase 1 classification is locked.";
+const INDIA_ONLY_NOTICE =
+  "India is the required primary market for MDR 2017 / CDSCO registration. Additional jurisdictions can be added after Phase 1 classification is locked.";
+
+const DESCRIPTION_SUGGESTION_LABELS = [
+  "Analytical method",
+  "Product form",
+  "Technology & purpose",
+  "DMF-style summary",
+  "From document",
+  "Alternative",
+] as const;
+
+const UPCOMING_MARKETS = [
+  { flag: "🇪🇺", name: "European Union" },
+  { flag: "🇺🇸", name: "United States" },
+  { flag: "🇸🇬", name: "Singapore" },
+  { flag: "🇦🇺", name: "Australia" },
+] as const;
 
 const FIELD_INPUT_CLASS = "w-full px-3.5 py-2.5 border border-border rounded-xl bg-surface2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition";
 const LABEL_CLASS = "block text-sm font-medium mb-1.5 text-foreground";
 
 const DRAFT_KEY = "newproduct_draft";
+const NS_KEY = "newproduct_namespace_id";
 
 /** Normalise any deviceClass string to just the letter A/B/C/D */
 function normalizeDeviceClass(raw: string | undefined): "A" | "B" | "C" | "D" | "" {
@@ -26,8 +44,20 @@ function normalizeDeviceClass(raw: string | undefined): "A" | "B" | "C" | "D" | 
   return m ? (m[1] as "A" | "B" | "C" | "D") : "";
 }
 
+function clearRegistrationDraft() {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+    localStorage.removeItem(NS_KEY);
+  } catch {}
+}
+
 export default function NewProductPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const makeNamespaceId = () =>
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const [form, setForm] = useState({
     name: "", manufacturer: "", description: "", intendedUse: "",
@@ -112,14 +142,16 @@ export default function NewProductPage() {
   const [autofilling, setAutofilling] = useState(false);
   const [autofillDocName, setAutofillDocName] = useState("");
   const [autofillDone, setAutofillDone] = useState(false);
+  const [descriptionSuggestions, setDescriptionSuggestions] = useState<string[]>([]);
   const [extractMeta, setExtractMeta] = useState<{
     method: string;
     charCount: number;
     pageCount?: number;
     ocrPages?: number;
   } | null>(null);
-  const [search, setSearch] = useState("");
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
+  // Multi-country picker (re-enable when markets beyond India are supported)
+  // const [search, setSearch] = useState("");
+  // const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [productId, setProductId] = useState<string | null>(null);
@@ -128,24 +160,52 @@ export default function NewProductPage() {
   const [dragOver, setDragOver] = useState(false);
   const [specialOpen, setSpecialOpen] = useState(false);
   const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
+  const [productNamespaceId, setProductNamespaceId] = useState<string>(() => makeNamespaceId());
+  const [draftHydrated, setDraftHydrated] = useState(false);
 
   // ── Persist draft to localStorage ─────────────────────────────────────────
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(DRAFT_KEY);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setForm((prev) => ({ ...prev, ...parsed }));
+      const startFresh = searchParams.get("fresh") === "1";
+      if (startFresh) {
+        clearRegistrationDraft();
+        setProductNamespaceId(makeNamespaceId());
+        setDraftHydrated(true);
+        return;
       }
-    } catch {}
+
+      const saved = localStorage.getItem(DRAFT_KEY);
+      const savedNs = localStorage.getItem(NS_KEY);
+      if (saved && savedNs) {
+        const parsed = JSON.parse(saved);
+        setForm((prev) => ({ ...prev, ...parsed, countries: ["IN"] }));
+        setProductNamespaceId(savedNs);
+      } else {
+        // No in-progress draft — always use a new namespace for a new product
+        clearRegistrationDraft();
+        setProductNamespaceId(makeNamespaceId());
+      }
+    } catch {
+      setProductNamespaceId(makeNamespaceId());
+    } finally {
+      setDraftHydrated(true);
+    }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
+    if (!draftHydrated || productId) return;
     try {
       localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
     } catch {}
-  }, [form]);
+  }, [form, draftHydrated, productId]);
+
+  useEffect(() => {
+    if (!draftHydrated || !productNamespaceId || productId) return;
+    try {
+      localStorage.setItem(NS_KEY, productNamespaceId);
+    } catch {}
+  }, [productNamespaceId, draftHydrated, productId]);
 
   function upd(field: string, value: string | boolean | string[] | null) {
     setForm((p) => ({ ...p, [field]: value }));
@@ -195,18 +255,31 @@ export default function NewProductPage() {
 
     // Step 2: Send to autofill API (chunk → embed → upsert → RAG query → GPT)
     try {
+      const nsId = productNamespaceId || makeNamespaceId();
+      if (!productNamespaceId) setProductNamespaceId(nsId);
       const res = await fetch("/api/products/autofill", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ documentText: text, scope: "product" }),
+        body: JSON.stringify({ documentText: text, scope: "product", productNamespaceId: nsId }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Autofill failed");
+      if (typeof data.productNamespaceId === "string" && data.productNamespaceId) {
+        setProductNamespaceId(data.productNamespaceId);
+      }
+      const suggestions = Array.isArray(data.descriptionSuggestions)
+        ? data.descriptionSuggestions.filter((s: unknown): s is string => typeof s === "string" && s.trim().length > 0)
+        : [];
+      if (data.description?.trim() && !suggestions.some((s: string) => s.trim() === data.description.trim())) {
+        suggestions.unshift(data.description.trim());
+      }
+      setDescriptionSuggestions(suggestions.slice(0, 6));
+
       setForm((prev) => ({
         ...prev,
         name: data.name || prev.name,
         manufacturer: data.manufacturer || prev.manufacturer,
-        description: data.description || prev.description,
+        description: data.description || suggestions[0] || prev.description,
         intendedUse: data.intendedUse || prev.intendedUse,
         patientPopulation: data.patientPopulation || prev.patientPopulation,
         deviceClass: normalizeDeviceClass(data.deviceClass) || prev.deviceClass,
@@ -260,38 +333,19 @@ export default function NewProductPage() {
     }
   };
 
-  // ── Country helpers ─────────────────────────────────────────────────────────
-  function toggleCountry(code: string) {
-    if (code === "IN") return; // India locked
-    setForm((p) => ({
-      ...p,
-      countries: p.countries.includes(code) ? p.countries.filter((c) => c !== code) : [...p.countries, code],
-    }));
-  }
+  const indiaMarket = useMemo(() => {
+    for (const rg of REGION_GROUPS) {
+      const india = rg.countries.find((c) => c.code === "IN");
+      if (india) return india;
+    }
+    return { code: "IN", name: "India", flag: "🇮🇳", frameworkCount: 0 };
+  }, []);
 
-  function toggleRegion(region: string) {
-    setCollapsed((p) => ({ ...p, [region]: !p[region] }));
-  }
-
-  function selectAllInRegion(codes: string[]) {
-    setForm((p) => {
-      const newCountries = new Set(p.countries);
-      const unlocked = codes.filter((c) => c !== "IN");
-      const allSelected = unlocked.every((c) => newCountries.has(c));
-      if (allSelected) { unlocked.forEach((c) => newCountries.delete(c)); }
-      else { unlocked.forEach((c) => newCountries.add(c)); }
-      return { ...p, countries: [...newCountries] };
-    });
-  }
-
-  const filteredRegions = useMemo(() => {
-    const q = search.toLowerCase().trim();
-    if (!q) return REGION_GROUPS;
-    return REGION_GROUPS.map((rg) => ({
-      ...rg,
-      countries: rg.countries.filter((c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q)),
-    })).filter((rg) => rg.countries.length > 0);
-  }, [search]);
+  // ── Country helpers (multi-market — commented until post–Phase 1 lock) ─────
+  // function toggleCountry(code: string) { ... }
+  // function toggleRegion(region: string) { ... }
+  // function selectAllInRegion(codes: string[]) { ... }
+  // const filteredRegions = useMemo(() => { ... }, [search]);
 
   // ── Doc upload (post-create) ─────────────────────────────────────────────
   async function uploadFiles(pId: string, files: FileList | File[]) {
@@ -332,16 +386,15 @@ export default function NewProductPage() {
       const res = await fetch("/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, vectorNamespaceId: productNamespaceId || undefined }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed"); return; }
+      clearRegistrationDraft();
       setProductId(data.product._id);
     } catch { setError("Connection error"); }
     finally { setLoading(false); }
   }
-
-  const totalCountries = REGION_GROUPS.reduce((s, r) => s + r.countries.length, 0);
 
   function BoolToggle({ label, field, hint }: { label: string; field: "isSterile" | "hasSoftware" | "isActive" | "isInvasive"; hint: string }) {
     const val = form[field];
@@ -428,7 +481,7 @@ export default function NewProductPage() {
                 {autofillDone ? (
                   <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
                     ✅ {autofillDocName}
-                    <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); setExtractMeta(null); if (autofillInputRef.current) autofillInputRef.current.value = ""; }}
+                    <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); setExtractMeta(null); setDescriptionSuggestions([]); if (autofillInputRef.current) autofillInputRef.current.value = ""; }}
                       className="ml-1 text-muted hover:text-foreground">✕</button>
                   </div>
                 ) : autofilling ? (
@@ -480,9 +533,58 @@ export default function NewProductPage() {
 
           {/* Description */}
           <div>
-            <label className={LABEL_CLASS}>Description</label>
-            <textarea rows={2} value={form.description} onChange={(e) => upd("description", e.target.value)}
-              className={FIELD_INPUT_CLASS} placeholder="Brief description of the device, its purpose and technology" />
+            <div className="flex items-center justify-between gap-2 mb-1.5">
+              <label className={LABEL_CLASS + " mb-0"}>Description</label>
+              {descriptionSuggestions.length > 0 && (
+                <span className="text-[10px] font-medium text-accent px-2 py-0.5 rounded-full bg-accent/10 border border-accent/20">
+                  {descriptionSuggestions.length} AI suggestions
+                </span>
+              )}
+            </div>
+            <textarea
+              rows={3}
+              value={form.description}
+              onChange={(e) => upd("description", e.target.value)}
+              className={FIELD_INPUT_CLASS}
+              placeholder="Brief description of the device, its purpose and technology (CDSCO DMF §1.1b)"
+            />
+            {descriptionSuggestions.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <p className="text-[11px] text-muted leading-relaxed">
+                  Pick a suggested description from your uploaded document, or edit the field above.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {descriptionSuggestions.map((suggestion, i) => {
+                    const selected = form.description.trim() === suggestion.trim();
+                    const label = DESCRIPTION_SUGGESTION_LABELS[i] ?? `Option ${i + 1}`;
+                    return (
+                      <button
+                        key={`${i}-${suggestion.slice(0, 32)}`}
+                        type="button"
+                        onClick={() => upd("description", suggestion)}
+                        className={`text-left p-3 rounded-xl border transition ${
+                          selected
+                            ? "border-accent bg-accent/5 ring-1 ring-accent/25"
+                            : "border-border bg-surface2/50 hover:border-accent/35 hover:bg-accent/5"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-1.5">
+                          <span className={`text-[10px] font-bold uppercase tracking-wide ${selected ? "text-accent" : "text-muted"}`}>
+                            {label}
+                          </span>
+                          {selected && (
+                            <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded bg-accent/15 text-accent">
+                              Applied
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-foreground leading-relaxed line-clamp-4">{suggestion}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Intended Use */}
@@ -553,7 +655,7 @@ export default function NewProductPage() {
         </div>
 
         {/* Step 1.5 — Predicate Device & Regulatory Pathway */}
-        <div className={`bg-surface border border-border rounded-2xl p-6 ${productId ? "opacity-60 pointer-events-none" : ""}`}>
+        <div className={`bg-surface border border-border rounded-2xl p-6 min-w-0 overflow-hidden ${productId ? "opacity-60 pointer-events-none" : ""}`}>
           <PredicatePathway form={form} upd={upd} productId={productId} />
         </div>
 
@@ -564,76 +666,101 @@ export default function NewProductPage() {
           </div>
         )}
 
-        {/* Target Markets */}
-
-        <div className="bg-surface border border-border rounded-2xl p-6">
-          <div className="flex items-center justify-between mb-1">
+        {/* Target Markets — Phase 1: India only (MDR 2017 / CDSCO) */}
+        <div className="bg-surface border border-border rounded-2xl p-6 space-y-5">
+          <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide">Target Markets *</h2>
-              <p className="text-xs text-muted mt-0.5">{form.countries.length} of {totalCountries} countries selected</p>
+              <p className="text-xs text-muted mt-0.5">
+                Primary regulatory jurisdiction for this product registration
+              </p>
+            </div>
+            <span className="shrink-0 text-[10px] px-2 py-1 rounded-lg bg-surface2 border border-border text-muted font-semibold">
+              1 active
+            </span>
+          </div>
+
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-accent/20 bg-accent/5 text-[11px] text-foreground leading-relaxed">
+            <span className="shrink-0 mt-0.5 text-base" aria-hidden>🇮🇳</span>
+            <p>{INDIA_ONLY_NOTICE}</p>
+          </div>
+
+          <div className="rounded-xl border-2 border-accent/35 bg-linear-to-br from-accent/6 via-surface to-surface overflow-hidden">
+            <div className="px-4 py-3 border-b border-accent/15 bg-accent/4 flex items-center justify-between gap-3">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-accent">Primary market</span>
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-accent/10 text-accent border border-accent/25">
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" aria-hidden>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+                Locked
+              </span>
+            </div>
+
+            <div className="p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center gap-4 min-w-0">
+                <div
+                  className="w-14 h-14 shrink-0 rounded-2xl bg-surface border border-border shadow-sm flex items-center justify-center text-3xl"
+                  aria-hidden
+                >
+                  {indiaMarket.flag}
+                </div>
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-base font-semibold text-foreground">{indiaMarket.name}</h3>
+                    <span className="text-[10px] font-mono font-medium px-1.5 py-0.5 rounded bg-surface2 border border-border text-muted">
+                      {indiaMarket.code}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted mt-0.5">CDSCO · Medical Devices Rules, 2017 (India)</p>
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-green-50 text-green-800 border border-green-200">
+                      MDR 2017
+                    </span>
+                    {indiaMarket.frameworkCount > 0 && (
+                      <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-surface2 text-muted border border-border">
+                        {indiaMarket.frameworkCount} dossier framework{indiaMarket.frameworkCount !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                      Selected
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="shrink-0 sm:text-right">
+                <div className="text-[10px] uppercase tracking-wide text-muted font-semibold">Status</div>
+                <div className="text-sm font-semibold text-foreground mt-0.5">Ready for registration</div>
+              </div>
             </div>
           </div>
 
-          {/* India locked banner */}
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-2.5 mb-4 text-xs text-blue-700">
-            <span>🇮🇳</span>
-            <span><strong>India is pre-selected and locked.</strong> {INDIA_ONLY_NOTICE}</span>
+          <div className="pt-1 border-t border-border/80">
+            <p className="text-[11px] font-medium text-muted mb-2">
+              Additional markets
+              <span className="font-normal text-muted/80"> — available after Phase 1 classification lock</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {UPCOMING_MARKETS.map((m) => (
+                <span
+                  key={m.name}
+                  title="Available after Phase 1 classification is locked"
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-border/60 bg-surface2/80 text-xs text-muted opacity-60 cursor-not-allowed"
+                >
+                  <span aria-hidden>{m.flag}</span>
+                  <span>{m.name}</span>
+                  <span className="text-[9px] uppercase tracking-wide font-semibold">Soon</span>
+                </span>
+              ))}
+            </div>
           </div>
 
-          <div className="mb-4">
-            <input type="text" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search countries..."
-              className={FIELD_INPUT_CLASS} />
-          </div>
-
-          <div className="space-y-2">
-            {filteredRegions.map((rg) => {
-              const regionCodes = rg.countries.map((c) => c.code);
-              const selectedInRegion = regionCodes.filter((c) => form.countries.includes(c)).length;
-              const isCollapsed = collapsed[rg.region] ?? false;
-
-              return (
-                <div key={rg.region} className="border border-border rounded-xl overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-2.5 bg-surface2">
-                    <button type="button" onClick={() => toggleRegion(rg.region)} className="flex items-center gap-2 text-sm font-semibold text-foreground">
-                      <svg className={`w-3.5 h-3.5 text-muted transition-transform ${isCollapsed ? "" : "rotate-90"}`} fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                      {rg.region}
-                      <span className="text-xs text-muted font-normal">({rg.countries.length} countries)</span>
-                    </button>
-                    <div className="flex items-center gap-2">
-                      {selectedInRegion > 0 && (
-                        <span className="text-[10px] px-2 py-0.5 bg-accent/10 text-accent rounded-full font-semibold">{selectedInRegion} selected</span>
-                      )}
-                      <button type="button" onClick={() => selectAllInRegion(regionCodes)}
-                        className="text-[10px] px-2 py-0.5 text-muted hover:text-accent font-medium transition">
-                        {regionCodes.filter(c => c !== "IN").every((c) => form.countries.includes(c)) ? "Deselect all" : "Select all"}
-                      </button>
-                    </div>
-                  </div>
-
-                  {!isCollapsed && (
-                    <div className="px-3 py-2 flex flex-wrap gap-1.5">
-                      {rg.countries.map((c) => {
-                        const isIndia = c.code === "IN";
-                        return (
-                          <button key={c.code} type="button" onClick={() => toggleCountry(c.code)}
-                            disabled={!isIndia}
-                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border transition ${
-                              isIndia
-                                ? "bg-blue-50 border-blue-300 text-blue-700 cursor-not-allowed"
-                                : "bg-surface2 border-border text-muted opacity-40 cursor-not-allowed"
-                            }`}>
-                            <span>{c.flag}</span>
-                            <span>{c.name}</span>
-                            {isIndia && <span className="text-[9px] bg-blue-100 px-1 rounded font-bold">SELECTED</span>}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+          {/*
+          Multi-country picker — restore when additional markets are enabled post–Phase 1 lock:
+          - search / collapsed state
+          - toggleCountry, toggleRegion, selectAllInRegion, filteredRegions
+          - region accordion with filteredRegions.map(...)
+          */}
         </div>
 
 

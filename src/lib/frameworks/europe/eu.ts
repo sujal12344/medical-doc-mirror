@@ -7,6 +7,7 @@ const EU_MDR: RegulatoryFramework = {
   flag: "🇪🇺",
   authority: "MDR 2017/745",
   documentType: "Technical Documentation (Medical Device)",
+  deviceType: "medical-device",
   sections: [
     {
       id: "device_description",
@@ -503,6 +504,7 @@ const EU_IVDR: RegulatoryFramework = {
   flag: "🇪🇺",
   authority: "IVDR 2017/746",
   documentType: "Technical Documentation (IVD)",
+  deviceType: "ivd",
   sections: [
     {
       id: "device_description",

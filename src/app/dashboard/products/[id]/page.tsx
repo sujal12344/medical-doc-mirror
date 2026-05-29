@@ -5,7 +5,8 @@ import { getSession } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Product } from "@/models/Product";
 import { RegulatoryDocument } from "@/models/Document";
-import { FRAMEWORKS, REGION_GROUPS } from "@/lib/frameworks";
+import { FRAMEWORKS, REGION_GROUPS, filterFrameworksByDeviceType } from "@/lib/frameworks";
+import type { FrameworkDeviceType } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
 import ProductDetailsButton from "../../../../components/ProductDetailsButton";
 
@@ -19,7 +20,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   if (!product) notFound();
 
   const docs = await RegulatoryDocument.find({ productId: id }).sort({ updatedAt: -1 }).lean();
-  const availableFrameworks = FRAMEWORKS.filter((f) => product.countries.includes(f.countryCode));
+  const productDeviceType: FrameworkDeviceType =
+    product.deviceType === "ivd" ? "ivd" : "medical-device";
+  const availableFrameworks = filterFrameworksByDeviceType(
+    FRAMEWORKS.filter((f) => product.countries.includes(f.countryCode)),
+    productDeviceType,
+  );
   const uploadedDocs = (product.uploadedDocs || []) as { fileId: string; originalName: string; extractedText: string; uploadedAt: Date }[];
   const hasUploadedDocs = uploadedDocs.length > 0;
 
@@ -83,14 +89,25 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
 
       {/* Generate Regulatory Documents — grouped by country */}
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-foreground">Generate Regulatory Document</h2>
-          <span className="text-xs text-muted">{availableFrameworks.length} framework{availableFrameworks.length !== 1 ? "s" : ""} available</span>
+        <div className="flex items-center justify-between mb-4 gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-foreground">Generate Regulatory Document</h2>
+            <p className="text-xs text-muted mt-0.5">
+              Showing {productDeviceType === "ivd" ? "IVD" : "medical device"} dossier types only
+              {productDeviceType === "ivd" ? " (e.g. DMF for India)" : ""}.
+            </p>
+          </div>
+          <span className="text-xs text-muted shrink-0">
+            {availableFrameworks.length} framework{availableFrameworks.length !== 1 ? "s" : ""} available
+          </span>
         </div>
 
         {availableFrameworks.length === 0 ? (
           <p className="text-sm text-muted bg-surface border border-border rounded-xl p-6 text-center">
-            No frameworks available. Go back and add target countries to this product.
+            No {productDeviceType === "ivd" ? "IVD" : "medical device"} frameworks for the selected countries.
+            {productDeviceType === "ivd"
+              ? " For India, use Device Master File (IVD). Add target countries on the product if needed."
+              : " Go back and add target countries to this product."}
           </p>
         ) : (
           <div className="space-y-4">

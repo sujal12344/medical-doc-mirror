@@ -2,7 +2,7 @@ import type { RegulatoryFramework } from "../types";
 
 export const CN_FRAMEWORKS: RegulatoryFramework[] = [
   {
-    id: "CN_NMPA_II", countryCode: "CN", countryName: "China", flag: "🇨🇳", authority: "NMPA", documentType: "Class II Registration",
+    id: "CN_NMPA_II", countryCode: "CN", countryName: "China", flag: "🇨🇳", authority: "NMPA", documentType: "Class II Registration", deviceType: "medical-device",
     sections: [
       { id: "admin", title: "Administrative Information", description: "Applicant, agent, and device identification", fields: [
         { id: "applicant", label: "Applicant Information", hint: "Manufacturer name, address, unified social credit code" },
@@ -81,7 +81,7 @@ export const CN_FRAMEWORKS: RegulatoryFramework[] = [
     ],
   },
   {
-    id: "CN_NMPA_III", countryCode: "CN", countryName: "China", flag: "🇨🇳", authority: "NMPA", documentType: "Class III Registration",
+    id: "CN_NMPA_III", countryCode: "CN", countryName: "China", flag: "🇨🇳", authority: "NMPA", documentType: "Class III Registration", deviceType: "medical-device",
     sections: [
       { id: "admin", title: "Administrative Information", description: "Applicant, agent, and device identification", fields: [
         { id: "applicant", label: "Applicant Information", hint: "Manufacturer name, address, unified social credit code, and legal representative" },
@@ -171,7 +171,7 @@ export const CN_FRAMEWORKS: RegulatoryFramework[] = [
     ],
   },
   {
-    id: "CN_NMPA_IVD", countryCode: "CN", countryName: "China", flag: "🇨🇳", authority: "NMPA", documentType: "IVD Registration",
+    id: "CN_NMPA_IVD", countryCode: "CN", countryName: "China", flag: "🇨🇳", authority: "NMPA", documentType: "IVD Registration", deviceType: "ivd",
     sections: [
       { id: "admin", title: "Administrative Information", description: "Applicant, agent, and IVD device identification", fields: [
         { id: "applicant", label: "Applicant Information", hint: "IVD manufacturer name, address, and unified social credit code" },

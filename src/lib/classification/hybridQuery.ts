@@ -27,10 +27,11 @@ export type ClassificationOutput = {
 export async function runHybridClassification(input: {
   companyId: string;
   productId?: string;
+  vectorNamespaceId?: string;
   deviceDescription: string;
   existingProductData?: object;
 }): Promise<ClassificationOutput> {
-  const { companyId, productId, deviceDescription, existingProductData } = input;
+  const { companyId, productId, vectorNamespaceId, deviceDescription, existingProductData } = input;
 
   // Initialize clients
   const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
@@ -50,16 +51,19 @@ export async function runHybridClassification(input: {
     let deviceContext = "";
 
     try {
-      const productNs = index.namespace(`product_${companyId}`);
-      const productMatches = await productNs.query({
-        vector: queryVector,
-        topK: 5,
-        includeMetadata: true,
-      });
-      if (productMatches.matches.length > 0) {
-        deviceContext =
-          "Product document context:\n" +
-          productMatches.matches.map((m) => m.metadata?.text || "").join("\n\n");
+      const nsProductId = vectorNamespaceId || productId;
+      if (nsProductId) {
+        const productNs = index.namespace(`product_${companyId}_${nsProductId}`);
+        const productMatches = await productNs.query({
+          vector: queryVector,
+          topK: 5,
+          includeMetadata: true,
+        });
+        if (productMatches.matches.length > 0) {
+          deviceContext =
+            "Product document context:\n" +
+            productMatches.matches.map((m) => m.metadata?.text || "").join("\n\n");
+        }
       }
     } catch (err) {
       console.warn("Could not fetch product namespace context, skipping.", err);

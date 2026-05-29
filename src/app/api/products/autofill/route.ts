@@ -6,7 +6,6 @@ import { Pinecone } from "@pinecone-database/pinecone";
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const pc = new Pinecone({ apiKey: process.env.PINECONE_KEY! });
 
-// Same index as hybridQuery.ts — product_{userId} namespace
 const INDEX_NAME = process.env.PINECONE_INDEX!;
 const MIN_SCORE = 0.1;
 const CHUNK_SIZE = 1500;
@@ -37,6 +36,14 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
   return res.data.map((d) => d.embedding);
 }
 
+function normalizeNamespaceProductId(input: unknown): string | null {
+  if (typeof input !== "string") return null;
+  const trimmed = input.trim();
+  if (!trimmed) return null;
+  const safe = trimmed.replace(/[^a-zA-Z0-9_-]/g, "");
+  return safe || null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     const token = await getToken({ req });
@@ -45,10 +52,11 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json();
     const documentText = body.documentText as string;
+    const suppliedNamespaceProductId = normalizeNamespaceProductId(body.productNamespaceId);
 
     if (!documentText?.trim()) return NextResponse.json({ error: "No document text provided" }, { status: 400 });
 
-    return await runProductAutofill(userId, documentText);
+    return await runProductAutofill(userId, documentText, suppliedNamespaceProductId);
   } catch (error: unknown) {
     console.error("[autofill] RAG error:", error);
     const message = error instanceof Error ? error.message : "Autofill failed";
@@ -59,6 +67,7 @@ export async function POST(req: NextRequest) {
 async function upsertChunks(
   userId: string,
   namespace: string,
+  productNamespaceId: string,
   purpose: string,
   docId: string,
   chunks: string[],
@@ -70,7 +79,7 @@ async function upsertChunks(
     const vectors = batch.map((text, j) => ({
       id: `${docId}_chunk_${i + j}`,
       values: embeddings[j],
-      metadata: { text, userId, purpose, docId },
+      metadata: { text, userId, productNamespaceId, purpose, docId },
     }));
     await index.upsert({ records: vectors });
   }
@@ -84,6 +93,7 @@ async function retrieveContexts(
   queries: string[],
   labels: string[],
   userId: string,
+  productNamespaceId: string,
   purpose: string,
   docId: string,
 ) {
@@ -99,7 +109,7 @@ async function retrieveContexts(
       vector: queryEmbeds[i],
       topK: 5,
       includeMetadata: true,
-      filter: { userId, purpose, docId },
+      filter: { userId, productNamespaceId, purpose, docId },
     });
 
     console.log(`\n[autofill] Query ${i + 1}: "${labels[i]}"`);
@@ -115,13 +125,58 @@ async function retrieveContexts(
   return contexts;
 }
 
-async function runProductAutofill(userId: string, documentText: string) {
+/** Ensure at least 4 distinct description options for the registration UI */
+function buildDescriptionSuggestions(
+  primary: string,
+  fromModel: unknown,
+  extraSources: string[],
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  const push = (s: string) => {
+    const t = s.replace(/\s+/g, " ").trim();
+    if (t.length < 24) return;
+    const key = t.toLowerCase().slice(0, 80);
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push(t);
+  };
+
+  if (Array.isArray(fromModel)) {
+    for (const item of fromModel) {
+      if (typeof item === "string") push(item);
+    }
+  }
+
+  if (primary?.trim()) push(primary.trim());
+
+  for (const source of extraSources) {
+    if (!source?.trim()) continue;
+    const sentences = source
+      .split(/(?<=[.!?])\s+/)
+      .map((s) => s.replace(/\s+/g, " ").trim())
+      .filter((s) => s.length >= 40 && s.length <= 420);
+    for (const s of sentences) {
+      push(s);
+      if (out.length >= 8) break;
+    }
+    if (out.length >= 8) break;
+  }
+
+  return out.slice(0, 6);
+}
+
+async function runProductAutofill(userId: string, documentText: string, suppliedNamespaceProductId: string | null) {
   const chunks = chunkText(documentText);
   console.log(`[autofill:product] ${chunks.length} chunks from ${documentText.length} chars`);
 
-  const NAMESPACE = `product_${userId}`;
-  const docId = `product_${userId}_${Date.now()}`;
-  const index = await upsertChunks(userId, NAMESPACE, "autofill", docId, chunks);
+  // Option B: strict product-level namespace product_${userId}_${productNamespaceId}
+  // Before DB product exists we use a generated temporary productNamespaceId and return it to client.
+  const productNamespaceId = suppliedNamespaceProductId ?? `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+  const namespace = `product_${userId}_${productNamespaceId}`;
+  const docId = `${productNamespaceId}_${Date.now()}`;
+  const index = await upsertChunks(userId, namespace, productNamespaceId, "autofill", docId, chunks);
 
   const queries = [
       "product name trade name manufacturer company name brand",
@@ -129,10 +184,18 @@ async function runProductAutofill(userId: string, documentText: string) {
       "sterile active invasive software drug combination IVD in-vitro diagnostic classification class",
       "surgical implant body orifice contact duration invasive CNS cardiac life support radiation drug delivery absorbed tissue",
       "blood donor screening HIV hepatitis HBsAg HCV HTLV malaria syphilis CMV blood grouping ABO Rh self-test near-patient point of care genetic testing drug monitoring tumour marker cancer HLA fertility prenatal",
+      "device description product summary principle technology method reagent kit composition mechanism analytical colorimetric enzymatic",
     ];
 
-  const QUERY_LABELS = ["Identity (name/manufacturer)", "Intended Use / Patient Pop", "Classification characteristics", "Invasion / Risk flags", "IVD Part II context"];
-  const contexts = await retrieveContexts(index, queries, QUERY_LABELS, userId, "autofill", docId);
+  const QUERY_LABELS = [
+    "Identity (name/manufacturer)",
+    "Intended Use / Patient Pop",
+    "Classification characteristics",
+    "Invasion / Risk flags",
+    "IVD Part II context",
+    "Device description",
+  ];
+  const contexts = await retrieveContexts(index, queries, QUERY_LABELS, userId, productNamespaceId, "autofill", docId);
 
   const ragBlock = contexts
     .map((c, i) => `[Context ${i + 1} — ${QUERY_LABELS[i]}]\n${c}`)
@@ -160,12 +223,19 @@ async function runProductAutofill(userId: string, documentText: string) {
 Extract product registration fields from the provided IFU / brochure document excerpts.
 You MUST populate "intendedUse" and "description" when any indication, purpose, principle, or product summary appears in the document.
 intendedUse = clinical/indication statement (what the test detects, specimen, setting).
-description = short technical summary (kit type, method e.g. ELISA/CLIA, analyte e.g. HBsAg).
+description = your single best technical summary (kit type, method e.g. ELISA/CLIA/colorimetric, analyte).
+descriptionSuggestions = REQUIRED array of at least 4 distinct one- to three-sentence device descriptions from the document, each a complete regulatory-style statement. Use different angles when the document allows:
+  (1) Analytical method — principle, reagent, measurement conditions (e.g. colorimetric at stated pH)
+  (2) Product form — kit type, components, specimen/material
+  (3) Technology & purpose — what is measured and how at a high level
+  (4) CDSCO DMF section 1.1b style — formal device description for master file
+Do not repeat the same wording across suggestions. Set "description" to the best single option (usually matches suggestion 1).
 Return ONLY valid raw JSON with exactly these keys (use empty string or false if not found):
 {
   "name": string,
   "manufacturer": string,
   "description": string,
+  "descriptionSuggestions": string[],
   "intendedUse": string,
   "patientPopulation": string,
   "deviceClass": "A" | "B" | "C" | "D" | "",
@@ -300,6 +370,17 @@ IVD PART II FIELDS (First Schedule Part II, MDR 2017 — only set for deviceType
 
     const parsed = JSON.parse(completion.choices[0].message.content || "{}");
 
+    const descriptionContext = contexts[QUERY_LABELS.length - 1] ?? "";
+    const descriptionSuggestions = buildDescriptionSuggestions(
+      typeof parsed.description === "string" ? parsed.description : "",
+      parsed.descriptionSuggestions,
+      [descriptionContext, documentText],
+    );
+    parsed.descriptionSuggestions = descriptionSuggestions;
+    if (!parsed.description?.trim() && descriptionSuggestions[0]) {
+      parsed.description = descriptionSuggestions[0];
+    }
+
     console.log(`\n[autofill] ── EXTRACTED FIELDS ──`);
     console.log(`[autofill]   name              : ${parsed.name || "(not found)"}`);
     console.log(`[autofill]   manufacturer      : ${parsed.manufacturer || "(not found)"}`);
@@ -334,8 +415,12 @@ IVD PART II FIELDS (First Schedule Part II, MDR 2017 — only set for deviceType
     console.log(`[autofill]   ivdSpecial Drug/Cancer             : ${parsed.ivdDrugMonitoring}/${parsed.ivdCancerMarkers}`);
     console.log(`[autofill]   intendedUse        : ${(parsed.intendedUse || "(not found)").slice(0, 100)}…`);
     console.log(`[autofill]   description        : ${(parsed.description || "(not found)").slice(0, 100)}…`);
+    console.log(`[autofill]   descriptionSuggestions: ${descriptionSuggestions.length} option(s)`);
+    descriptionSuggestions.slice(0, 4).forEach((s: string, i: number) => {
+      console.log(`[autofill]     [${i + 1}] ${s.slice(0, 90)}…`);
+    });
   console.log(`[autofill:product]   chunksIndexed: ${chunks.length}`);
   console.log(`${"─".repeat(60)}\n`);
 
-  return NextResponse.json({ ...parsed, chunksIndexed: chunks.length });
+  return NextResponse.json({ ...parsed, chunksIndexed: chunks.length, productNamespaceId, namespace });
 }

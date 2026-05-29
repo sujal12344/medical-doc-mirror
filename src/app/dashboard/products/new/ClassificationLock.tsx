@@ -313,7 +313,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
               onClick={() => upd("classificationLocked", !form.classificationLocked)}
               className={`w-full py-2.5 rounded-xl text-xs font-bold border-2 transition ${
                 form.classificationLocked
-                  ? "bg-purple-600 border-purple-600 text-white"
+                  ? "bg-accent border-accent text-white"
                   : "border-purple-300 text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed"
               }`}>
               {form.classificationLocked ? "🔒 Classification Locked" : "🔓 Lock Classification"}

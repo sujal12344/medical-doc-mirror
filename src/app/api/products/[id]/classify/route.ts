@@ -43,6 +43,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     const result = await runHybridClassification({
       companyId,
       productId: id,
+      vectorNamespaceId: product.vectorNamespaceId,
       deviceDescription: fullDeviceDescription,
       existingProductData: {
         name: product.name,

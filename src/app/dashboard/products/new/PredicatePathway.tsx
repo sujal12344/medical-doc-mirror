@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type PathwayForm = {
   intendedUse: string;
   deviceType: string;
@@ -19,6 +21,16 @@ type PathwayForm = {
 };
 
 type Upd = (field: string, value: string | boolean | null) => void;
+
+type PredicateSuggestion = {
+  rank: number;
+  reason: string;
+  name: string;
+  manufacturer: string;
+  regNo: string;
+  intendedUse: string;
+  deviceClass: string;
+};
 
 const FIELD = "w-full px-3 py-2 border border-border rounded-xl bg-surface2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition";
 const LABEL = "block text-xs font-medium text-foreground mb-1";
@@ -45,9 +57,97 @@ function StatusSelect({ field, value, upd }: { field: string; value: string; upd
 export default function PredicatePathway({ form, upd, productId }: { form: PathwayForm; upd: Upd, productId: string | null }) {
   const { predicateExists } = form;
   const isHighRisk = ["C", "D"].includes(form.deviceClass);
+  const [predicateLoading, setPredicateLoading] = useState(false);
+  const [searchImportList, setSearchImportList] = useState(false);
+  const [predicateSuggestions, setPredicateSuggestions] = useState<PredicateSuggestion[]>([]);
+  const [predicateSearchMeta, setPredicateSearchMeta] = useState<{
+    keyword: string;
+    total: number;
+    listType: "import" | "manufacturer";
+  } | null>(null);
+
+  function applyPredicateSuggestion(suggestion: PredicateSuggestion) {
+    upd("predicateExists", true);
+    upd("predicateName", suggestion.name);
+    upd("predicateManufacturer", suggestion.manufacturer);
+    upd("predicateRegNo", suggestion.regNo);
+    upd("predicateClass", suggestion.deviceClass);
+    upd("predicateBasis", suggestion.reason || "Auto-matched using intended use similarity");
+  }
+
+  async function handleAutoFindPredicate() {
+    let intendedUse = form.intendedUse?.trim();
+    if (!intendedUse) {
+      try {
+        const draft = localStorage.getItem("newproduct_draft");
+        if (draft) {
+          const parsed = JSON.parse(draft);
+          intendedUse = (parsed.intendedUse || "").trim();
+        }
+      } catch {}
+    }
+
+    if (!intendedUse) {
+      alert("Please enter the Intended Use/Claims above first.");
+      return;
+    }
+
+    setPredicateLoading(true);
+    setPredicateSuggestions([]);
+    setPredicateSearchMeta(null);
+    try {
+      const res = await fetch("/api/products/predicate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          intendedUse,
+          cdscoListType: searchImportList ? "import" : "manufacturer",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "No match found");
+        return;
+      }
+
+      const suggestions: PredicateSuggestion[] = Array.isArray(data.matches) && data.matches.length > 0
+        ? data.matches
+        : data.match
+          ? [{
+              rank: 1,
+              reason: data.matchReason || "Best CDSCO match",
+              name: data.match.name,
+              manufacturer: data.match.manufacturer,
+              regNo: data.match.regNo,
+              intendedUse: data.match.intendedUse || "",
+              deviceClass: data.match.deviceClass,
+            }]
+          : [];
+
+      if (suggestions.length === 0) {
+        alert("No predicate suggestions returned");
+        return;
+      }
+
+      setPredicateSuggestions(suggestions);
+      setPredicateSearchMeta({
+        keyword: data.searchKeyword || "",
+        total: data.totalDevicesScraped ?? 0,
+        listType: data.cdscoListType === "import" ? "import" : "manufacturer",
+      });
+      applyPredicateSuggestion(suggestions[0]);
+    } catch (error) {
+      console.error(error);
+      alert("Failed to auto-fill predicate device");
+    } finally {
+      setPredicateLoading(false);
+    }
+  }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 min-w-0 max-w-full">
       {/* Header */}
       <div className="flex items-start justify-between gap-4">
         <div>
@@ -57,64 +157,134 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
         <span className="shrink-0 text-[10px] px-2 py-1 rounded-lg bg-surface2 border border-border text-muted font-semibold">1.5</span>
       </div>
 
-      <button
-        type="button"
-        onClick={async () => {
-          // Read intendedUse from form state; fallback to localStorage draft
-          let intendedUse = form.intendedUse?.trim();
-          if (!intendedUse) {
-            try {
-              const draft = localStorage.getItem("newproduct_draft");
-              if (draft) {
-                const parsed = JSON.parse(draft);
-                intendedUse = (parsed.intendedUse || "").trim();
-              }
-            } catch {}
-          }
+      <div className="space-y-3 min-w-0 max-w-full">
+        <div className="flex items-start justify-between gap-4 px-3 py-2.5 rounded-xl border border-border bg-surface2/40">
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold text-foreground">CDSCO Import list</p>
+            <p className="text-[10px] text-muted mt-0.5 leading-relaxed">
+              {searchImportList
+                ? "Search approved devices under Import (loadAppsImport / #impPre)."
+                : "Search approved devices under Manufacturer (default)."}
+            </p>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={searchImportList}
+            disabled={predicateLoading}
+            onClick={() => {
+              setSearchImportList((v) => !v);
+              setPredicateSuggestions([]);
+              setPredicateSearchMeta(null);
+            }}
+            className={`relative shrink-0 mt-0.5 w-10 h-5 rounded-full transition-colors disabled:opacity-50 ${
+              searchImportList ? "bg-accent" : "bg-surface2 border border-border"
+            }`}
+          >
+            <span
+              className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${
+                searchImportList ? "left-[22px]" : "left-0.5"
+              }`}
+            />
+          </button>
+        </div>
 
-          if (!intendedUse) {
-            alert("Please enter the Intended Use/Claims above first.");
-            return;
-          }
+        <button
+          type="button"
+          onClick={handleAutoFindPredicate}
+          disabled={predicateLoading}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface2 text-gray-500 text-xs font-semibold hover:bg-white border border-gray-400 transition disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-surface2"
+        >
+          {predicateLoading ? (
+            <>
+              <span className="w-3.5 h-3.5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin shrink-0" />
+              Searching CDSCO list…
+            </>
+          ) : (
+            <>🔍 Auto Find Predicate ({searchImportList ? "Import" : "Manufacturer"})</>
+          )}
+        </button>
+        {predicateLoading && (
+          <p className="text-[11px] text-muted flex items-center gap-1.5">
+            <span className="w-2.5 h-2.5 border border-muted/40 border-t-muted rounded-full animate-spin shrink-0" />
+            Scraping CDSCO {searchImportList ? "Import" : "Manufacturer"} list and matching by intended use — this may take a minute.
+          </p>
+        )}
 
-          try {
-            const res = await fetch(
-              `/api/products/predicate`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ intendedUse }),
-              }
-            );
-
-            const data = await res.json();
-
-            if (!data.success) {
-              alert(data.message || "No match found");
-              return;
-            }
-
-            upd("predicateExists", true);
-            upd("predicateName", data.match.name);
-            upd("predicateManufacturer", data.match.manufacturer);
-            upd("predicateRegNo", data.match.regNo);
-            // deviceClass is already normalised to "A"/"B"/"C"/"D" by the API
-            upd("predicateClass", data.match.deviceClass);
-            upd(
-              "predicateBasis",
-              `Auto-matched using intended use similarity`
-            );
-
-            alert("Predicate device auto-filled");
-          } catch (error) {
-            console.error(error);
-            alert("Failed to auto-fill predicate device");
-          }
-        }}
-        className="px-4 py-2 rounded-xl bg-surface2 text-gray-500 text-xs font-semibold hover:bg-white border border-gray-400 transition"
-      >
-        🔍 Auto Find Predicate Device
-      </button>
+        {predicateSuggestions.length > 0 && !predicateLoading && (
+          <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-green-200 bg-green-50/30 p-3 space-y-2">
+            <div className="min-w-0 space-y-1">
+              <p className="text-[11px] font-semibold text-green-800 break-words">
+                Top {predicateSuggestions.length} CDSCO predicate suggestion{predicateSuggestions.length !== 1 ? "s" : ""}
+              </p>
+              {predicateSearchMeta && (
+                <p className="text-[10px] text-muted break-words">
+                  List:{" "}
+                  <strong className="text-foreground">
+                    {predicateSearchMeta.listType === "import" ? "Import" : "Manufacturer"}
+                  </strong>
+                  {" · "}
+                  Keyword: <strong className="text-foreground">{predicateSearchMeta.keyword}</strong>
+                  {" · "}
+                  {predicateSearchMeta.total} device{predicateSearchMeta.total !== 1 ? "s" : ""} scraped
+                </p>
+              )}
+            </div>
+            <p className="text-[10px] text-green-700/90 break-words">
+              Select the best predicate for substantial equivalence. Rank #1 is pre-applied to the form below.
+            </p>
+            <div className="grid gap-2 min-w-0 max-w-full">
+              {predicateSuggestions.map((s) => {
+                const selected =
+                  form.predicateRegNo === s.regNo &&
+                  form.predicateName === s.name;
+                return (
+                  <button
+                    key={`${s.rank}-${s.regNo}`}
+                    type="button"
+                    onClick={() => applyPredicateSuggestion(s)}
+                    className={`block w-full min-w-0 max-w-full overflow-hidden text-left p-3 rounded-xl border transition ${
+                      selected
+                        ? "border-green-500 bg-green-50 ring-1 ring-green-400/30"
+                        : "border-border bg-surface hover:border-green-300 hover:bg-green-50/50"
+                    }`}
+                  >
+                    <div className="flex gap-2.5 min-w-0">
+                      <span
+                        className={`shrink-0 w-6 h-6 rounded-full text-[10px] font-black flex items-center justify-center ${
+                          selected ? "bg-green-600 text-white" : "bg-surface2 text-muted border border-border"
+                        }`}
+                      >
+                        {s.rank}
+                      </span>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <p className="text-xs font-semibold text-foreground break-words">{s.name}</p>
+                        <p className="text-[10px] text-muted mt-0.5 break-words">{s.manufacturer}</p>
+                        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                          <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-surface2 border border-border text-muted">
+                            Class {s.deviceClass || "—"}
+                          </span>
+                          {s.regNo && (
+                            <span className="text-[10px] font-mono text-muted break-all">{s.regNo}</span>
+                          )}
+                          {selected && (
+                            <span className="text-[9px] font-semibold text-green-700">Applied</span>
+                          )}
+                        </div>
+                        {s.reason && (
+                          <p className="text-[11px] text-foreground/90 mt-2 leading-relaxed break-words line-clamp-3">
+                            {s.reason}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Decision */}
       <div className="space-y-2">

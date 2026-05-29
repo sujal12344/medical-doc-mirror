@@ -98,6 +98,8 @@ export type ProductDocument = {
   patientPopulation: string;
   deviceClass: "A" | "B" | "C" | "D";
   deviceType: "medical-device" | "ivd";
+  /** Pinecone isolation key used for product-specific namespace (product_${userId}_${vectorNamespaceId}) */
+  vectorNamespaceId: string;
   countries: string[];
   status: "draft" | "active" | "archived";
 
@@ -212,6 +214,7 @@ const productSchema = new Schema<ProductDocument>(
     patientPopulation: { type: String, trim: true, maxlength: 500, default: "" },
     deviceClass: { type: String, enum: ["A", "B", "C", "D"], default: "A", required: true },
     deviceType: { type: String, enum: ["medical-device", "ivd"], default: "medical-device", required: true },
+    vectorNamespaceId: { type: String, default: "" },
     countries: { type: [String], default: ["IN"] },
     status: { type: String, enum: ["draft", "active", "archived"], default: "draft" },
 
