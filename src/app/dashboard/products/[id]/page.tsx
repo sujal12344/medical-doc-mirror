@@ -181,7 +181,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <div className="space-y-2">
             {docs.map((d) => (
               <Link key={String(d._id)} href={`/dashboard/documents/${d._id}`}
-                className="flex items-center justify-between bg-surface border border-border rounded-xl p-4 hover:border-[var(--accent)]/40 hover:shadow-sm transition">
+                className="flex items-center justify-between bg-surface border border-border rounded-xl p-4 hover:border-accent/40 hover:shadow-sm transition">
                 <div>
                   <p className="text-sm font-semibold text-foreground">{d.title}</p>
                   <p className="text-xs text-muted mt-0.5">{d.countryCode} &middot; {d.frameworkId} &middot; v{d.version}</p>

@@ -376,7 +376,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
       {predicateExists === false && (
         <div className="border border-orange-200 bg-orange-50/40 rounded-xl p-4 space-y-4">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-orange-500 text-white text-[9px] font-black flex items-center justify-center">B</span>
+            <span className="w-5 h-5 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center">B</span>
             <div className="text-xs font-bold text-orange-800">Novel Device Pathway — MDR 2017</div>
           </div>
 
@@ -413,7 +413,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
             {/* Step B2: MD-27 — Ethics Committee */}
             <div className="rounded-xl border border-border px-3 py-3 space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black flex items-center justify-center border border-blue-300">1</span>
+                <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-black flex items-center justify-center border border-orange-300">1</span>
                 <div>
                   <div className="text-xs font-semibold text-foreground">MD-27 — Ethics Committee (IEC) Approval</div>
                   <div className="text-[10px] text-muted">Independent Ethics Committee registration &amp; approval before clinical investigation begins</div>

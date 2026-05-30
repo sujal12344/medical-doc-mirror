@@ -13,7 +13,7 @@
 | Logged-in user | `Company` document (not a separate `User` model) |
 | Auth | NextAuth v4 credentials → JWT → `getSession()` loads `Company` |
 | Core entities | `Product`, `RegulatoryDocument` |
-| AI | OpenAI + Pinecone RAG (autofill, optional classify) |
+| AI | OpenAI + Pinecone RAG (autofill, classify); Playwright CDSCO predicate scrape |
 | Export | docxtemplater, ZIP pipeline via `/api/upload` |
 
 ---
@@ -29,7 +29,9 @@
 | Styling | Tailwind CSS **4** |
 | Path alias | `@/*` → `src/*` (`tsconfig.json`) |
 
-**Key dependencies:** `@pinecone-database/pinecone`, `openai`, `@google-cloud/storage`, `docxtemplater`, `pdf-parse`, `pdfjs-dist`, `@napi-rs/canvas`, `three-globe`.
+**Key dependencies:** `@pinecone-database/pinecone`, `openai`, `playwright`, `@google-cloud/storage`, `docxtemplater`, `pdf-parse`, `pdfjs-dist`, `@napi-rs/canvas`, `three-globe`.
+
+**Next.js server externals** (`next.config.ts`): `pdfjs-dist`, `@napi-rs/canvas`, `pdf-parse`.
 
 ---
 
@@ -45,6 +47,7 @@ nextjs-mongo-professional/
 ├── eslint.config.mjs
 ├── postcss.config.mjs
 ├── placeholders.json              ← DOCX merge-field names for export
+├── MDR_2017_Interactive_Flowchart.html  ← MDR Phase 0–2 reference (not mounted in app)
 ├── public/
 │   ├── dmf_template_exact.html
 │   ├── dmf_chatbot.html           ← Legacy UI; POST /api/chat
@@ -84,13 +87,13 @@ nextjs-mongo-professional/
 | | `business-genesis/BusinessGenesisForm.tsx` | Form UI |
 | | `business-genesis/Phase0MiniFlowchart.tsx` | Sidebar flowchart |
 | `/dashboard/products` | `products/page.tsx` | Product list |
-| `/dashboard/products/new` | `products/new/page.tsx` | **Phase 1** registration; collapsible **Knowledge Base** (product doc RAG); lock |
+| `/dashboard/products/new` | `products/new/page.tsx` | **Phase 1** registration; Knowledge Base RAG; India-only markets; `?fresh=1` for new session |
 | | `products/new/DeviceCharacterisation.tsx` | Part I (medical device) |
 | | `products/new/IVDCharacterisation.tsx` | Part II (IVD) |
-| | `products/new/PredicatePathway.tsx` | Step 1.5 — manual fields + **Auto Find Predicate** (CDSCO API) |
-| | `products/new/ClassificationLock.tsx` | Steps 1.6 / 1.8 lock |
+| | `products/new/PredicatePathway.tsx` | Step 1.5 — CDSCO predicate (Import/Manufacturer toggle, top 5 suggestions) |
+| | `products/new/ClassificationLock.tsx` | Steps 1.6 / 1.7 / 1.8 — listed/ambiguous, CLA, lock |
 | | `products/new/Phase1MiniFlowchart.tsx` | Sidebar flowchart |
-| `/dashboard/products/[id]` | `products/[id]/page.tsx` | Product hub; frameworks; doc list |
+| `/dashboard/products/[id]` | `products/[id]/page.tsx` | Product hub; **frameworks filtered by `deviceType`**; doc list |
 | | `products/[id]/CreateDocButton.tsx` | Creates `RegulatoryDocument` |
 | `/dashboard/documents/[id]` | `documents/[id]/page.tsx` | Section editor + AI chat |
 | `/dashboard/compliance` | `compliance/page.tsx` | Country guide + `/api/chat` |
@@ -127,8 +130,8 @@ nextjs-mongo-professional/
 |---------|------|------|---------|
 | GET, POST | `/api/products` | `products/route.ts` | List / create (`flatToNestedProduct`) |
 | GET, PUT, DELETE | `/api/products/[id]` | `products/[id]/route.ts` | CRUD; PUT uses `buildProductWritePayload` |
-| POST | `/api/products/autofill` | `products/autofill/route.ts` | RAG: chunk → embed → `product_{userId}` → GPT → Step 1 JSON |
-| POST | `/api/products/predicate` | `products/predicate/route.ts` | CDSCO scrape + OpenAI match → predicate fields (no Pinecone) |
+| POST | `/api/products/autofill` | `products/autofill/route.ts` | RAG → `product_{userId}_{productNamespaceId}`; returns `descriptionSuggestions[]` |
+| POST | `/api/products/predicate` | `products/predicate/route.ts` | Playwright CDSCO scrape; body `{ intendedUse, cdscoListType?: "import" \| "manufacturer" }`; returns up to 5 `matches[]` |
 | POST | `/api/products/[id]/upload` | `products/[id]/upload/route.ts` | Append `uploadedDocs` (multipart **or** JSON text) |
 | GET, POST | `/api/products/[id]/classify` | `products/[id]/classify/route.ts` | AI class → `classLock.ai` |
 | POST | `/api/products/[id]/classify/confirm` | `products/[id]/classify/confirm/route.ts` | Lock AI classification |
@@ -171,7 +174,9 @@ nextjs-mongo-professional/
 ### `Product.ts`
 
 **Top-level (identity & markets):**
-`userId`, `name`, `manufacturer`, `description`, `intendedUse`, `patientPopulation`, `deviceClass` (A|B|C|D), `deviceType` (`medical-device` | `ivd`), `countries[]`, `status`, `isSterile`, `hasSoftware`, `uploadedDocs[]`, timestamps.
+`userId`, `name`, `manufacturer`, `description`, `intendedUse`, `patientPopulation`, `deviceClass` (A|B|C|D), `deviceType` (`medical-device` | `ivd`), `countries[]`, `status`, `isSterile`, `hasSoftware`, `vectorNamespaceId`, `uploadedDocs[]`, timestamps.
+
+`vectorNamespaceId` — UUID (or product `_id` fallback) for Pinecone namespace `product_{userId}_{vectorNamespaceId}`.
 
 **Nested sections (do not flatten at root):**
 
@@ -202,11 +207,12 @@ nextjs-mongo-professional/
 | `auth.ts` | `getSession()`, `requireAuth()` |
 | `documentExtract.ts` | PDF text extraction + OCR fallback (pdf-parse → pdfjs render → OpenAI Vision) |
 | `productMapper.ts` | Flat form ↔ nested Product; `$unset` wrong device section |
-| `classification/hybridQuery.ts` | Pinecone `product_{companyId}` + MDR rules + GPT classification |
+| `businessGenesis.ts` | Phase 0 completion; **India-only** secE helpers (`enforceIndiaOnlySecE`) |
+| `classification/hybridQuery.ts` | Pinecone `product_{companyId}_{vectorNamespaceId}` + MDR rules + GPT |
 | `compliance-knowledge/` | Static country data (`data.ts`, `types.ts`, `index.ts`) |
 | `frameworks/` | Per-country regulatory field definitions |
-| `frameworks/index.ts` | `FRAMEWORKS`, `REGION_GROUPS` |
-| `frameworks/types.ts` | `RegulatoryFramework`, `FrameworkSection`, … |
+| `frameworks/index.ts` | `FRAMEWORKS`, `REGION_GROUPS`, `filterFrameworksByDeviceType()` |
+| `frameworks/types.ts` | `RegulatoryFramework` (+ optional `deviceType`: `ivd` \| `medical-device`) |
 
 ### `frameworks/` regions (35 country modules)
 
@@ -233,7 +239,7 @@ southeast-asia/  singapore, thailand, indonesia, malaysia, philippines, vietnam,
 | `ProductDetailsModal.tsx` | Modal: full product + nested `medDevice` / `IVDdevice` / `predDevice` / `classLock` |
 | `landing/*` | Marketing: Hero, Globe, CountryExplorer, Pricing, FAQ, SpotlightBorder, CSS |
 | `phase0/BusinessSetupWidget.tsx` | Dashboard Phase 0 card |
-| `phase1/ClassificationWidget.tsx` | Dashboard Phase 1 card → links **`/dashboard/products`** (not classification page) |
+| `phase1/ClassificationWidget.tsx` | Dashboard Phase 1 card → `/dashboard/products/new?fresh=1` |
 
 **Co-located UI** (under `app/dashboard/...`): forms, flowcharts, `CreateDocButton`, document editor, etc.
 
@@ -250,21 +256,26 @@ southeast-asia/  singapore, thailand, indonesia, malaysia, philippines, vietnam,
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
-│ Phase 1: /dashboard/products/new                                │
+│ Phase 1: /dashboard/products/new?fresh=1                        │
 │   1. Knowledge Base (optional): upload IFU → extract-text        │
-│      (pdf-parse text layer, OCR fallback for sparse/image PDFs)  │
-│      POST /api/products/autofill → Pinecone product_{userId}    │
+│      (pdf-parse; Vision OCR fallback for sparse/image PDFs)     │
+│      POST /api/products/autofill → Pinecone                     │
+│      product_{userId}_{productNamespaceId}                      │
 │   2. Product form: medDevice OR IVDdevice (by deviceType)       │
-│   3. Step 1.5 PredicatePathway: manual OR Auto Find Predicate   │
-│      → POST /api/products/predicate (CDSCO list + AI pick)      │
+│      Description: pick from AI descriptionSuggestions (≥4)      │
+│   3. Step 1.5 PredicatePathway: CDSCO Import or Manufacturer    │
+│      → POST /api/products/predicate (top 5 ranked matches)      │
 │   4. ClassificationLock: 1.6 listed/ambiguous →                 │
 │      1.7 CLA clarification (if ambiguous) → 1.8 lock            │
-│   5. POST /api/products (+ uploadedDocs when wired on create)   │
-│   6. Optional: POST /api/products/[id]/upload                     │
+│   5. Target markets: India only (locked); countries = ["IN"]    │
+│   6. POST /api/products (vectorNamespaceId); clear draft/NS     │
+│   7. Optional: POST /api/products/[id]/upload                   │
 └─────────────────────────────────────────────────────────────────┘
                               ↓
 ┌─────────────────────────────────────────────────────────────────┐
 │ Phase 2: /dashboard/products/[id]                               │
+│   Framework cards filtered by product.deviceType (IVD vs MD)  │
+│   India IVD → IN_DMF only; MD → IN_DMF_MD only                │
 │   CreateDocButton → RegulatoryDocument                          │
 │   /dashboard/documents/[id] → edit sections, chat, autofill     │
 │   /dashboard/upload → bulk DOCX ZIP (separate pipeline)         │
@@ -285,11 +296,26 @@ Autofill API alone does **not** write `uploadedDocs` (vectors only in Pinecone).
 
 | Namespace | Written by | Read by |
 |-----------|------------|---------|
-| `product_{userId}` | `POST /api/products/autofill` | `hybridQuery.ts` (classification), autofill retrieval |
-| ~~`predicate_{userId}`~~ | **Removed** (was doc-upload predicate autofill) | — |
-| `company_{userId}` | **Legacy** — re-upload if migrating old data | — |
+| `product_{userId}_{productNamespaceId}` | `POST /api/products/autofill` | `hybridQuery.ts`, autofill retrieval |
+| `productNamespaceId` | Client UUID on `/products/new`; persisted as `Product.vectorNamespaceId` (fallback: `product._id`) | — |
+| ~~`product_{userId}`~~ | **Legacy** single-user namespace | Re-index if migrating old vectors |
+| ~~`predicate_{userId}`~~ | **Removed** | — |
+| ~~`company_{userId}`~~ | **Legacy** | — |
 
-**Predicate lookup** does not use Pinecone; it uses `POST /api/products/predicate` (Playwright scrape of CDSCO approved devices + OpenAI ranking).
+**New product session:** `/dashboard/products/new?fresh=1` clears `localStorage` keys `newproduct_draft` and `newproduct_namespace_id`; successful POST also clears them so each registration gets a new namespace UUID.
+
+**Predicate lookup** does not use Pinecone; Playwright scrapes [CDSCO ListOfApprovedDevices](https://cdscomdonline.gov.in/NewMedDev/ListOfApprovedDevices) — **Manufacturer** or **Import** tab (`#impPre` / `loadAppsImport`) — then OpenAI ranks up to 5 matches (all scraped devices when ≤5 unique rows).
+
+### Framework selection (Phase 2)
+
+| Product `deviceType` | India frameworks shown |
+|---------------------|-------------------------|
+| `ivd` | `IN_DMF` (Device Master File IVD) |
+| `medical-device` | `IN_DMF_MD` (Device Master File Medical Device) |
+
+EU: `EU_IVDR` vs `EU_MDR`. China: `CN_NMPA_IVD` vs `CN_NMPA_II`/`III`. Untagged country frameworks default to **medical-device** only. Use `filterFrameworksByDeviceType()` in `frameworks/index.ts`.
+
+**Not in repo yet:** PMF (Plant Master File) — referenced in `MDR_2017_Interactive_Flowchart.html` but no `IN_PMF` framework module.
 
 ---
 
@@ -314,8 +340,9 @@ NEXTAUTH_SECRET
 NEXTAUTH_URL
 OPENAI_API_KEY
 PINECONE_KEY
-PINECONE_INDEX          # product autofill (`product_{userId}`)
-PINECONE_INDEX2         # hybrid classification (`product_{userId}` + MDR rules index)
+PINECONE_INDEX          # product autofill (`product_{userId}_{productNamespaceId}`)
+PINECONE_INDEX2         # hybrid classification (same namespace pattern + MDR rules index)
+OPENAI_MODEL            # GPT for autofill, predicate ranking, classification
 PINECONE_EMBED_MODEL
 OPENAI_OCR_MODEL        # optional; defaults to OPENAI_MODEL
 PDF_OCR_ENABLED         # optional flag for OCR fallback
@@ -352,8 +379,13 @@ PDF_MIN_CHARS_PER_PAGE_MULTI
 | Country framework fields | `lib/frameworks/<region>/<country>.ts`, `frameworks/index.ts` |
 | Fix session / login | `api/auth/[...nextauth]/route.ts`, `lib/auth.ts` |
 | Document editor chat | `dashboard/documents/[id]/page.tsx`, `api/chat/route.ts` |
-| PDF autofill registration | Knowledge Base on `products/new/page.tsx`, `api/products/autofill/route.ts` |
-| Auto-find predicate (CDSCO) | `products/new/PredicatePathway.tsx`, `api/products/predicate/route.ts` |
+| PDF autofill registration | Knowledge Base on `products/new/page.tsx`, `api/products/autofill/route.ts`, `lib/documentExtract.ts` |
+| Description suggestions (autofill) | `autofill/route.ts` → `descriptionSuggestions[]`; UI on `products/new/page.tsx` |
+| Auto-find predicate (CDSCO) | `PredicatePathway.tsx`, `api/products/predicate/route.ts` |
+| Per-product Pinecone namespace | `products/new/page.tsx` (`vectorNamespaceId`), `autofill/route.ts`, `hybridQuery.ts` |
+| IVD vs MD framework cards | `products/[id]/page.tsx`, `filterFrameworksByDeviceType()` |
+| Phase 0 India-only markets | `businessGenesis.ts`, `BusinessGenesisForm.tsx` |
+| New product fresh session | Link `?fresh=1` from products list, dashboard, ClassificationWidget |
 | Persist IFU/PDF on product | `api/products/[id]/upload/route.ts` |
 | Nested product create/update | `lib/productMapper.ts`, `models/Product.ts` |
 | DOCX bulk export | `api/upload/route.ts`, `dashboard/upload/page.tsx` |
@@ -368,64 +400,67 @@ PDF_MIN_CHARS_PER_PAGE_MULTI
 - MD-14 / MD-16 / dossier **UI pages removed**; API dossier route remains.
 - `/api/assistant` unused by frontend.
 - `Company.companyPassword` stored/compared in plaintext.
-- Duplicate path variants in tooling (`src\` vs `src/`) — same files on Windows.
-- Verify `handleCreateAndContinue` still sends `uploadedDocs` / `pendingSourceDoc` on POST if doc persistence is required.
+- **`IN_PMF` (Plant Master File)** not implemented — flowchart lists PMF + DMF; only DMF frameworks exist.
+- Multi-country product registration UI commented out (India-only Phase 1); framework data for 40+ countries remains.
+- Re-index legacy vectors from `company_*` or bare `product_{userId}` if old uploads must be reused.
+- Predicate scrape uses Playwright `headless: false` — may need headless/server config for production deploy.
 
 ---
 
 ## 15. Recent development (May 2026)
 
-Summary of work done in this iteration — use this when continuing sessions.
+Summary of work through late May 2026 — use when continuing sessions.
 
 ### Product schema & mapper
 
-- **`Product`** split into nested sections: `medDevice`, `IVDdevice`, `predDevice`, `classLock` (no flat Part I/II/predicate keys at root).
-- **`src/lib/productMapper.ts`**: `flatToNestedProduct`, `buildProductWritePayload`, `applyDeviceTypeSections` — only one of `medDevice` / `IVDdevice` persisted per `deviceType`.
-- **`ProductDetailsModal`** reads nested sections for display.
+- Nested sections: `medDevice`, `IVDdevice`, `predDevice`, `classLock`.
+- **`vectorNamespaceId`** on `Product` for per-product Pinecone isolation.
+- `productMapper.ts`: `flatToNestedProduct`, `buildProductWritePayload`, `applyDeviceTypeSections`.
 
-### Auth fix
+### Phase 0 (`/dashboard/business-genesis`)
 
-- NextAuth route corrected to `src/app/api/auth/[...nextauth]/route.ts` (was typo `[...nxtAuth]` → session 404s).
+- Flowchart tab order **E→B→C→A→D**; `computePhase0Completion`, `isPhase0Complete`.
+- **India-only** regulatory pathway and target markets (`enforceIndiaOnlySecE`, locked checkbox chips).
+- Server→client plain JSON for `businessGenesis` (no ObjectId leak to client components).
+- Signatories subdocs without `_id` in forms.
 
-### Phase 0 UI (`/dashboard/business-genesis`)
+### Phase 1 (`/dashboard/products/new`)
 
-- Tabs follow MDR flowchart order: **E** (0.1–0.3 market), **B** (0.4–0.6 incorporation), **C** (0.7 bank), **A** (0.8 statutory), **D** (0.9 IP).
-- **0.4** `legalEntityExists` Yes/No — skip incorporation when Yes.
-- **0.6** MCA checklist: RUN, DSC/DIN, MoA medical-device object, SPICe+, COI upload.
-- **0.7** Bank name, AD Code callout, **authorised signatories** list.
-- **secE**: reimbursement + patent landscape, pathway IN/CE/FDA, `targetCountries`, pathway notes.
-- **secD**: NDA template upload, domain name.
-- Shared logic: `src/lib/businessGenesis.ts` (`computePhase0Completion`, `isPhase0Complete`).
+- **Knowledge Base:** extract-text + autofill; OCR for sparse PDFs (`documentExtract.ts`, `next.config.ts` `serverExternalPackages`).
+- **Description suggestions:** autofill returns `descriptionSuggestions[]` (≥4); selectable cards in UI.
+- **Predicate:** CDSCO scrape with **Import / Manufacturer** toggle; **top 5** ranked suggestions; backfill when ≤5 unique rows scraped.
+- **ClassificationLock:** 1.6 listed vs ambiguous → 1.7 CLA → 1.8 lock (`cdscoListStatus`, `claClarification*` fields).
+- **Target markets:** India-only UI; `countries: ["IN"]`; multi-country picker commented for later.
+- **Namespace session:** fresh UUID per registration; `?fresh=1` on new-product links; clear `localStorage` on successful create.
 
-### Phase 1 UI (`/dashboard/products/new`)
+### Phase 2 (`/dashboard/products/[id]`)
 
-- **Phase 0** (`/dashboard/business-genesis`): flowchart-aligned tabs **E→B→C→A→D** (steps 0.1–0.9), `computePhase0Completion`, `phase0Complete` on save.
-- **Knowledge Base** panel (collapsible): **+ Add knowledge** → upload product IFU/brochure → **Autofill Product from Document** only.
-- **Extract-text OCR fallback**: sparse/image PDFs now auto-run Vision OCR (`src/lib/documentExtract.ts`) with per-page retries and partial-page tolerance.
-- Product Information / Predicate sections no longer duplicate upload buttons.
-- **PredicatePathway**: **Auto Find Predicate Device** calls `/api/products/predicate` (intended use → CDSCO scrape → AI best match → fills `predDevice` fields).
-- **ClassificationLock branch parity with flowchart**: explicit **1.6 listed vs ambiguous**; if ambiguous then **1.7 CLA clarification** before **1.8 lock**.
+- **`filterFrameworksByDeviceType()`** — IVD products see IVD dossiers only (e.g. `IN_DMF`, not `IN_DMF_MD`).
+- Frameworks may set explicit `deviceType`; inference from id/documentType for EU/China/India.
 
 ### RAG / Pinecone
 
-- Renamed namespace `company_{userId}` → **`product_{userId}`** for registration document autofill.
-- **Removed** predicate document RAG: no `scope: "predicate"` on autofill, no `runPredicateAutofill`, no `predicate_{userId}` queries in `hybridQuery.ts`.
-- Classification RAG uses **`product_{companyId}`** plus MDR rules index (`PINECONE_INDEX2`).
+- Namespace pattern: **`product_{userId}_{productNamespaceId}`** (Option B).
+- Autofill accepts/returns `productNamespaceId`; classification uses `vectorNamespaceId || productId`.
+- Removed predicate/company namespace RAG paths.
 
-### APIs touched
+### APIs (recent)
 
-| Change | File |
-|--------|------|
-| Product-only autofill | `api/products/autofill/route.ts` |
-| CDSCO predicate match | `api/products/predicate/route.ts` (new) |
-| `uploadedDocs` JSON/multipart | `api/products/[id]/upload/route.ts` |
-| Nested product POST/PUT | `api/products/route.ts`, `api/products/[id]/route.ts` |
+| Area | File |
+|------|------|
+| Autofill + description suggestions | `api/products/autofill/route.ts` |
+| CDSCO predicate (Import/Mfg, top 5) | `api/products/predicate/route.ts` |
+| Extract-text + OCR | `api/extract-text/route.ts` |
+| Product create + vectorNamespaceId | `api/products/route.ts` |
+| Classification RAG namespace | `lib/classification/hybridQuery.ts`, `api/products/[id]/classify/route.ts` |
 
-### Not in scope / still open
+### Still open
 
+- `/dashboard/products/[id]/classify` UI (API exists).
 - Standalone `/dashboard/classification` page.
-- `/dashboard/products/[id]/classify` page (API exists).
-- Re-index legacy vectors from `company_*` namespaces if old uploads must be reused.
+- **`IN_PMF`** framework and upload flow (PMF in MDR flowchart).
+- Re-enable multi-country target markets post–Phase 1 lock.
+- Production headless Playwright for predicate API.
 
 ---
 
