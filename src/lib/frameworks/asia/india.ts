@@ -4,189 +4,259 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
   {
     id: "IN_DMF", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (IVD)", deviceType: "ivd",
     sections: [
-      { id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
-        { id: "1.1a", label: "Product Name", hint: "Full commercial name of the IVD medical device" },
-        { id: "1.1b", label: "Device Description", hint: "Brief description: purpose, technology, mechanism of action", textarea: true },
-        { id: "1.1c", label: "Novel Features", hint: "Any features that distinguish it from existing devices", textarea: true },
-        { id: "1.1d", label: "Claimed Shelf Life", hint: "e.g. 18 months from date of manufacture" },
-        { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D" },
-        { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted", textarea: true },
-        { id: "1.2", label: "Regulatory Status in India", hint: "Whether approved or new IVD" },
-        { id: "1.3", label: "Domestic Price", hint: "Price per unit in country of origin currency" },
-        { id: "1.4", label: "Marketing History", hint: "Marketing history from first introduction", textarea: true },
-        { id: "1.5", label: "Regulatory Approvals Table", hint: "Country | Indication | Shelf-Life | Risk Class | Date", textarea: true },
-        { id: "1.6", label: "Pending Clearance Requests", hint: "Agency | Use | Status | Reason for rejection", textarea: true },
-        { id: "1.7a", label: "Adverse Events Summary", hint: "Summary with frequency of occurrence", textarea: true },
-        { id: "1.7b", label: "Field Safety Corrective Actions", hint: "Date | Reason | Countries | Action", textarea: true },
-      ]},
-      { id: "s2", title: "Device Description & Specification", description: "Technical details, components, specimen requirements", fields: [
-        { id: "2.1a", label: "What is Detected", hint: "Specific analyte, pathogen, antibody detected" },
-        { id: "2.1b", label: "Device Function", hint: "Screening / Diagnostics / Monitoring" },
-        { id: "2.1c", label: "Disorder/Condition Detected", hint: "Include limitations and precautions", textarea: true },
-        { id: "2.1d", label: "Automated or Manual", hint: "Automated / Semi-automated / Manual" },
-        { id: "2.1e", label: "Qualitative or Quantitative", hint: "Qualitative / Semi-quantitative / Quantitative" },
-        { id: "2.1f", label: "Specimen Type", hint: "Serum, Plasma, Whole Blood, etc." },
-        { id: "2.1g", label: "Testing Population", hint: "Human / Animal / Both" },
-        { id: "2.1h", label: "Intended User", hint: "Professional / Lay person" },
-        { id: "2.1i", label: "Assay Principle", hint: "Technology and step-by-step mechanism", textarea: true },
-        { id: "2.1j", label: "Components Description", hint: "Each component: name, ingredient, function", textarea: true },
-        { id: "2.1k", label: "Specimen Collection Specs", hint: "Collection materials, volume, stability", textarea: true },
-        { id: "2.1l", label: "Instrumentation", hint: "Instrument name, model, specifications", textarea: true },
-        { id: "2.1m", label: "Software", hint: "Software name, version, function", textarea: true },
-        { id: "2.1n", label: "Configurations/Variants", hint: "Pack sizes and variants available", textarea: true },
-        { id: "2.1o", label: "Accessories", hint: "All accessories and companion devices", textarea: true },
-        { id: "2.2", label: "Clinical Performance (New Device)", hint: "Summary of clinical performance evaluation", textarea: true },
-        { id: "2.3", label: "Adverse Events (Existing Device)", hint: "Adverse event reports and certificates", textarea: true },
-      ]},
-      { id: "s3", title: "Essential Principles Checklist", description: "Safety and performance compliance", fields: [
-        { id: "3a", label: "EP Checklist", hint: "EP number | Relevant | Standard | Complies | Reference", textarea: true },
-        { id: "3b", label: "Conformity Methods", hint: "Standards, reference methods, in-house methods", textarea: true },
-      ]},
-      { id: "s4", title: "Risk Analysis", description: "Risk management per ISO 14971", fields: [
-        { id: "4a", label: "Risk Analysis Summary", hint: "Risks identified and how controlled", textarea: true },
-        { id: "4b", label: "Possible Hazards", hint: "False positives/negatives, instability hazards", textarea: true },
-      ]},
-      { id: "s5", title: "Design & Manufacturing", description: "Design, process, and manufacturing site information", fields: [
-        { id: "5.1", label: "Device Design", hint: "Critical ingredients, design sites", textarea: true },
-        { id: "5.2", label: "Manufacturing Process", hint: "Technologies, assembly, testing, packaging", textarea: true },
-        { id: "5.3", label: "Manufacturing Sites", hint: "Name and address of manufacturing sites", textarea: true },
-      ]},
-      { id: "s6", title: "Product Validation & Verification", description: "Study protocols, results, and conclusions", fields: [
-        { id: "6.1", label: "COA / Summary Information", hint: "Study protocol, results, conclusions", textarea: true },
-        { id: "6.2", label: "Detailed Information", hint: "Complete study protocol and report", textarea: true },
-      ]},
-      { id: "s7", title: "Analytical Studies", description: "Conformity demonstration studies", fields: [
-        { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true },
-      ]},
-      { id: "s8", title: "Specimen Type", description: "Specimen stability and matrix comparison", fields: [
-        { id: "8a", label: "Specimen Stability", hint: "Each matrix stability conditions", textarea: true },
-        { id: "8b", label: "Matrix Comparison", hint: "Number of samples, statistical methods", textarea: true },
-      ]},
-      { id: "s9", title: "Analytical Performance", description: "Accuracy, sensitivity, specificity studies", fields: [
-        { id: "9.1", label: "Accuracy (Trueness & Precision)", hint: "Study designs, results, conclusions", textarea: true },
-        { id: "9.2", label: "Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
-        { id: "10", label: "Analytical Sensitivity", hint: "LoB, LoD, LoQ studies", textarea: true },
-        { id: "11", label: "Analytical Specificity", hint: "Interference and cross-reactivity", textarea: true },
-        { id: "12", label: "Metrological Traceability", hint: "Reference materials and procedures", textarea: true },
-        { id: "13", label: "Measuring Range", hint: "Linear range, LoD, hook effect", textarea: true },
-        { id: "14", label: "Assay Cut-off", hint: "Populations studied, ROC analysis", textarea: true },
-      ]},
-      { id: "s15", title: "Stability Studies", description: "Shelf life, in-use, and shipping stability", fields: [
-        { id: "15", label: "Stability Overview", hint: "Summary of stability studies", textarea: true },
-        { id: "16", label: "Claimed Shelf Life", hint: "3+ lots, real-time + accelerated", textarea: true },
-        { id: "17", label: "In-Use Stability", hint: "Open vial, on-board stability", textarea: true },
-        { id: "18", label: "Shipping Stability", hint: "Real/simulated shipping conditions", textarea: true },
-      ]},
-      { id: "s19", title: "Clinical Evidence", description: "Clinical evaluation report", fields: [
-        { id: "19", label: "Clinical Evidence", hint: "Conformity to essential principles", textarea: true },
-      ]},
-      { id: "s20", title: "Labelling", description: "Labels and IFU", fields: [
-        { id: "20", label: "Complete Labelling Set", hint: "Outer box, primary label, IFU", textarea: true },
-      ]},
-      { id: "s21", title: "Post-Marketing Surveillance", description: "Vigilance and CAPA", fields: [
-        { id: "21", label: "Surveillance Data", hint: "Complaints received and CAPA taken", textarea: true },
-      ]},
-      { id: "s22", title: "Additional Information", description: "IVD-specific additional requirements", fields: [
-        { id: "22.1", label: "Antigen/Antibody Details", hint: "Source, characterization, coating process", textarea: true },
-        { id: "22.2", label: "Test Protocol", hint: "Specifications and method of testing", textarea: true },
-        { id: "22.3", label: "NCA Evaluation Report", hint: "Evaluation by national control authority", textarea: true },
-        { id: "22.4", label: "Batch Test Report", hint: "3+ consecutive batches", textarea: true },
-        { id: "22.5", label: "Component Test Report", hint: "All components used in finished device", textarea: true },
-        { id: "22.6", label: "Pack Size & Labelling", hint: "All pack sizes and labelling spec" },
-        { id: "22.7", label: "Product Inserts (IFU)", hint: "Full IFU document", textarea: true },
-        { id: "22.8", label: "Indian Lab Evaluation", hint: "Sensitivity/specificity by Indian lab", textarea: true },
-        { id: "22.9", label: "Safety Data Sheet", hint: "Safe handling, material control, storage", textarea: true },
-      ]},
+      {
+        id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
+          { id: "1.1a", label: "Product Name", hint: "Full commercial name of the IVD medical device" },
+          { id: "1.1b", label: "Device Description", hint: "Brief description: purpose, technology, mechanism of action", textarea: true },
+          { id: "1.1c", label: "Novel Features", hint: "Any features that distinguish it from existing devices", textarea: true },
+          { id: "1.1d", label: "Claimed Shelf Life", hint: "e.g. 18 months from date of manufacture" },
+          { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D" },
+          { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted", textarea: true },
+          { id: "1.2", label: "Regulatory Status in India", hint: "Whether approved or new IVD" },
+          { id: "1.3", label: "Domestic Price", hint: "Price per unit in country of origin currency" },
+          { id: "1.4", label: "Marketing History", hint: "Marketing history from first introduction", textarea: true },
+          { id: "1.5", label: "Regulatory Approvals Table", hint: "Country | Indication | Shelf-Life | Risk Class | Date", textarea: true },
+          { id: "1.6", label: "Pending Clearance Requests", hint: "Agency | Use | Status | Reason for rejection", textarea: true },
+          { id: "1.7a", label: "Adverse Events Summary", hint: "Summary with frequency of occurrence", textarea: true },
+          { id: "1.7b", label: "Field Safety Corrective Actions", hint: "Date | Reason | Countries | Action", textarea: true },
+          { id: "1.7c", label: "Animal/Human Derived Materials", hint: "Animal fluids, tissues, human derivatives used in device", textarea: true },
+          { id: "1.7d", label: "Microbial/Recombinant Materials", hint: "Microbial, recombinant proteins, antigens, antibodies used", textarea: true }
+        ]
+      },
+      {
+        id: "s2", title: "Device Description & Specification", description: "Technical details, components, specimen requirements", fields: [
+          { id: "2.1a", label: "What is Detected", hint: "Specific analyte, pathogen, antibody detected" },
+          { id: "2.1b", label: "Device Function", hint: "Screening / Diagnostics / Monitoring" },
+          { id: "2.1c", label: "Disorder/Condition Detected", hint: "Include limitations and precautions", textarea: true },
+          { id: "2.1d", label: "Automated or Manual", hint: "Automated / Semi-automated / Manual" },
+          { id: "2.1e", label: "Qualitative or Quantitative", hint: "Qualitative / Semi-quantitative / Quantitative" },
+          { id: "2.1f", label: "Specimen Type", hint: "Serum, Plasma, Whole Blood, etc." },
+          { id: "2.1g", label: "Testing Population", hint: "Human / Animal / Both" },
+          { id: "2.1h", label: "Intended User", hint: "Professional / Lay person" },
+          { id: "2.1i", label: "Assay Principle", hint: "Technology and step-by-step mechanism", textarea: true },
+          { id: "2.1j", label: "Components Description", hint: "Each component: name, ingredient, function", textarea: true },
+          { id: "2.1k", label: "Specimen Collection Specs", hint: "Collection materials, volume, stability", textarea: true },
+          { id: "2.1l", label: "Instrumentation", hint: "Instrument name, model, specifications", textarea: true },
+          { id: "2.1m", label: "Software", hint: "Software name, version, function", textarea: true },
+          { id: "2.1n", label: "Configurations/Variants", hint: "Pack sizes and variants available", textarea: true },
+          { id: "2.1o", label: "Accessories", hint: "All accessories and companion devices", textarea: true },
+          { id: "2.1p", label: "Dedicated Assay Procedure", hint: "Step-by-step assay workflow, controls and calculations", textarea: true },
+          { id: "2.1q", label: "Instrument Compatibility Requirements", hint: "Compatible analyzers, readers, wavelength requirements", textarea: true },
+          { id: "2.2", label: "Clinical Performance (New Device)", hint: "Summary of clinical performance evaluation", textarea: true },
+          { id: "2.3", label: "Adverse Events (Existing Device)", hint: "Adverse event reports and certificates", textarea: true },
+          { id: "2.4", label: "Predicate Device Comparison", hint: "Substantial equivalence analysis", textarea: true },
+          { id: "2.5", label: "External Certificates", hint: "ISO 13485, CE, WHO PQ, MDSAP, etc.", textarea: true },
+        ]
+      },
+      {
+        id: "s3", title: "Essential Principles Checklist", description: "Safety and performance compliance", fields: [
+          { id: "3a", label: "EP Checklist", hint: "EP number | Relevant | Standard | Complies | Reference", textarea: true },
+          { id: "3b", label: "Conformity Methods", hint: "Standards, reference methods, in-house methods", textarea: true },
+          { id: "3c", label: "Evidence Reference Location", hint: "Reference to report, annexure, technical document", textarea: true },
+        ]
+      },
+      {
+        id: "s4", title: "Risk Analysis", description: "Risk management per ISO 14971", fields: [
+          { id: "4a", label: "Risk Analysis Summary", hint: "Risks identified and how controlled", textarea: true },
+          { id: "4b", label: "Possible Hazards", hint: "False positives/negatives, instability hazards", textarea: true },
+          { id: "4c", label: "Residual Risk Evaluation", hint: "Residual risks after mitigation measures", textarea: true },
+          { id: "4d", label: "Benefit-Risk Conclusion", hint: "Justification that benefits outweigh residual risks", textarea: true },
+          { id: "4e", label: "Risk Control Measures", hint: "Implemented controls and verification activities", textarea: true },
+        ]
+      },
+      {
+        id: "s5", title: "Design & Manufacturing", description: "Design, process, and manufacturing site information", fields: [
+          { id: "5.1", label: "Device Design", hint: "Critical ingredients, design sites", textarea: true },
+          { id: "5.2", label: "Manufacturing Process", hint: "Technologies, assembly, testing, packaging", textarea: true },
+          { id: "5.3", label: "Manufacturing Sites", hint: "Name and address of manufacturing sites", textarea: true },
+          { id: "5.4", label: "Critical Raw Materials", hint: "Antigens, antibodies, enzymes, buffers, preservatives", textarea: true },
+          { id: "5.5", label: "Design and Development Sites", hint: "Locations where design activities are performed", textarea: true },
+        ]
+      },
+      {
+        id: "s6", title: "Product Validation & Verification", description: "Study protocols, results, and conclusions", fields: [
+          { id: "6.1", label: "COA / Summary Information", hint: "Study protocol, results, conclusions", textarea: true },
+          { id: "6.2", label: "Detailed Information", hint: "Complete study protocol and report", textarea: true },
+          { id: "6.3", label: "Validation Protocol", hint: "Study design and acceptance criteria", textarea: true },
+          { id: "6.4", label: "Validation Results", hint: "Summary of validation findings", textarea: true },
+          { id: "6.5", label: "Validation Conclusion", hint: "Overall conlusion and compliance statement", textarea: true },
+        ]
+      },
+      {
+        id: "s7", title: "Analytical Studies", description: "Conformity demonstration studies", fields: [
+          { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true },
+        ]
+      },
+      {
+        id: "s8", title: "Specimen Type", description: "Specimen stability and matrix comparison", fields: [
+          { id: "8a", label: "Specimen Stability", hint: "Each matrix stability conditions", textarea: true },
+          { id: "8b", label: "Matrix Comparison", hint: "Number of samples, statistical methods", textarea: true },
+        ]
+      },
+      {
+        id: "s9", title: "Analytical Performance", description: "Accuracy, sensitivity, specificity studies", fields: [
+          { id: "9.1", label: "Accuracy (Trueness & Precision)", hint: "Study designs, results, conclusions", textarea: true },
+          { id: "9.1a", label: "Repeatability", hint: "Within-run precision studies", textarea: true },
+          { id: "9.2", label: "Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
+          { id: "10", label: "Analytical Sensitivity", hint: "LoB, LoD, LoQ studies", textarea: true },
+          { id: "11", label: "Analytical Specificity", hint: "Interference and cross-reactivity", textarea: true },
+          { id: "12", label: "Metrological Traceability", hint: "Reference materials and procedures", textarea: true },
+          { id: "13", label: "Measuring Range", hint: "Linear range, LoD, hook effect", textarea: true },
+          { id: "14", label: "Assay Cut-off", hint: "Populations studied, ROC analysis", textarea: true },
+          { id: "14.1", label: "Cut-Off Calculation Method", hint: "Formula, statistical approach, ROC analysis", textarea: true },
+        ]
+      },
+      {
+        id: "s15", title: "Stability Studies", description: "Shelf life, in-use, and shipping stability", fields: [
+          { id: "15", label: "Stability Overview", hint: "Summary of stability studies", textarea: true },
+          { id: "16", label: "Claimed Shelf Life", hint: "3+ lots, real-time + accelerated", textarea: true },
+          { id: "17", label: "In-Use Stability", hint: "Open vial, on-board stability", textarea: true },
+          { id: "18", label: "Shipping Stability", hint: "Real/simulated shipping conditions", textarea: true },
+        ]
+      },
+      {
+        id: "s19", title: "Clinical Evidence", description: "Clinical evaluation report", fields: [
+          { id: "19", label: "Clinical Evidence", hint: "Conformity to essential principles", textarea: true },
+        ]
+      },
+      {
+        id: "s20", title: "Labelling", description: "Labels and IFU", fields: [
+          { id: "20", label: "Complete Labelling Set", hint: "Outer box, primary label, IFU", textarea: true },
+        ]
+      },
+      {
+        id: "s21", title: "Post-Marketing Surveillance", description: "Vigilance and CAPA", fields: [
+          { id: "21", label: "Surveillance Data", hint: "Complaints received and CAPA taken", textarea: true },
+        ]
+      },
+      {
+        id: "s22", title: "Additional Information", description: "IVD-specific additional requirements", fields: [
+          { id: "22.1", label: "Antigen/Antibody Details", hint: "Source, characterization, coating process", textarea: true },
+          { id: "22.2", label: "Test Protocol", hint: "Specifications and method of testing", textarea: true },
+          { id: "22.3", label: "NCA Evaluation Report", hint: "Evaluation by national control authority", textarea: true },
+          { id: "22.4", label: "Batch Test Report", hint: "3+ consecutive batches", textarea: true },
+          { id: "22.5", label: "Component Test Report", hint: "All components used in finished device", textarea: true },
+          { id: "22.6", label: "Pack Size & Labelling", hint: "All pack sizes and labelling spec" },
+          { id: "22.7", label: "Product Inserts (IFU)", hint: "Full IFU document", textarea: true },
+          { id: "22.8", label: "Indian Lab Evaluation", hint: "Sensitivity/specificity by Indian lab", textarea: true },
+          { id: "22.9", label: "Safety Data Sheet", hint: "Safe handling, material control, storage", textarea: true },
+          { id: "22.10", label: "Quality Control Acceptance Criteria", hint: "Negative control, positive control and validity criteria", textarea: true },
+          { id: "22.11", label: "Biological Source Materials", hint: "Animal, human, microbial or recombinant origin materials", textarea: true },
+          { id: "22.12", label: "Applicable Standards", hint: "ISO, CLSI, WHO and other standards used", textarea: true },
+          { id: "22.13", label: "Calibrator Details", hint: "Reference materials and calibration hierarchy", textarea: true },
+          { id: "22.14", label: "Control Material Details", hint: "Positive, negative and internal controls", textarea: true },
+        ]
+      },
     ],
   },
   {
     id: "IN_DMF_MD", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (Medical Device)", deviceType: "medical-device",
     sections: [
-      { id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
-        { id: "1.1a", label: "Product Name", hint: "Full commercial name of the medical device" },
-        { id: "1.1b", label: "Device Description", hint: "Brief description of the device including purpose, technology, and mechanism of action", textarea: true },
-        { id: "1.1c", label: "Novel Features", hint: "Features distinguishing this device from existing marketed devices", textarea: true },
-        { id: "1.1d", label: "Claimed Shelf Life", hint: "Expected useful life e.g. 5 years from date of manufacture" },
-        { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D per MDR 2017 classification rules" },
-        { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted in the DMF", textarea: true },
-        { id: "1.2", label: "Regulatory Status in India", hint: "Whether device is already approved, new, or under review by CDSCO" },
-        { id: "1.3", label: "Domestic Price", hint: "Ex-factory price per unit in country of origin currency" },
-        { id: "1.4", label: "Marketing History", hint: "Global marketing history from first commercial introduction", textarea: true },
-        { id: "1.5", label: "Regulatory Approvals Table", hint: "Country | Intended Use | Risk Class | Approval Date | License Number", textarea: true },
-        { id: "1.6", label: "Pending Clearance Requests", hint: "Regulatory Agency | Intended Use | Status | Reason for any rejection", textarea: true },
-        { id: "1.7a", label: "Adverse Events Summary", hint: "Summary of all reported adverse events with frequency of occurrence", textarea: true },
-        { id: "1.7b", label: "Field Safety Corrective Actions", hint: "Date | Reason | Affected Countries | Corrective Action taken", textarea: true },
-      ]},
-      { id: "s2", title: "Device Description", description: "Technical details, intended use, principle of operation", fields: [
-        { id: "2.1", label: "Device Function", hint: "Primary therapeutic, diagnostic, or monitoring function of the device" },
-        { id: "2.2", label: "Intended Use", hint: "Specific medical indication, patient population, and clinical setting", textarea: true },
-        { id: "2.3", label: "Principle of Operation", hint: "Scientific and engineering principles underlying device function", textarea: true },
-        { id: "2.4", label: "Technical Specifications", hint: "Dimensions, weight, power requirements, operating parameters", textarea: true },
-        { id: "2.5", label: "Materials and Composition", hint: "All materials including patient-contacting materials with grade and source", textarea: true },
-        { id: "2.6", label: "Components Description", hint: "Each component: name, material, function, and supplier", textarea: true },
-        { id: "2.7", label: "Software", hint: "Software name, version, SOP level, intended function per IEC 62304", textarea: true },
-        { id: "2.8", label: "Accessories", hint: "All accessories, companion devices, and consumables required", textarea: true },
-        { id: "2.9", label: "Configurations/Variants", hint: "All models, sizes, configurations, and variants available", textarea: true },
-        { id: "2.10", label: "Sterilization Method", hint: "Method of sterilization (EtO, gamma, steam, etc.) and validation reference" },
-        { id: "2.11", label: "Biocompatibility Summary", hint: "Summary of biological evaluation per ISO 10993-1 risk assessment", textarea: true },
-        { id: "2.12", label: "Shelf Life Basis", hint: "Basis for claimed shelf life including accelerated and real-time data references" },
-      ]},
-      { id: "s3", title: "Essential Principles", description: "Safety and performance compliance per Schedule 3", fields: [
-        { id: "3a", label: "EP Checklist", hint: "Essential Principle number | Applicable | Standard Used | Compliance Status | Evidence Reference", textarea: true },
-        { id: "3b", label: "Conformity Methods", hint: "Methods used to demonstrate conformity: harmonized standards, common specifications, in-house methods", textarea: true },
-        { id: "3c", label: "Applied Standards", hint: "List of all Indian and international standards applied with edition and date", textarea: true },
-      ]},
-      { id: "s4", title: "Risk Management", description: "Risk analysis and management per ISO 14971", fields: [
-        { id: "4a", label: "Risk Analysis per ISO 14971", hint: "Complete risk analysis including intended use, foreseeable misuse, and hazardous situations", textarea: true },
-        { id: "4b", label: "Hazard Analysis", hint: "Systematic identification of hazards: biological, mechanical, electrical, thermal, radiation", textarea: true },
-        { id: "4c", label: "Risk Control Measures", hint: "Risk control options implemented: inherent safety, protective measures, information for safety", textarea: true },
-        { id: "4d", label: "Residual Risk Evaluation", hint: "Overall residual risk assessment and benefit-risk analysis", textarea: true },
-      ]},
-      { id: "s5", title: "Design & Manufacturing", description: "Design history, manufacturing process, and site information", fields: [
-        { id: "5.1", label: "Design Description", hint: "Detailed device design including engineering drawings and specifications", textarea: true },
-        { id: "5.2", label: "Design History", hint: "Design and development planning, inputs, outputs, reviews, and transfers", textarea: true },
-        { id: "5.3", label: "Manufacturing Process", hint: "Complete process flow: raw materials, assembly, testing, packaging, sterilization", textarea: true },
-        { id: "5.4", label: "Manufacturing Sites", hint: "Name, address, and scope of each manufacturing and sterilization site", textarea: true },
-        { id: "5.5", label: "Special Processes", hint: "Processes that cannot be fully verified by inspection (welding, sealing, sterilization)", textarea: true },
-        { id: "5.6", label: "Process Validation", hint: "Validation protocols and reports for critical manufacturing processes", textarea: true },
-      ]},
-      { id: "s6", title: "Verification & Validation", description: "Design verification, validation, and performance testing", fields: [
-        { id: "6.1", label: "Design Verification", hint: "Testing to confirm design outputs meet design input requirements", textarea: true },
-        { id: "6.2", label: "Design Validation", hint: "Testing to confirm device meets user needs and intended uses under actual or simulated conditions", textarea: true },
-        { id: "6.3", label: "Biocompatibility Testing (ISO 10993)", hint: "Biological evaluation results: cytotoxicity, sensitization, irritation, systemic toxicity", textarea: true },
-        { id: "6.4", label: "Electrical Safety (IEC 60601)", hint: "Electrical safety testing results per IEC 60601-1 and relevant collateral/particular standards", textarea: true },
-        { id: "6.5", label: "EMC Testing", hint: "Electromagnetic compatibility test results per IEC 60601-1-2", textarea: true },
-        { id: "6.6", label: "Sterilization Validation", hint: "Sterilization process validation per ISO 11135/11137/17665 as applicable", textarea: true },
-        { id: "6.7", label: "Packaging Validation", hint: "Sterile barrier system validation per ISO 11607 and transport simulation", textarea: true },
-        { id: "6.8", label: "Shelf Life Testing", hint: "Real-time and accelerated aging data per ASTM F1980", textarea: true },
-        { id: "6.9", label: "Software Validation", hint: "Software verification and validation per IEC 62304 including cybersecurity assessment", textarea: true },
-      ]},
-      { id: "s7", title: "Clinical Evidence", description: "Clinical evaluation and investigation data", fields: [
-        { id: "7.1", label: "Clinical Evaluation Report", hint: "Systematic review of clinical data demonstrating safety and performance", textarea: true },
-        { id: "7.2", label: "Clinical Investigation Summary", hint: "Summary of any clinical trials conducted with protocol and results", textarea: true },
-        { id: "7.3", label: "Literature Review", hint: "Systematic literature review of equivalent or similar device clinical data", textarea: true },
-        { id: "7.4", label: "Post-Market Clinical Data", hint: "Clinical data collected from post-market surveillance activities", textarea: true },
-      ]},
-      { id: "s8", title: "Labelling", description: "Labels, IFU, and packaging per CDSCO requirements", fields: [
-        { id: "8.1", label: "Device Labels", hint: "All labels: primary packaging, secondary packaging, shipping labels per MDR 2017", textarea: true },
-        { id: "8.2", label: "Instructions for Use", hint: "Complete IFU with indications, contraindications, warnings, and operating instructions", textarea: true },
-        { id: "8.3", label: "Packaging", hint: "Packaging specifications and materials for all configurations", textarea: true },
-        { id: "8.4", label: "Implant Card", hint: "Patient implant card if applicable per MDR 2017 Schedule 5", textarea: true },
-      ]},
-      { id: "s9", title: "Post-Market Surveillance", description: "Surveillance plan, adverse event reporting, and corrective actions", fields: [
-        { id: "9.1", label: "Surveillance Plan", hint: "Proactive post-market surveillance plan including data sources and analysis methods", textarea: true },
-        { id: "9.2", label: "Adverse Event Reporting", hint: "Process for reporting serious adverse events to CDSCO within prescribed timelines", textarea: true },
-        { id: "9.3", label: "CAPA", hint: "Corrective and preventive action procedures for identified device issues", textarea: true },
-        { id: "9.4", label: "Field Safety Corrective Actions", hint: "Procedures for field safety notices, recalls, and corrective actions", textarea: true },
-      ]},
-      { id: "s10", title: "Additional Requirements", description: "CDSCO-specific regulatory certificates and licenses", fields: [
-        { id: "10.1", label: "CDSCO Import License", hint: "Import license number and validity per Medical Device Rules 2017" },
-        { id: "10.2", label: "Free Sale Certificate", hint: "Certificate of free sale from country of origin regulatory authority" },
-        { id: "10.3", label: "ISO 13485 Certificate", hint: "Current ISO 13485 QMS certificate issued by accredited certification body" },
-        { id: "10.4", label: "Manufacturing License", hint: "Manufacturing license from country of origin regulatory authority" },
-        { id: "10.5", label: "Wholesale License", hint: "Wholesale license details for Indian importer/distributor" },
-        { id: "10.6", label: "Test Reports from Approved Labs", hint: "Test reports from CDSCO-recognized or NABL-accredited laboratories", textarea: true },
-      ]},
+      {
+        id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
+          { id: "1.1a", label: "Product Name", hint: "Full commercial name of the medical device" },
+          { id: "1.1b", label: "Device Description", hint: "Brief description of the device including purpose, technology, and mechanism of action", textarea: true },
+          { id: "1.1c", label: "Novel Features", hint: "Features distinguishing this device from existing marketed devices", textarea: true },
+          { id: "1.1d", label: "Claimed Shelf Life", hint: "Expected useful life e.g. 5 years from date of manufacture" },
+          { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D per MDR 2017 classification rules" },
+          { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted in the DMF", textarea: true },
+          { id: "1.2", label: "Regulatory Status in India", hint: "Whether device is already approved, new, or under review by CDSCO" },
+          { id: "1.3", label: "Domestic Price", hint: "Ex-factory price per unit in country of origin currency" },
+          { id: "1.4", label: "Marketing History", hint: "Global marketing history from first commercial introduction", textarea: true },
+          { id: "1.5", label: "Regulatory Approvals Table", hint: "Country | Intended Use | Risk Class | Approval Date | License Number", textarea: true },
+          { id: "1.6", label: "Pending Clearance Requests", hint: "Regulatory Agency | Intended Use | Status | Reason for any rejection", textarea: true },
+          { id: "1.7a", label: "Adverse Events Summary", hint: "Summary of all reported adverse events with frequency of occurrence", textarea: true },
+          { id: "1.7b", label: "Field Safety Corrective Actions", hint: "Date | Reason | Affected Countries | Corrective Action taken", textarea: true },
+        ]
+      },
+      {
+        id: "s2", title: "Device Description", description: "Technical details, intended use, principle of operation", fields: [
+          { id: "2.1", label: "Device Function", hint: "Primary therapeutic, diagnostic, or monitoring function of the device" },
+          { id: "2.2", label: "Intended Use", hint: "Specific medical indication, patient population, and clinical setting", textarea: true },
+          { id: "2.3", label: "Principle of Operation", hint: "Scientific and engineering principles underlying device function", textarea: true },
+          { id: "2.4", label: "Technical Specifications", hint: "Dimensions, weight, power requirements, operating parameters", textarea: true },
+          { id: "2.5", label: "Materials and Composition", hint: "All materials including patient-contacting materials with grade and source", textarea: true },
+          { id: "2.6", label: "Components Description", hint: "Each component: name, material, function, and supplier", textarea: true },
+          { id: "2.7", label: "Software", hint: "Software name, version, SOP level, intended function per IEC 62304", textarea: true },
+          { id: "2.8", label: "Accessories", hint: "All accessories, companion devices, and consumables required", textarea: true },
+          { id: "2.9", label: "Configurations/Variants", hint: "All models, sizes, configurations, and variants available", textarea: true },
+          { id: "2.10", label: "Sterilization Method", hint: "Method of sterilization (EtO, gamma, steam, etc.) and validation reference" },
+          { id: "2.11", label: "Biocompatibility Summary", hint: "Summary of biological evaluation per ISO 10993-1 risk assessment", textarea: true },
+          { id: "2.12", label: "Shelf Life Basis", hint: "Basis for claimed shelf life including accelerated and real-time data references" },
+        ]
+      },
+      {
+        id: "s3", title: "Essential Principles", description: "Safety and performance compliance per Schedule 3", fields: [
+          { id: "3a", label: "EP Checklist", hint: "Essential Principle number | Applicable | Standard Used | Compliance Status | Evidence Reference", textarea: true },
+          { id: "3b", label: "Conformity Methods", hint: "Methods used to demonstrate conformity: harmonized standards, common specifications, in-house methods", textarea: true },
+          { id: "3c", label: "Applied Standards", hint: "List of all Indian and international standards applied with edition and date", textarea: true },
+        ]
+      },
+      {
+        id: "s4", title: "Risk Management", description: "Risk analysis and management per ISO 14971", fields: [
+          { id: "4a", label: "Risk Analysis per ISO 14971", hint: "Complete risk analysis including intended use, foreseeable misuse, and hazardous situations", textarea: true },
+          { id: "4b", label: "Hazard Analysis", hint: "Systematic identification of hazards: biological, mechanical, electrical, thermal, radiation", textarea: true },
+          { id: "4c", label: "Risk Control Measures", hint: "Risk control options implemented: inherent safety, protective measures, information for safety", textarea: true },
+          { id: "4d", label: "Residual Risk Evaluation", hint: "Overall residual risk assessment and benefit-risk analysis", textarea: true },
+        ]
+      },
+      {
+        id: "s5", title: "Design & Manufacturing", description: "Design history, manufacturing process, and site information", fields: [
+          { id: "5.1", label: "Design Description", hint: "Detailed device design including engineering drawings and specifications", textarea: true },
+          { id: "5.2", label: "Design History", hint: "Design and development planning, inputs, outputs, reviews, and transfers", textarea: true },
+          { id: "5.3", label: "Manufacturing Process", hint: "Complete process flow: raw materials, assembly, testing, packaging, sterilization", textarea: true },
+          { id: "5.4", label: "Manufacturing Sites", hint: "Name, address, and scope of each manufacturing and sterilization site", textarea: true },
+          { id: "5.5", label: "Special Processes", hint: "Processes that cannot be fully verified by inspection (welding, sealing, sterilization)", textarea: true },
+          { id: "5.6", label: "Process Validation", hint: "Validation protocols and reports for critical manufacturing processes", textarea: true },
+        ]
+      },
+      {
+        id: "s6", title: "Verification & Validation", description: "Design verification, validation, and performance testing", fields: [
+          { id: "6.1", label: "Design Verification", hint: "Testing to confirm design outputs meet design input requirements", textarea: true },
+          { id: "6.2", label: "Design Validation", hint: "Testing to confirm device meets user needs and intended uses under actual or simulated conditions", textarea: true },
+          { id: "6.3", label: "Biocompatibility Testing (ISO 10993)", hint: "Biological evaluation results: cytotoxicity, sensitization, irritation, systemic toxicity", textarea: true },
+          { id: "6.4", label: "Electrical Safety (IEC 60601)", hint: "Electrical safety testing results per IEC 60601-1 and relevant collateral/particular standards", textarea: true },
+          { id: "6.5", label: "EMC Testing", hint: "Electromagnetic compatibility test results per IEC 60601-1-2", textarea: true },
+          { id: "6.6", label: "Sterilization Validation", hint: "Sterilization process validation per ISO 11135/11137/17665 as applicable", textarea: true },
+          { id: "6.7", label: "Packaging Validation", hint: "Sterile barrier system validation per ISO 11607 and transport simulation", textarea: true },
+          { id: "6.8", label: "Shelf Life Testing", hint: "Real-time and accelerated aging data per ASTM F1980", textarea: true },
+          { id: "6.9", label: "Software Validation", hint: "Software verification and validation per IEC 62304 including cybersecurity assessment", textarea: true },
+        ]
+      },
+      {
+        id: "s7", title: "Clinical Evidence", description: "Clinical evaluation and investigation data", fields: [
+          { id: "7.1", label: "Clinical Evaluation Report", hint: "Systematic review of clinical data demonstrating safety and performance", textarea: true },
+          { id: "7.2", label: "Clinical Investigation Summary", hint: "Summary of any clinical trials conducted with protocol and results", textarea: true },
+          { id: "7.3", label: "Literature Review", hint: "Systematic literature review of equivalent or similar device clinical data", textarea: true },
+          { id: "7.4", label: "Post-Market Clinical Data", hint: "Clinical data collected from post-market surveillance activities", textarea: true },
+        ]
+      },
+      {
+        id: "s8", title: "Labelling", description: "Labels, IFU, and packaging per CDSCO requirements", fields: [
+          { id: "8.1", label: "Device Labels", hint: "All labels: primary packaging, secondary packaging, shipping labels per MDR 2017", textarea: true },
+          { id: "8.2", label: "Instructions for Use", hint: "Complete IFU with indications, contraindications, warnings, and operating instructions", textarea: true },
+          { id: "8.3", label: "Packaging", hint: "Packaging specifications and materials for all configurations", textarea: true },
+          { id: "8.4", label: "Implant Card", hint: "Patient implant card if applicable per MDR 2017 Schedule 5", textarea: true },
+        ]
+      },
+      {
+        id: "s9", title: "Post-Market Surveillance", description: "Surveillance plan, adverse event reporting, and corrective actions", fields: [
+          { id: "9.1", label: "Surveillance Plan", hint: "Proactive post-market surveillance plan including data sources and analysis methods", textarea: true },
+          { id: "9.2", label: "Adverse Event Reporting", hint: "Process for reporting serious adverse events to CDSCO within prescribed timelines", textarea: true },
+          { id: "9.3", label: "CAPA", hint: "Corrective and preventive action procedures for identified device issues", textarea: true },
+          { id: "9.4", label: "Field Safety Corrective Actions", hint: "Procedures for field safety notices, recalls, and corrective actions", textarea: true },
+        ]
+      },
+      {
+        id: "s10", title: "Additional Requirements", description: "CDSCO-specific regulatory certificates and licenses", fields: [
+          { id: "10.1", label: "CDSCO Import License", hint: "Import license number and validity per Medical Device Rules 2017" },
+          { id: "10.2", label: "Free Sale Certificate", hint: "Certificate of free sale from country of origin regulatory authority" },
+          { id: "10.3", label: "ISO 13485 Certificate", hint: "Current ISO 13485 QMS certificate issued by accredited certification body" },
+          { id: "10.4", label: "Manufacturing License", hint: "Manufacturing license from country of origin regulatory authority" },
+          { id: "10.5", label: "Wholesale License", hint: "Wholesale license details for Indian importer/distributor" },
+          { id: "10.6", label: "Test Reports from Approved Labs", hint: "Test reports from CDSCO-recognized or NABL-accredited laboratories", textarea: true },
+        ]
+      },
     ],
   },
 ];
