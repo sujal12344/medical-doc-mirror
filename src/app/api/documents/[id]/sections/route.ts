@@ -23,7 +23,17 @@ export async function PUT(req: Request, ctx: Ctx) {
     const filledFields = Object.values(fields).filter((v) => typeof v === "string" && (v as string).trim()).length;
     const completionPct = totalFields > 0 ? Math.round((filledFields / totalFields) * 100) : 0;
 
-    doc.sections.set(sectionId, { fields, completionPct });
+    const fieldKeys = Object.keys(fields);
+    console.log("[dmf-sections] PUT save", {
+      documentId: id,
+      sectionId,
+      fieldCount: fieldKeys.length,
+      dottedFieldIds: fieldKeys.filter((k) => k.includes(".")).length,
+      completionPct,
+    });
+
+    doc.sections.set(sectionId, { fields: { ...fields }, completionPct });
+    doc.markModified("sections");
     await doc.save();
 
     return NextResponse.json({ ok: true, completionPct });

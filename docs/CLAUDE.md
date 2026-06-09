@@ -144,7 +144,7 @@ nextjs-mongo-professional/
 | GET, POST | `/api/documents` | `documents/route.ts` |
 | GET, PUT, DELETE | `/api/documents/[id]` | `documents/[id]/route.ts` |
 | PUT | `/api/documents/[id]/sections` | `documents/[id]/sections/route.ts` |
-| POST | `/api/documents/[id]/autofill` | `documents/[id]/autofill/route.ts` — uses product `uploadedDocs` |
+| POST | `/api/documents/[id]/autofill` | `documents/[id]/autofill/route.ts` — seeds from `Product.intendedUse` + `predDevice` via `dmfProductPrefill.ts`; then GPT from `uploadedDocs` (either alone is enough) |
 | POST | `/api/documents/[id]/chat-upload` | `documents/[id]/chat-upload/route.ts` |
 
 ### AI, files, utilities
@@ -207,6 +207,7 @@ nextjs-mongo-professional/
 | `auth.ts` | `getSession()`, `requireAuth()` |
 | `documentExtract.ts` | PDF text extraction + OCR fallback (pdf-parse → pdfjs render → OpenAI Vision) |
 | `productMapper.ts` | Flat form ↔ nested Product; `$unset` wrong device section |
+| `dmfProductPrefill.ts` | Phase 1 → DMF field seeds (`intendedUse`, `predDevice`, name, class) for `IN_DMF` / `IN_DMF_MD` |
 | `businessGenesis.ts` | Phase 0 completion; **India-only** secE helpers (`enforceIndiaOnlySecE`) |
 | `classification/hybridQuery.ts` | Pinecone `product_{companyId}_{vectorNamespaceId}` + MDR rules + GPT |
 | `compliance-knowledge/` | Static country data (`data.ts`, `types.ts`, `index.ts`) |
@@ -288,9 +289,27 @@ southeast-asia/  singapore, thailand, indonesia, malaysia, philippines, vietnam,
 |------|----------------|
 | Autofill on **new** product | Text stored in client `pendingSourceDoc` → sent as `uploadedDocs` on **POST /api/products** |
 | After product exists | **POST /api/products/[id]/upload** with JSON `{ originalName, extractedText }` or multipart files |
-| Document autofill | **POST /api/documents/[id]/autofill** reads `product.uploadedDocs` |
+| Document autofill | **POST /api/documents/[id]/autofill** — **(1)** deterministic prefill from `intendedUse`, `predDevice`, identity fields; **(2)** GPT from `uploadedDocs` / chat upload (skips fields already filled) |
 
-Autofill API alone does **not** write `uploadedDocs` (vectors only in Pinecone).
+Product registration autofill (`/api/products/autofill`) does **not** write `uploadedDocs` (vectors only in Pinecone).
+
+### India DMF frameworks (`lib/frameworks/asia/india.ts`)
+
+| Framework | `deviceType` | Notable sections |
+|-----------|--------------|------------------|
+| `IN_DMF` | `ivd` | §1–22 + **s10** regulatory certificates; **2.0** intended use; **2.1s** prior generations; **2.4** predicate (from `predDevice`) |
+| `IN_DMF_MD` | `medical-device` | §1–10; **2.13** predicate; **2.14** prior generations; **2.2** intended use |
+
+**DMF prefill map** (`getProductDmfPrefill`):
+
+| Product field | IVD (`IN_DMF`) | MD (`IN_DMF_MD`) |
+|---------------|----------------|------------------|
+| `name` | `s1` / `1.1a` | `s1` / `1.1a` |
+| `description` | `s1` / `1.1b` | `s1` / `1.1b` |
+| `deviceClass` | `s1` / `1.1e` | `s1` / `1.1e` |
+| `intendedUse` | `s2` / `2.0`, `2.1c` | `s2` / `2.2` |
+| `patientPopulation` | `s2` / `2.1g` | — |
+| `predDevice.*` | `s2` / `2.4`, `s1` / `1.2` pathway note | `s2` / `2.13`, `s1` / `1.2` |
 
 ### Pinecone namespaces (registration RAG)
 
@@ -387,6 +406,7 @@ PDF_MIN_CHARS_PER_PAGE_MULTI
 | Phase 0 India-only markets | `businessGenesis.ts`, `BusinessGenesisForm.tsx` |
 | New product fresh session | Link `?fresh=1` from products list, dashboard, ClassificationWidget |
 | Persist IFU/PDF on product | `api/products/[id]/upload/route.ts` |
+| DMF section autofill (Phase 1 seed) | `lib/dmfProductPrefill.ts`, `api/documents/[id]/autofill/route.ts`, `frameworks/asia/india.ts` |
 | Nested product create/update | `lib/productMapper.ts`, `models/Product.ts` |
 | DOCX bulk export | `api/upload/route.ts`, `dashboard/upload/page.tsx` |
 | Sidebar broken “Documents” link | `components/Sidebar.tsx` — should point to products or doc list |
@@ -444,6 +464,12 @@ Summary of work through late May 2026 — use when continuing sessions.
 - Autofill accepts/returns `productNamespaceId`; classification uses `vectorNamespaceId || productId`.
 - Removed predicate/company namespace RAG paths.
 
+### India DMF field audit & document autofill (late May 2026)
+
+- **`india.ts`:** IVD **2.0** intended use, **2.1s** prior generations, **s10** certificates (parity with MD); MD **2.13** predicate, **2.14** prior generations; clarified §2.3 I/II/III labels; fixed **6.5** typo.
+- **`dmfProductPrefill.ts`:** Reads `Product.intendedUse` and nested `predDevice` (`predicateName`, `predicateManufacturer`, `predicateRegNo`, `predicateClass`, `predicateBasis`, `predicateExists`) from MongoDB before GPT autofill.
+- **`documents/[id]/autofill`:** Applies product seed first; allows autofill with Phase 1 data only (no IFU upload); merges GPT extractions without overwriting seeded or user-edited fields.
+
 ### APIs (recent)
 
 | Area | File |
@@ -453,6 +479,7 @@ Summary of work through late May 2026 — use when continuing sessions.
 | Extract-text + OCR | `api/extract-text/route.ts` |
 | Product create + vectorNamespaceId | `api/products/route.ts` |
 | Classification RAG namespace | `lib/classification/hybridQuery.ts`, `api/products/[id]/classify/route.ts` |
+| DMF document autofill + product seed | `lib/dmfProductPrefill.ts`, `api/documents/[id]/autofill/route.ts` |
 
 ### Still open
 

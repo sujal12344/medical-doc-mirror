@@ -22,7 +22,15 @@ const documentSchema = new Schema<DocumentDocument>(
     frameworkId: { type: String, required: true, maxlength: 50 },
     title: { type: String, required: true, trim: true, maxlength: 500 },
     status: { type: String, enum: ["draft", "in-review", "approved", "submitted"], default: "draft" },
-    sections: { type: Map, of: new Schema({ fields: { type: Map, of: String }, completionPct: Number }, { _id: false }), default: {} },
+    // fields uses Mixed (not Map) — framework field ids contain dots (e.g. 1.1a, 2.0)
+    sections: {
+      type: Map,
+      of: new Schema(
+        { fields: { type: Schema.Types.Mixed, default: () => ({}) }, completionPct: { type: Number, default: 0 } },
+        { _id: false },
+      ),
+      default: () => new Map(),
+    },
     version: { type: Number, default: 1 },
   },
   { timestamps: true },

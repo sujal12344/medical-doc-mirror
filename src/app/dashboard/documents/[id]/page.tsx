@@ -3,8 +3,10 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { RegulatoryFieldEditor } from "@/components/documents/RegulatoryFieldEditor";
 import { FRAMEWORKS } from "@/lib/frameworks";
 import type { FrameworkSection } from "@/lib/frameworks";
+import { countDocumentFieldCompletion, normalizeDocumentSections } from "@/lib/normalizeDocument";
 
 type DocData = {
   _id: string;
@@ -17,6 +19,61 @@ type DocData = {
   sections: Record<string, { fields: Record<string, string>; completionPct: number }>;
 };
 
+type ProductForIndex = {
+  _id: string;
+  vectorNamespaceId?: string;
+  name?: string;
+  description?: string;
+  intendedUse?: string;
+  uploadedDocs?: { originalName: string; extractedText: string }[];
+  predDevice?: {
+    predicateName?: string;
+    predicateManufacturer?: string;
+    predicateBasis?: string;
+    predicateClass?: string;
+  };
+};
+
+function buildProductIndexText(product: ProductForIndex, extraText: string): string {
+  const pred = product.predDevice;
+  return [
+    ...(product.uploadedDocs || []).map((d) => `--- ${d.originalName} ---\n${d.extractedText}`),
+    extraText ? `--- DMF chat upload ---\n${extraText}` : "",
+    product.name ? `Product: ${product.name}` : "",
+    product.description ? `Description: ${product.description}` : "",
+    product.intendedUse ? `Intended use: ${product.intendedUse}` : "",
+    pred?.predicateName ? `Predicate device: ${pred.predicateName}` : "",
+    pred?.predicateManufacturer ? `Predicate manufacturer: ${pred.predicateManufacturer}` : "",
+    pred?.predicateClass ? `Predicate class: Class ${pred.predicateClass}` : "",
+    pred?.predicateBasis ? `Predicate rationale / distinguishing features: ${pred.predicateBasis}` : "",
+  ]
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+async function upsertProductKnowledgeIndex(
+  productId: string,
+  extraText: string,
+): Promise<{ chunksIndexed: number; namespace: string } | null> {
+  const pr = await fetch(`/api/products/${productId}`);
+  if (!pr.ok) return null;
+  const { product } = (await pr.json()) as { product?: ProductForIndex };
+  if (!product) return null;
+
+  const documentText = buildProductIndexText(product, extraText);
+  if (!documentText.trim()) return null;
+
+  const productNamespaceId = product.vectorNamespaceId || product._id;
+  const r = await fetch("/api/products/autofill", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ documentText, productNamespaceId, indexOnly: true }),
+  });
+  const data = await r.json();
+  if (!r.ok) throw new Error((data.error as string) || "Pinecone index failed");
+  return { chunksIndexed: data.chunksIndexed as number, namespace: data.namespace as string };
+}
+
 export default function DocumentEditorPage() {
   const { id } = useParams<{ id: string }>();
   const [doc, setDoc] = useState<DocData | null>(null);
@@ -27,13 +84,19 @@ export default function DocumentEditorPage() {
   const [chatMessages, setChatMessages] = useState<{ role: string; text: string }[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [autofilling, setAutofilling] = useState(false);
+  const [initialAutofillDone, setInitialAutofillDone] = useState(false);
   const [chatDocContext, setChatDocContext] = useState("");
   const chatFileRef = useRef<HTMLInputElement>(null);
+  const initialAutofillStarted = useRef(false);
 
   useEffect(() => {
     fetch(`/api/documents/${id}`).then((r) => r.json()).then((data) => {
       if (data.document) {
-        setDoc(data.document);
+        const normalized = {
+          ...data.document,
+          sections: normalizeDocumentSections(data.document.sections),
+        };
+        setDoc(normalized);
         const fw = FRAMEWORKS.find((f) => f.id === data.document.frameworkId);
         setFramework(fw || null);
         if (fw) setActiveSection(fw.sections[0]?.id || "");
@@ -82,11 +145,34 @@ export default function DocumentEditorPage() {
     if (data.document) setDoc(data.document);
   }
 
-  async function triggerAutofill() {
-    if (!doc) return;
+  const runAutofill = useCallback(async (opts?: { isInitial?: boolean }) => {
+    if (!doc || autofilling) return;
     setAutofilling(true);
-    setChatMessages((prev) => [...prev, { role: "bot", text: "Running AI auto-fill from uploaded documents..." }]);
+    const startMsg = opts?.isInitial
+      ? "Opening document — auto-filling from your registered product and uploaded IFU…"
+      : "Indexing product knowledge to Pinecone, then running DMF auto-fill…";
+    setChatMessages((prev) => [...prev, { role: "bot", text: startMsg }]);
     try {
+      if (!opts?.isInitial && doc.productId) {
+        try {
+          const indexed = await upsertProductKnowledgeIndex(doc.productId, chatDocContext);
+          if (indexed) {
+            setChatMessages((prev) => [
+              ...prev,
+              {
+                role: "bot",
+                text: `Indexed ${indexed.chunksIndexed} chunk(s) to ${indexed.namespace} (product RAG namespace).`,
+              },
+            ]);
+          }
+        } catch (indexErr) {
+          setChatMessages((prev) => [
+            ...prev,
+            { role: "bot", text: `Pinecone index skipped: ${indexErr instanceof Error ? indexErr.message : "failed"}` },
+          ]);
+        }
+      }
+
       const r = await fetch(`/api/documents/${id}/autofill`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -94,10 +180,21 @@ export default function DocumentEditorPage() {
       });
       const data = await r.json();
       if (r.ok) {
-        setChatMessages((prev) => [...prev, { role: "bot", text: `Auto-fill complete! ${data.filledCount} fields filled from ${data.totalParsed} extracted values. Refreshing...` }]);
+        if (opts?.isInitial && typeof window !== "undefined") {
+          sessionStorage.setItem(`dmf_autofill_open_${id}`, "1");
+        }
+        const detail = opts?.isInitial
+          ? `Auto-fill complete on open — ${data.filledCount} fields filled (${data.productPrefillCount ?? 0} from Phase 1 product).`
+          : `Auto-fill complete! ${data.filledCount} fields filled (${data.totalParsed} GPT values parsed).`;
+        setChatMessages((prev) => [...prev, { role: "bot", text: detail }]);
         const refreshRes = await fetch(`/api/documents/${id}`);
         const refreshData = await refreshRes.json();
-        if (refreshData.document) setDoc(refreshData.document);
+        if (refreshData.document) {
+          setDoc({
+            ...refreshData.document,
+            sections: normalizeDocumentSections(refreshData.document.sections),
+          });
+        }
       } else {
         setChatMessages((prev) => [...prev, { role: "bot", text: `Auto-fill issue: ${data.error || "Unknown error"}` }]);
       }
@@ -105,7 +202,27 @@ export default function DocumentEditorPage() {
       setChatMessages((prev) => [...prev, { role: "bot", text: "Auto-fill failed. Check connection." }]);
     }
     setAutofilling(false);
-  }
+    setInitialAutofillDone(true);
+  }, [autofilling, chatDocContext, doc, id]);
+
+  useEffect(() => {
+    if (!doc || !framework || initialAutofillStarted.current) return;
+
+    const totalFields = framework.sections.reduce((n, s) => n + s.fields.length, 0);
+    const { filled, pct } = countDocumentFieldCompletion(doc.sections, totalFields);
+    const sessionKey = `dmf_autofill_open_${id}`;
+    const alreadyRan = typeof window !== "undefined" && sessionStorage.getItem(sessionKey) === "1";
+
+    // Auto-fill on first open when document is new/empty, or once per browser session
+    const shouldAutofill = !alreadyRan && (filled === 0 || pct < 15);
+    if (!shouldAutofill) {
+      setInitialAutofillDone(true);
+      return;
+    }
+
+    initialAutofillStarted.current = true;
+    void runAutofill({ isInitial: true });
+  }, [doc, framework, id, runAutofill]);
 
   async function handleChatFileUpload(files: FileList) {
     if (!files.length) return;
@@ -175,15 +292,26 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
   }
 
   if (!doc || !framework) {
-    return <div className="p-8"><p className="text-muted">Loading document...</p></div>;
+    return (
+      <div className="flex h-[calc(100vh-4rem)] items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-sm font-medium text-foreground">Loading document…</p>
+          <p className="text-xs text-muted mt-1">Preparing regulatory sections</p>
+        </div>
+      </div>
+    );
   }
 
   const currentSection: FrameworkSection | undefined = framework.sections.find((s) => s.id === activeSection);
+  const sectionPct = currentSection ? (doc.sections?.[currentSection.id]?.completionPct ?? 0) : 0;
+  const sectionFilled = currentSection
+    ? currentSection.fields.filter((f) => getFieldValue(currentSection.id, f.id).trim()).length
+    : 0;
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-[calc(100vh-4rem)] min-h-0">
       {/* Section Nav */}
-      <div className="w-56 bg-surface border-r border-border overflow-y-auto shrink-0 p-3">
+      <div className="w-60 bg-surface border-r border-border overflow-y-auto shrink-0 p-3">
         <Link href={`/dashboard/products`} className="text-xs text-muted hover:text-foreground mb-3 block">&larr; Back</Link>
         <p className="text-xs font-semibold text-foreground mb-1 truncate">{doc.title}</p>
         <p className="text-[10px] text-muted mb-4">v{doc.version} &middot; {doc.status}</p>
@@ -207,32 +335,62 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
       </div>
 
       {/* Editor */}
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto min-w-0 relative">
+        {autofilling && !initialAutofillDone ? (
+          <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-center gap-2 border-b border-accent/20 bg-accent/5 px-4 py-2.5 text-xs text-foreground">
+            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-accent border-t-transparent" />
+            Auto-filling from Phase 1 product data and documents…
+          </div>
+        ) : null}
         {currentSection ? (
-          <div className="max-w-3xl">
-            <h2 className="text-xl font-bold text-foreground mb-1">{currentSection.title}</h2>
-            <p className="text-sm text-muted mb-6">{currentSection.description}</p>
-            <div className="space-y-4">
-              {currentSection.fields.map((field) => (
-                <div key={field.id} className="bg-surface border border-border rounded-xl p-4">
-                  <label className="block text-sm font-medium text-foreground mb-1">{field.label}</label>
-                  <p className="text-xs text-muted mb-2">{field.hint}</p>
-                  {field.textarea ? (
-                    <textarea rows={4} value={getFieldValue(currentSection.id, field.id)}
-                      onChange={(e) => setFieldValue(currentSection.id, field.id, e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-surface2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition resize-y" />
-                  ) : (
-                    <input type="text" value={getFieldValue(currentSection.id, field.id)}
-                      onChange={(e) => setFieldValue(currentSection.id, field.id, e.target.value)}
-                      className="w-full px-3 py-2 border border-border rounded-lg bg-surface2 text-sm focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent transition" />
-                  )}
+          <div className={`max-w-4xl mx-auto p-6 pb-24 ${autofilling && !initialAutofillDone ? "pt-14" : ""}`}>
+            <div className="mb-6 rounded-xl border border-border bg-surface2/60 p-4">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1">
+                    {framework.documentType}
+                  </p>
+                  <h2 className="text-xl font-bold text-foreground">{currentSection.title}</h2>
+                  {currentSection.description ? (
+                    <p className="text-sm text-muted mt-1 max-w-2xl">{currentSection.description}</p>
+                  ) : null}
                 </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-foreground">{sectionPct}%</p>
+                  <p className="text-[10px] text-muted">
+                    {sectionFilled} of {currentSection.fields.length} fields
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 h-1.5 rounded-full bg-surface overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-accent transition-all duration-300"
+                  style={{ width: `${sectionPct}%` }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-5">
+              {currentSection.fields.map((field) => (
+                <RegulatoryFieldEditor
+                  key={field.id}
+                  fieldId={field.id}
+                  label={field.label}
+                  hint={field.hint}
+                  textarea={field.textarea}
+                  value={getFieldValue(currentSection.id, field.id)}
+                  onChange={(v) => setFieldValue(currentSection.id, field.id, v)}
+                />
               ))}
             </div>
-            <div className="mt-6">
-              <button onClick={() => saveSection(currentSection.id)} disabled={saving}
-                className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition disabled:opacity-50">
-                {saving ? "Saving..." : "Save Section"}
+
+            <div className="sticky bottom-0 mt-8 -mx-6 px-6 py-4 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent border-t border-border/80">
+              <button
+                onClick={() => saveSection(currentSection.id)}
+                disabled={saving}
+                className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition disabled:opacity-50 shadow-sm"
+              >
+                {saving ? "Saving…" : `Save ${currentSection.title}`}
               </button>
             </div>
           </div>
@@ -249,7 +407,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               <h3 className="text-xs font-semibold text-foreground">AI Assistant</h3>
               <p className="text-[10px] text-muted">Upload docs or ask questions</p>
             </div>
-            <button onClick={triggerAutofill} disabled={autofilling}
+            <button onClick={() => runAutofill()} disabled={autofilling}
               className="text-[10px] px-2.5 py-1 bg-[var(--accent)] text-white rounded-lg font-medium hover:bg-[var(--accent-hover)] transition disabled:opacity-50">
               {autofilling ? "Filling..." : "Auto-fill"}
             </button>
@@ -259,7 +417,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
           {chatMessages.length === 0 && (
             <div className="text-[11px] text-muted p-3 bg-surface2 rounded-lg border border-border">
               <p className="font-medium text-foreground mb-1">Welcome!</p>
-              <p className="mb-2">Upload documents using the 📎 button below, then click <strong>Auto-fill</strong> to let AI fill matching fields.</p>
+              <p className="mb-2">New documents auto-fill on open from your registered product. Upload IFU with 📎 and click <strong>Auto-fill</strong> to refresh from documents.</p>
               <p>You can also ask questions about any field or type &quot;fill [field] = [value]&quot; to update directly.</p>
             </div>
           )}

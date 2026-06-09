@@ -1,32 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 import { OpenAI } from "openai";
-import { Pinecone } from "@pinecone-database/pinecone";
+import {
+  chunkText,
+  indexProductDocument,
+  normalizeNamespaceProductId,
+} from "@/lib/productVectorIndex";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-const pc = new Pinecone({ apiKey: process.env.PINECONE_KEY! });
 
 const INDEX_NAME = process.env.PINECONE_INDEX!;
 const MIN_SCORE = 0.1;
-const CHUNK_SIZE = 1500;
-const CHUNK_OVERLAP = 200;
-const EMBED_BATCH = 32;
-
-function chunkText(text: string): string[] {
-  const clean = text.replace(/\n+/g, "\n").replace(/\s+/g, " ").trim();
-  const chunks: string[] = [];
-  let i = 0;
-  while (i < clean.length) {
-    let end = i + CHUNK_SIZE;
-    if (end < clean.length) {
-      const next = clean.indexOf(" ", end);
-      if (next !== -1 && next - end < 50) end = next;
-    }
-    chunks.push(clean.substring(i, end).trim());
-    i = end - CHUNK_OVERLAP;
-  }
-  return chunks;
-}
 
 async function embedBatch(texts: string[]): Promise<number[][]> {
   const res = await openai.embeddings.create({
@@ -34,14 +18,6 @@ async function embedBatch(texts: string[]): Promise<number[][]> {
     input: texts,
   });
   return res.data.map((d) => d.embedding);
-}
-
-function normalizeNamespaceProductId(input: unknown): string | null {
-  if (typeof input !== "string") return null;
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  const safe = trimmed.replace(/[^a-zA-Z0-9_-]/g, "");
-  return safe || null;
 }
 
 export async function POST(req: NextRequest) {
@@ -53,8 +29,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const documentText = body.documentText as string;
     const suppliedNamespaceProductId = normalizeNamespaceProductId(body.productNamespaceId);
+    const indexOnly = body.indexOnly === true;
 
     if (!documentText?.trim()) return NextResponse.json({ error: "No document text provided" }, { status: 400 });
+
+    if (indexOnly) {
+      const indexed = await indexProductDocument(userId, documentText, suppliedNamespaceProductId);
+      return NextResponse.json({ ok: true, indexOnly: true, ...indexed });
+    }
 
     return await runProductAutofill(userId, documentText, suppliedNamespaceProductId);
   } catch (error: unknown) {
@@ -62,29 +44,6 @@ export async function POST(req: NextRequest) {
     const message = error instanceof Error ? error.message : "Autofill failed";
     return NextResponse.json({ error: message }, { status: 500 });
   }
-}
-
-async function upsertChunks(
-  userId: string,
-  namespace: string,
-  productNamespaceId: string,
-  purpose: string,
-  docId: string,
-  chunks: string[],
-) {
-  const index = pc.index(INDEX_NAME).namespace(namespace);
-  for (let i = 0; i < chunks.length; i += EMBED_BATCH) {
-    const batch = chunks.slice(i, i + EMBED_BATCH);
-    const embeddings = await embedBatch(batch);
-    const vectors = batch.map((text, j) => ({
-      id: `${docId}_chunk_${i + j}`,
-      values: embeddings[j],
-      metadata: { text, userId, productNamespaceId, purpose, docId },
-    }));
-    await index.upsert({ records: vectors });
-  }
-  console.log(`[autofill] Upserted ${chunks.length} vectors to namespace '${namespace}'`);
-  return index;
 }
 
 async function retrieveContexts(
@@ -171,12 +130,14 @@ async function runProductAutofill(userId: string, documentText: string, supplied
   const chunks = chunkText(documentText);
   console.log(`[autofill:product] ${chunks.length} chunks from ${documentText.length} chars`);
 
-  // Option B: strict product-level namespace product_${userId}_${productNamespaceId}
-  // Before DB product exists we use a generated temporary productNamespaceId and return it to client.
-  const productNamespaceId = suppliedNamespaceProductId ?? `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const namespace = `product_${userId}_${productNamespaceId}`;
-  const docId = `${productNamespaceId}_${Date.now()}`;
-  const index = await upsertChunks(userId, namespace, productNamespaceId, "autofill", docId, chunks);
+  const { productNamespaceId, namespace, docId } = await indexProductDocument(
+    userId,
+    documentText,
+    suppliedNamespaceProductId,
+  );
+  const { Pinecone } = await import("@pinecone-database/pinecone");
+  const pc = new Pinecone({ apiKey: process.env.PINECONE_KEY! });
+  const index = pc.index(INDEX_NAME).namespace(namespace);
 
   const queries = [
       "product name trade name manufacturer company name brand",

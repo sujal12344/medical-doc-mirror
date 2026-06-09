@@ -6,6 +6,25 @@ import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { FRAMEWORKS } from "@/lib/frameworks";
+import {
+  applyPrefillToSections,
+  buildProductContextForDmfAutofill,
+  getProductDmfPrefill,
+} from "@/lib/dmfProductPrefill";
+import {
+  buildValidFieldIdSets,
+  completionPctForSection,
+  parseSectionFieldKey,
+  persistSections,
+  sectionsToPlain,
+} from "@/lib/documentSections";
+
+const LOG = "[dmf-autofill]";
+
+function preview(value: string, max = 80): string {
+  const oneLine = value.replace(/\s+/g, " ").trim();
+  return oneLine.length <= max ? oneLine : `${oneLine.slice(0, max)}…`;
+}
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -32,14 +51,45 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       extraText ? `--- Chat Upload ---\n${extraText}` : "",
     ].filter(Boolean).join("\n\n");
 
-    if (!combinedText.trim()) {
-      return NextResponse.json({ error: "No source documents found. Upload documents to the product first." }, { status: 400 });
-    }
-
     const fw = FRAMEWORKS.find((f) => f.id === doc.frameworkId);
     if (!fw) return NextResponse.json({ error: "Framework not found" }, { status: 404 });
 
-    const truncated = combinedText.slice(0, 80_000);
+    const sections = sectionsToPlain(doc.sections);
+    const validFieldIds = buildValidFieldIdSets(fw);
+    const productPrefill = getProductDmfPrefill(doc.frameworkId, product as Record<string, unknown>);
+    const productPrefillCount = applyPrefillToSections(sections, fw, productPrefill);
+
+    console.log(`${LOG} start`, {
+      documentId: id,
+      frameworkId: doc.frameworkId,
+      framework: fw.documentType,
+      productId: String(doc.productId),
+      productName: (product as { name?: string }).name ?? "(no name)",
+    });
+    console.log(`${LOG} sources`, {
+      uploadedDocs: uploadedDocs.length,
+      extraTextChars: extraText.length,
+      hasUploadedDocs: combinedText.trim().length > 0,
+    });
+    console.log(`${LOG} product prefill (${productPrefillCount} fields)`, Object.fromEntries(
+      Object.entries(productPrefill).map(([k, v]) => [k, preview(v)]),
+    ));
+
+    const productContext = buildProductContextForDmfAutofill(product as Record<string, unknown>);
+    const hasUploadedDocs = combinedText.trim().length > 0;
+    const hasProductSeed =
+      productPrefillCount > 0 || productContext.includes("Intended use") || productContext.includes("Predicate");
+
+    if (!hasUploadedDocs && !hasProductSeed) {
+      return NextResponse.json(
+        { error: "No source data. Complete Phase 1 (intended use / predicate) or upload documents to the product." },
+        { status: 400 },
+      );
+    }
+
+    const truncated = hasUploadedDocs
+      ? combinedText.slice(0, 80_000)
+      : productContext;
 
     const fieldList = fw.sections.flatMap((s) =>
       s.fields.map((f) => `${s.id}|${f.id}|${f.label}|${f.hint}`)
@@ -55,7 +105,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           content: `You are a regulatory documentation expert. Given source documents from a medical device manufacturer, extract data and fill regulatory form fields.
 
 RULES:
-- Output ONLY valid JSON: an object mapping "sectionId.fieldId" to the extracted value string.
+- Output ONLY valid JSON: keys must be "sectionId.fieldId" where sectionId is s1, s2, s10, etc. and fieldId is the EXACT id from the list (e.g. "s1.1.1a", "s2.2.1c") — fieldIds often contain dots.
+- For field 1.2 (Regulatory Status in India): if predicate on CDSCO list → "Yes — approved" + predicate name; else "New device".
+- For field 2.1c (Disorder/Condition): state the clinical disorder/condition detected — NOT the full intended-use paragraph (that belongs in 2.0 / 2.2).
 - If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values).
 - NEVER copy field labels or hints as values.
 - Keep values concise but complete. For tables, use pipe-delimited rows.
@@ -68,8 +120,10 @@ RULES:
 FIELDS TO FILL (sectionId|fieldId|label|hint):
 ${fieldList.join("\n")}
 
-SOURCE DOCUMENTS:
+${hasUploadedDocs ? "SOURCE DOCUMENTS" : "SOURCE (product registration only — no uploaded IFU yet)"}:
 ${truncated}
+
+${hasUploadedDocs ? `ALSO USE (Phase 1 product record — do not contradict):\n${productContext}\n` : ""}
 
 Return JSON mapping "sectionId.fieldId" to extracted values.`,
         },
@@ -85,40 +139,88 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
       const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/, "").trim();
       parsed = JSON.parse(cleaned);
     } catch {
+      console.error(`${LOG} GPT JSON parse failed`, { rawPreview: preview(raw, 200) });
       return NextResponse.json({ error: "AI returned invalid JSON", raw }, { status: 500 });
     }
 
-    let filledCount = 0;
-    const sections = doc.sections instanceof Map ? Object.fromEntries(doc.sections) : (doc.sections || {});
+    const gptKeys = Object.keys(parsed);
+    const rejected: { key: string; reason: string }[] = [];
+    const gptApplied: string[] = [];
+    const gptSkipped: string[] = [];
+
+    let filledCount = productPrefillCount;
 
     for (const [key, value] of Object.entries(parsed)) {
-      if (!value || typeof value !== "string") continue;
-      const [sectionId, fieldId] = key.split(".");
-      if (!sectionId || !fieldId) continue;
+      if (!value || typeof value !== "string") {
+        rejected.push({ key, reason: "empty or non-string value" });
+        continue;
+      }
+      const parsedKey = parseSectionFieldKey(key, validFieldIds);
+      if (!parsedKey) {
+        rejected.push({ key, reason: "unknown sectionId.fieldId (use e.g. s1.1.1a not s1.1a)" });
+        continue;
+      }
+      const { sectionId, fieldId } = parsedKey;
 
       if (!sections[sectionId]) sections[sectionId] = { fields: {}, completionPct: 0 };
-      const sFields = sections[sectionId].fields instanceof Map
-        ? Object.fromEntries(sections[sectionId].fields)
-        : (sections[sectionId].fields || {});
+      const sFields = { ...sections[sectionId].fields };
 
-      if (!sFields[fieldId] || !sFields[fieldId].trim()) {
+      if (!sFields[fieldId]?.trim()) {
         sFields[fieldId] = value;
         filledCount++;
+        gptApplied.push(key);
+      } else {
+        gptSkipped.push(key);
       }
       sections[sectionId].fields = sFields;
-
-      const fwSection = fw.sections.find((s) => s.id === sectionId);
-      if (fwSection) {
-        const filled = fwSection.fields.filter((f) => sFields[f.id] && sFields[f.id].trim()).length;
-        sections[sectionId].completionPct = Math.round((filled / fwSection.fields.length) * 100);
-      }
+      sections[sectionId].completionPct = completionPctForSection(fw, sectionId, sFields);
     }
 
-    doc.sections = sections;
-    doc.markModified("sections");
+    console.log(`${LOG} GPT response`, {
+      keysReturned: gptKeys.length,
+      applied: gptApplied.length,
+      skippedAlreadyFilled: gptSkipped.length,
+      rejected: rejected.length,
+    });
+    if (gptApplied.length) {
+      console.log(`${LOG} GPT applied`, Object.fromEntries(
+        gptApplied.map((k) => [k, preview(parsed[k] ?? "")]),
+      ));
+    }
+    if (rejected.length) {
+      console.log(`${LOG} GPT rejected keys`, rejected);
+    }
+    if (gptSkipped.length) {
+      console.log(`${LOG} GPT skipped (already had value)`, gptSkipped);
+    }
+
+    const sectionSummary = Object.fromEntries(
+      Object.entries(sections).map(([sid, sec]) => [
+        sid,
+        {
+          completionPct: sec.completionPct,
+          fieldCount: Object.keys(sec.fields).length,
+          fieldIds: Object.keys(sec.fields).sort(),
+        },
+      ]),
+    );
+    console.log(`${LOG} sections before save`, sectionSummary);
+
+    persistSections(doc, sections, { log: true });
     await doc.save();
 
-    return NextResponse.json({ filledCount, totalParsed: Object.keys(parsed).length });
+    console.log(`${LOG} saved`, {
+      documentId: id,
+      filledCount,
+      productPrefillCount,
+      totalParsed: gptKeys.length,
+    });
+
+    return NextResponse.json({
+      filledCount,
+      productPrefillCount,
+      totalParsed: Object.keys(parsed).length,
+    });
   } catch (error) {
     if ((error as Error).message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     console.error("POST /api/documents/[id]/autofill failed:", error);

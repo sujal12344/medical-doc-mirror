@@ -8,11 +8,11 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
           { id: "1.1a", label: "Product Name", hint: "Full commercial name of the IVD medical device" },
           { id: "1.1b", label: "Device Description", hint: "Brief description: purpose, technology, mechanism of action", textarea: true },
-          { id: "1.1c", label: "Novel Features", hint: "Any features that distinguish it from existing devices", textarea: true },
+          { id: "1.1c", label: "Novel Features", hint: "Features vs CDSCO predicate — from predDevice.predicateBasis + subject/predicate comparison (Phase 1)", textarea: true },
           { id: "1.1d", label: "Claimed Shelf Life", hint: "e.g. 18 months from date of manufacture" },
           { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D" },
           { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted", textarea: true },
-          { id: "1.2", label: "Regulatory Status in India", hint: "Whether approved or new IVD" },
+          { id: "1.2", label: "Regulatory Status in India", hint: "Yes — approved (name CDSCO predicate device) OR New device — from Phase 1 predicate pathway" },
           { id: "1.3", label: "Domestic Price", hint: "Price per unit in country of origin currency" },
           { id: "1.4", label: "Marketing History", hint: "Marketing history from first introduction", textarea: true },
           { id: "1.5", label: "Regulatory Approvals Table", hint: "Country | Indication | Shelf-Life | Risk Class | Date", textarea: true },
@@ -25,9 +25,10 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s2", title: "Device Description & Specification", description: "Technical details, components, specimen requirements", fields: [
+          { id: "2.0", label: "Intended Use / Indications for Use", hint: "Full intended use and claims statement (CDSCO DMF §2; from Phase 1 registration)", textarea: true },
           { id: "2.1a", label: "What is Detected", hint: "Specific analyte, pathogen, antibody detected" },
           { id: "2.1b", label: "Device Function", hint: "Screening / Diagnostics / Monitoring" },
-          { id: "2.1c", label: "Disorder/Condition Detected", hint: "Include limitations and precautions", textarea: true },
+          { id: "2.1c", label: "Disorder/Condition Detected", hint: "Clinical disorder/condition the assay addresses (not the full intended-use statement — see field 2.0)", textarea: true },
           { id: "2.1d", label: "Automated or Manual", hint: "Automated / Semi-automated / Manual" },
           { id: "2.1e", label: "Qualitative or Quantitative", hint: "Qualitative / Semi-quantitative / Quantitative" },
           { id: "2.1f", label: "Specimen Type", hint: "Serum, Plasma, Whole Blood, etc." },
@@ -42,10 +43,11 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "2.1o", label: "Accessories", hint: "All accessories and companion devices", textarea: true },
           { id: "2.1p", label: "Dedicated Assay Procedure", hint: "Step-by-step assay workflow, controls and calculations", textarea: true },
           { id: "2.1q", label: "Instrument Compatibility Requirements", hint: "Compatible analyzers, readers, wavelength requirements", textarea: true },
+          { id: "2.1s", label: "Previous Device Generations / Similar Devices", hint: "Reference to prior generations or similar marketed devices (manufacturer history)", textarea: true },
           { id: "2.2", label: "Clinical Performance (New Device)", hint: "Summary of clinical performance evaluation", textarea: true },
-          { id: "2.3", label: "Adverse Events (Existing Device)", hint: "Adverse event reports and certificates", textarea: true },
-          { id: "2.4", label: "Predicate Device Comparison", hint: "Substantial equivalence analysis", textarea: true },
-          { id: "2.5", label: "External Certificates", hint: "ISO 13485, CE, WHO PQ, MDSAP, etc.", textarea: true },
+          { id: "2.3", label: "Adverse Events on Market (§2.3 I)", hint: "Summary of adverse events vs units placed on market (existing device)", textarea: true },
+          { id: "2.4", label: "Predicate Device Comparison (§2.3 III)", hint: "Subject device (this product) vs CDSCO predicate — similarities, differences, equivalence conclusion; auto-filled from Product + predDevice", textarea: true },
+          { id: "2.5", label: "External Conformity Certificates (§2.3 II)", hint: "ISO 13485, CE, WHO PQ, MDSAP, etc.", textarea: true },
         ]
       },
       {
@@ -79,7 +81,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "6.2", label: "Detailed Information", hint: "Complete study protocol and report", textarea: true },
           { id: "6.3", label: "Validation Protocol", hint: "Study design and acceptance criteria", textarea: true },
           { id: "6.4", label: "Validation Results", hint: "Summary of validation findings", textarea: true },
-          { id: "6.5", label: "Validation Conclusion", hint: "Overall conlusion and compliance statement", textarea: true },
+          { id: "6.5", label: "Validation Conclusion", hint: "Overall conclusion and compliance statement", textarea: true },
         ]
       },
       {
@@ -147,6 +149,16 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "22.14", label: "Control Material Details", hint: "Positive, negative and internal controls", textarea: true },
         ]
       },
+      {
+        id: "s10", title: "Regulatory Certificates & Licences", description: "CDSCO and origin-country certificates (import / manufacture)", fields: [
+          { id: "10.1", label: "CDSCO Import License", hint: "Import licence number and validity per Medical Device Rules 2017" },
+          { id: "10.2", label: "Free Sale Certificate", hint: "Certificate of free sale from country of origin" },
+          { id: "10.3", label: "ISO 13485 Certificate", hint: "Current ISO 13485 QMS certificate (accredited CB)" },
+          { id: "10.4", label: "Manufacturing License", hint: "Manufacturing licence from country of origin" },
+          { id: "10.5", label: "Wholesale License", hint: "Indian importer / distributor wholesale licence" },
+          { id: "10.6", label: "Test Reports from Approved Labs", hint: "NABL / CDSCO-recognized laboratory reports", textarea: true },
+        ]
+      },
     ],
   },
   {
@@ -160,7 +172,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "1.1d", label: "Claimed Shelf Life", hint: "Expected useful life e.g. 5 years from date of manufacture" },
           { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D per MDR 2017 classification rules" },
           { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted in the DMF", textarea: true },
-          { id: "1.2", label: "Regulatory Status in India", hint: "Whether device is already approved, new, or under review by CDSCO" },
+          { id: "1.2", label: "Regulatory Status in India", hint: "Yes — approved (CDSCO predicate device name) OR New device — from Phase 1 predDevice" },
           { id: "1.3", label: "Domestic Price", hint: "Ex-factory price per unit in country of origin currency" },
           { id: "1.4", label: "Marketing History", hint: "Global marketing history from first commercial introduction", textarea: true },
           { id: "1.5", label: "Regulatory Approvals Table", hint: "Country | Intended Use | Risk Class | Approval Date | License Number", textarea: true },
@@ -183,6 +195,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "2.10", label: "Sterilization Method", hint: "Method of sterilization (EtO, gamma, steam, etc.) and validation reference" },
           { id: "2.11", label: "Biocompatibility Summary", hint: "Summary of biological evaluation per ISO 10993-1 risk assessment", textarea: true },
           { id: "2.12", label: "Shelf Life Basis", hint: "Basis for claimed shelf life including accelerated and real-time data references" },
+          { id: "2.13", label: "Predicate Device Comparison (§2.3 III)", hint: "Subject device (this product) vs CDSCO predicate — similarities, differences, equivalence conclusion; auto-filled from Product + predDevice", textarea: true },
+          { id: "2.14", label: "Previous Device Generations / Similar Devices", hint: "Prior generations or similar marketed devices from same manufacturer", textarea: true },
         ]
       },
       {
