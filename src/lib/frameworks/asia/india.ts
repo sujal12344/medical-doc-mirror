@@ -5,7 +5,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
     id: "IN_DMF", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (IVD)", deviceType: "ivd",
     sections: [
       {
-        id: "s1", title: "Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
+        id: "s1", title: "1.0 Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
           { id: "1.1a", label: "Product Name", hint: "Full commercial name of the IVD medical device" },
           { id: "1.1b", label: "Device Description", hint: "Brief description: purpose, technology, mechanism of action", textarea: true },
           { id: "1.1c", label: "Novel Features", hint: "Features vs CDSCO predicate — from predDevice.predicateBasis + subject/predicate comparison (Phase 1)", textarea: true },
@@ -24,7 +24,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s2", title: "Device Description & Specification", description: "Technical details, components, specimen requirements", fields: [
+        id: "s2", title: "2.0 Description and specification, including variants and accessories of the in vitro diagnostic medical device.", description: "Technical details, components, specimen requirements", fields: [
           { id: "2.0", label: "Intended Use / Indications for Use", hint: "Full intended use and claims statement (CDSCO DMF §2; from Phase 1 registration)", textarea: true },
           { id: "2.1a", label: "What is Detected", hint: "Specific analyte, pathogen, antibody detected" },
           { id: "2.1b", label: "Device Function", hint: "Screening / Diagnostics / Monitoring" },
@@ -51,88 +51,158 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s3", title: "Essential Principles Checklist", description: "Safety and performance compliance", fields: [
+        id: "s3", title: "3.0 Essential Principles Checklist", description: "Safety and performance compliance", fields: [
           { id: "3a", label: "EP Checklist", hint: "EP number | Relevant | Standard | Complies | Reference", textarea: true },
           { id: "3b", label: "Conformity Methods", hint: "Standards, reference methods, in-house methods", textarea: true },
           { id: "3c", label: "Evidence Reference Location", hint: "Reference to report, annexure, technical document", textarea: true },
         ]
       },
       {
-        id: "s4", title: "Risk Analysis", description: "Risk management per ISO 14971", fields: [
+        id: "s4", title: "4.0 Risk Analysis and Control Summary.", description: "Risk management per ISO 14971", fields: [
           { id: "4a", label: "Risk Analysis Summary", hint: "Risks identified and how controlled", textarea: true },
           { id: "4b", label: "Possible Hazards", hint: "False positives/negatives, instability hazards", textarea: true },
           { id: "4c", label: "Residual Risk Evaluation", hint: "Residual risks after mitigation measures", textarea: true },
           { id: "4d", label: "Benefit-Risk Conclusion", hint: "Justification that benefits outweigh residual risks", textarea: true },
           { id: "4e", label: "Risk Control Measures", hint: "Implemented controls and verification activities", textarea: true },
+          { id: "4.1", label: "Table 6.1: Risk Analysis Product. Q-Line® Albumin", hint: "Upload Risk Assessment report to generate product risk table", textarea: true, allowUpload: true },
+          { id: "4.2", label: "Table 6.2: Severity Table", hint: "Upload Risk Management file to generate severity definitions", textarea: true, allowUpload: true },
+          { id: "4.3", label: "Table 6.3: Probability Tables", hint: "Upload Risk Management file to generate probability definitions", textarea: true, allowUpload: true },
+          { id: "4.4", label: "Figure 6.1: Risk Assessment Matrix", hint: "Qualitative/semi-quantitative risk assessment matrix", textarea: true },
+          { id: "4.5", label: "Figure 6.2: Identify Hazards", hint: "Description/diagram of process to identify hazards", textarea: true },
+          { id: "4.6", label: "Figure 6.3: Risk Analysis", hint: "Outlines scope of risk analysis", textarea: true },
+          { id: "4.7", label: "Figure 6.4: Determining Risk Impact", hint: "Criteria for determining risk impact", textarea: true },
+          { id: "4.8", label: "Figure 6.5: Likelihood. the probability of a risk", hint: "Likelihood determination guidelines", textarea: true },
+          { id: "4.9", label: "Figure 6.6: Likelihood. the probability of a risk (alternate/detailed)", hint: "Alternate likelihood determination guidelines", textarea: true },
+          { id: "4.10", label: "Figure 6.7: Risk Estimation", hint: "Risk estimation flowchart", textarea: true }
         ]
       },
       {
-        id: "s5", title: "Design & Manufacturing", description: "Design, process, and manufacturing site information", fields: [
-          { id: "5.1", label: "Device Design", hint: "Critical ingredients, design sites", textarea: true },
-          { id: "5.2", label: "Manufacturing Process", hint: "Technologies, assembly, testing, packaging", textarea: true },
+        id: "s5", title: "5.0 Design and Manufacturing Information", description: "Design, process, and manufacturing site information", fields: [
+          { id: "5.1", label: "Device Design", hint: "Critical ingredients, design sites", textarea: true, allowUpload: true },
+          { id: "5.2", label: "Manufacturing Process", hint: "Technologies, assembly, testing, packaging", textarea: true, allowUpload: true },
           { id: "5.3", label: "Manufacturing Sites", hint: "Name and address of manufacturing sites", textarea: true },
-          { id: "5.4", label: "Critical Raw Materials", hint: "Antigens, antibodies, enzymes, buffers, preservatives", textarea: true },
-          { id: "5.5", label: "Design and Development Sites", hint: "Locations where design activities are performed", textarea: true },
+          { id: "5.4", label: "Critical Raw Materials", hint: "Antigens, antibodies, enzymes, buffers, preservatives", textarea: true, allowUpload: true },
+          { id: "5.5", label: "Design and Development Sites", hint: "Locations where design activities are performed", textarea: true }
         ]
       },
       {
-        id: "s6", title: "Product Validation & Verification", description: "Study protocols, results, and conclusions", fields: [
+        id: "s6", title: "6.0 Product Validation and Verification", description: "Study protocols, results, and conclusions", fields: [
           { id: "6.1", label: "COA / Summary Information", hint: "Study protocol, results, conclusions", textarea: true },
           { id: "6.2", label: "Detailed Information", hint: "Complete study protocol and report", textarea: true },
           { id: "6.3", label: "Validation Protocol", hint: "Study design and acceptance criteria", textarea: true },
           { id: "6.4", label: "Validation Results", hint: "Summary of validation findings", textarea: true },
           { id: "6.5", label: "Validation Conclusion", hint: "Overall conclusion and compliance statement", textarea: true },
+          { id: "6.6", label: "Table 4. Precision Table", hint: "Upload precision study raw data or report to populate", textarea: true, allowUpload: true },
+          { id: "6.7", label: "Table 5. Accuracy Table", hint: "Upload accuracy/method comparison study report to populate", textarea: true, allowUpload: true }
         ]
       },
       {
-        id: "s7", title: "Analytical Studies", description: "Conformity demonstration studies", fields: [
-          { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true },
+        id: "s7", title: "7.0 Analytical Studies", description: "Conformity demonstration studies", fields: [
+          { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true }
         ]
       },
       {
-        id: "s8", title: "Specimen Type", description: "Specimen stability and matrix comparison", fields: [
+        id: "s8", title: "8.0 Specimen Type", description: "Specimen stability and matrix comparison", fields: [
           { id: "8a", label: "Specimen Stability", hint: "Each matrix stability conditions", textarea: true },
-          { id: "8b", label: "Matrix Comparison", hint: "Number of samples, statistical methods", textarea: true },
+          { id: "8b", label: "Matrix Comparison", hint: "Number of samples, statistical methods", textarea: true }
         ]
       },
       {
-        id: "s9", title: "Analytical Performance", description: "Accuracy, sensitivity, specificity studies", fields: [
+        id: "s9", title: "9.0 Analytical Performance Characteristics", description: "Accuracy, trueness, precision, repeatability, and reproducibility", fields: [
           { id: "9.1", label: "Accuracy (Trueness & Precision)", hint: "Study designs, results, conclusions", textarea: true },
           { id: "9.1a", label: "Repeatability", hint: "Within-run precision studies", textarea: true },
           { id: "9.2", label: "Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
-          { id: "10", label: "Analytical Sensitivity", hint: "LoB, LoD, LoQ studies", textarea: true },
-          { id: "11", label: "Analytical Specificity", hint: "Interference and cross-reactivity", textarea: true },
-          { id: "12", label: "Metrological Traceability", hint: "Reference materials and procedures", textarea: true },
           { id: "13", label: "Measuring Range", hint: "Linear range, LoD, hook effect", textarea: true },
-          { id: "14", label: "Assay Cut-off", hint: "Populations studied, ROC analysis", textarea: true },
-          { id: "14.1", label: "Cut-Off Calculation Method", hint: "Formula, statistical approach, ROC analysis", textarea: true },
+          { id: "14.1", label: "Cut-Off Calculation Method", hint: "Formula, statistical approach, ROC analysis", textarea: true }
         ]
       },
       {
-        id: "s15", title: "Stability Studies", description: "Shelf life, in-use, and shipping stability", fields: [
-          { id: "15", label: "Stability Overview", hint: "Summary of stability studies", textarea: true },
-          { id: "16", label: "Claimed Shelf Life", hint: "3+ lots, real-time + accelerated", textarea: true },
-          { id: "17", label: "In-Use Stability", hint: "Open vial, on-board stability", textarea: true },
-          { id: "18", label: "Shipping Stability", hint: "Real/simulated shipping conditions", textarea: true },
+        id: "s10_sensitivity", title: "10.0 Analytical Sensitivity", description: "Analytical sensitivity / detection limit studies (LoB, LoD, LoQ)", fields: [
+          { id: "10.0a", label: "Analytical Sensitivity Overview", hint: "Brief description of detection limit studies", textarea: true },
+          { id: "10.1", label: "Table 6: Analytical Sensitivity Study", hint: "Upload sensitivity study report to populate the LoD/LoQ table", textarea: true, allowUpload: true }
         ]
       },
       {
-        id: "s19", title: "Clinical Evidence", description: "Clinical evaluation report", fields: [
-          { id: "19", label: "Clinical Evidence", hint: "Conformity to essential principles", textarea: true },
+        id: "s11_specificity", title: "11.0 Analytical Specificity", description: "Analytical specificity studies: interfering substances and cross-reactivity", fields: [
+          { id: "11.0a", label: "Analytical Specificity Overview", hint: "Brief description of interference and cross-reactivity studies", textarea: true },
+          { id: "11.1", label: "Table 6: Analytical Specificity Study", hint: "Upload specificity study report to populate the interference table", textarea: true, allowUpload: true }
         ]
       },
       {
-        id: "s20", title: "Labelling", description: "Labels and IFU", fields: [
-          { id: "20", label: "Complete Labelling Set", hint: "Outer box, primary label, IFU", textarea: true },
+        id: "s12_traceability", title: "12.0 Metrological traceability of calibrator and control material values:", description: "Traceability chain of calibrators and controls", fields: [
+          { id: "12.0a", label: "Metrological Traceability Details", hint: "Upload traceability documentation to populate calibration hierarchy", textarea: true, allowUpload: true }
         ]
       },
       {
-        id: "s21", title: "Post-Marketing Surveillance", description: "Vigilance and CAPA", fields: [
-          { id: "21", label: "Surveillance Data", hint: "Complaints received and CAPA taken", textarea: true },
+        id: "s13_cutoff", title: "13.0 Definition of Assay Cut-off:", description: "Assay cut-off determination studies", fields: [
+          { id: "14.0a", label: "Assay Cut-off Details", hint: "Clinical cut-off definition and justification", textarea: true }
         ]
       },
       {
-        id: "s22", title: "Additional Information", description: "IVD-specific additional requirements", fields: [
+        id: "s14_stability", title: "14.0 Stability (excluding specimen stability)", description: "Overview of reagent and kit stability studies", fields: [
+          { id: "15.0a", label: "Stability Studies Overview", hint: "Summary of all stability studies conducted — auto-filled from Stability Reports section", textarea: true }
+        ]
+      },
+      {
+        id: "s16_shelf", title: "16.0 Claimed Shelf Life", description: "Shelf life stability studies (real-time and accelerated)", fields: [
+          { id: "16.0a", label: "Claimed Shelf Life Data", hint: "Auto-filled from Accelerated Stability report in the Stability Reports section", textarea: true }
+        ]
+      },
+      {
+        id: "s17_inuse", title: "17.0 In-Use Stability", description: "Reconstituted/open-vial and on-board stability studies", fields: [
+          { id: "17.0a", label: "In-Use / On-Board Stability Data", hint: "Auto-filled from In-Use Stability report in the Stability Reports section", textarea: true }
+        ]
+      },
+      {
+        id: "s18_shipping", title: "18.0 Shipping Stability", description: "Stability under simulated or real shipping stress conditions", fields: [
+          { id: "18.0a", label: "Shipping / Transport Stability Data", hint: "Auto-filled from Shipping Stability report in the Stability Reports section", textarea: true }
+        ]
+      },
+      {
+        id: "s_stability_reports",
+        title: "Stability Reports",
+        description: "Full regulatory-grade stability study reports. Upload IFU and COA documents to auto-generate all three reports simultaneously.",
+        fields: [
+          {
+            id: "sr_inuse",
+            label: "In-Use Stability Study Report",
+            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 with sections: Objective, Storage Conditions, Testing Calendar, Product Description, Kit Content, Procedure, Study Results, Conclusion, Approval.",
+            textarea: true,
+            allowUpload: true
+          },
+          {
+            id: "sr_accelerated",
+            label: "Accelerated Stability Study Report",
+            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 with Arrhenius projection, 37°C storage, monthly intervals, and shelf life claim.",
+            textarea: true,
+            allowUpload: true
+          },
+          {
+            id: "sr_shipping",
+            label: "Shipping Stability Study Report",
+            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 and CLSI EP25-A with daily intervals over 7 days, transport simulation rationale.",
+            textarea: true,
+            allowUpload: true
+          }
+        ]
+      },
+      {
+        id: "s19", title: "19.0 Clinical Evidence", description: "Clinical evaluation report", fields: [
+          { id: "19", label: "Clinical Evidence", hint: "Conformity to essential principles", textarea: true }
+        ]
+      },
+      {
+        id: "s20", title: "20.0 Labelling", description: "Labels and IFU", fields: [
+          { id: "20", label: "Complete Labelling Set", hint: "Outer box, primary label, IFU", textarea: true }
+        ]
+      },
+      {
+        id: "s21", title: "21.0 Post Market Surveillance Data (Vigilance Reporting):", description: "Vigilance and CAPA", fields: [
+          { id: "21", label: "Surveillance Data", hint: "Complaints received and CAPA taken", textarea: true }
+        ]
+      },
+      {
+        id: "s22", title: "22.0 Information Required to be submitted for the in-vitro diagnostic medical device.", description: "IVD-specific additional requirements", fields: [
           { id: "22.1", label: "Antigen/Antibody Details", hint: "Source, characterization, coating process", textarea: true },
           { id: "22.2", label: "Test Protocol", hint: "Specifications and method of testing", textarea: true },
           { id: "22.3", label: "NCA Evaluation Report", hint: "Evaluation by national control authority", textarea: true },
@@ -144,19 +214,9 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "22.9", label: "Safety Data Sheet", hint: "Safe handling, material control, storage", textarea: true },
           { id: "22.10", label: "Quality Control Acceptance Criteria", hint: "Negative control, positive control and validity criteria", textarea: true },
           { id: "22.11", label: "Biological Source Materials", hint: "Animal, human, microbial or recombinant origin materials", textarea: true },
-          { id: "22.12", label: "Applicable Standards", hint: "ISO, CLSI, WHO and other standards used", textarea: true },
           { id: "22.13", label: "Calibrator Details", hint: "Reference materials and calibration hierarchy", textarea: true },
           { id: "22.14", label: "Control Material Details", hint: "Positive, negative and internal controls", textarea: true },
-        ]
-      },
-      {
-        id: "s10", title: "Regulatory Certificates & Licences", description: "CDSCO and origin-country certificates (import / manufacture)", fields: [
-          { id: "10.1", label: "CDSCO Import License", hint: "Import licence number and validity per Medical Device Rules 2017" },
-          { id: "10.2", label: "Free Sale Certificate", hint: "Certificate of free sale from country of origin" },
-          { id: "10.3", label: "ISO 13485 Certificate", hint: "Current ISO 13485 QMS certificate (accredited CB)" },
-          { id: "10.4", label: "Manufacturing License", hint: "Manufacturing licence from country of origin" },
-          { id: "10.5", label: "Wholesale License", hint: "Indian importer / distributor wholesale licence" },
-          { id: "10.6", label: "Test Reports from Approved Labs", hint: "NABL / CDSCO-recognized laboratory reports", textarea: true },
+          { id: "22.12a", label: "Table 22.1. List Of Standards", hint: "Upload standards certificate or list to populate standards table", textarea: true, allowUpload: true }
         ]
       },
     ],

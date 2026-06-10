@@ -86,3 +86,42 @@ export async function indexProductDocument(
 
   return { productNamespaceId, namespace, docId, chunksIndexed: chunks.length };
 }
+
+/**
+ * Query Pinecone for the top-k most relevant chunks matching `queryText`
+ * in the given product namespace. Returns concatenated text of matches.
+ */
+export async function queryProductDocuments(
+  userId: string,
+  productNamespaceId: string,
+  queryText: string,
+  topK = 12,
+): Promise<string> {
+  const indexName = process.env.PINECONE_INDEX;
+  const pineconeKey = process.env.PINECONE_KEY;
+  if (!indexName || !pineconeKey) return "";
+
+  try {
+    const [queryEmbedding] = await embedBatch([queryText]);
+    const namespace = `product_${userId}_${productNamespaceId}`;
+    const pc = new Pinecone({ apiKey: pineconeKey });
+    const index = pc.index(indexName).namespace(namespace);
+
+    const result = await index.query({
+      vector: queryEmbedding,
+      topK,
+      includeMetadata: true,
+    });
+
+    const chunks = (result.matches ?? [])
+      .filter((m) => m.score && m.score > 0.35)
+      .map((m) => (m.metadata as Record<string, unknown>)?.text as string)
+      .filter(Boolean);
+
+    return chunks.join("\n\n");
+  } catch (err) {
+    console.error("[queryProductDocuments] failed:", err);
+    return "";
+  }
+}
+

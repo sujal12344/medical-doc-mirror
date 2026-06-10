@@ -3,6 +3,7 @@ export type FrameworkField = {
   label: string;
   hint: string;
   textarea?: boolean;
+  allowUpload?: boolean;
 };
 
 export type FrameworkSection = {

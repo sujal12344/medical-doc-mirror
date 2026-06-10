@@ -86,6 +86,9 @@ export default function DocumentEditorPage() {
   const [autofilling, setAutofilling] = useState(false);
   const [initialAutofillDone, setInitialAutofillDone] = useState(false);
   const [chatDocContext, setChatDocContext] = useState("");
+  const [stabilityUploading, setStabilityUploading] = useState(false);
+  const [stabilityUploadStatus, setStabilityUploadStatus] = useState<"idle" | "success" | "error">("idle");
+  const [stabilityUploadMsg, setStabilityUploadMsg] = useState("");
   const chatFileRef = useRef<HTMLInputElement>(null);
   const initialAutofillStarted = useRef(false);
 
@@ -251,6 +254,62 @@ export default function DocumentEditorPage() {
     setChatLoading(false);
   }
 
+  async function handleStabilityAllUpload(files: FileList) {
+    if (!files.length || !doc) return;
+    setStabilityUploading(true);
+    setStabilityUploadStatus("idle");
+    setStabilityUploadMsg(`Processing ${files.length} file(s)... Generating all 3 stability reports…`);
+
+    const fd = new FormData();
+    for (const file of Array.from(files)) {
+      fd.append("file", file);
+    }
+
+    try {
+      const r = await fetch(`/api/documents/${id}/stability-all`, { method: "POST", body: fd });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        // Update stability reports section fields
+        const reportFieldMap: Record<string, { sectionId: string; fieldId: string }> = {
+          sr_inuse:      { sectionId: "s_stability_reports", fieldId: "sr_inuse" },
+          sr_accelerated:{ sectionId: "s_stability_reports", fieldId: "sr_accelerated" },
+          sr_shipping:   { sectionId: "s_stability_reports", fieldId: "sr_shipping" },
+          // DMF auto-fill sections also updated by backend
+        };
+        for (const [fieldId, mapping] of Object.entries(reportFieldMap)) {
+          const content = (data.results as Record<string, string>)[fieldId];
+          if (content) setFieldValue(mapping.sectionId, mapping.fieldId, content);
+        }
+        // Also update DMF textbox sections in local state
+        const dmfMap: Record<string, { sectionId: string; fieldId: string; sourceKey: string }> = {
+          "17.0a": { sectionId: "s17_inuse",  fieldId: "17.0a", sourceKey: "sr_inuse" },
+          "16.0a": { sectionId: "s16_shelf",  fieldId: "16.0a", sourceKey: "sr_accelerated" },
+          "18.0a": { sectionId: "s18_shipping",fieldId: "18.0a", sourceKey: "sr_shipping" },
+        };
+        for (const mapping of Object.values(dmfMap)) {
+          const content = (data.results as Record<string, string>)[mapping.sourceKey];
+          if (content) setFieldValue(mapping.sectionId, mapping.fieldId, content);
+        }
+        // Auto-fill overview section
+        const overview = (data.results as Record<string, string>)["overview"];
+        if (overview) setFieldValue("s14_stability", "15.0a", overview);
+
+        setStabilityUploadStatus("success");
+        setStabilityUploadMsg(
+          `✅ Generated ${data.reportsGenerated} stability report(s) from "${data.filesUploaded}" and auto-filled §14, §16, §17, §18 DMF sections.`
+        );
+      } else {
+        setStabilityUploadStatus("error");
+        setStabilityUploadMsg(data.error || "Failed to generate stability reports.");
+      }
+    } catch {
+      setStabilityUploadStatus("error");
+      setStabilityUploadMsg("Network error: failed to connect to upload service.");
+    } finally {
+      setStabilityUploading(false);
+    }
+  }
+
   async function sendChat() {
     if (!chatInput.trim() || chatLoading) return;
     const msg = chatInput.trim();
@@ -371,6 +430,65 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
             </div>
 
             <div className="space-y-5">
+              {/* Combined Stability Upload Panel — shown ONLY on the Stability Reports section */}
+              {currentSection.id === "s_stability_reports" && (
+                <div className="rounded-xl border border-dashed border-blue-400/50 bg-blue-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-400/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate All 3 Stability Reports at Once</p>
+                      <p className="text-xs text-muted">Upload your IFU and COA documents to auto-generate In-Use, Accelerated (Shelf Life), and Shipping stability reports simultaneously. The §14, §16, §17 and §18 DMF sections are also auto-filled.</p>
+                    </div>
+                  </div>
+                  {stabilityUploadMsg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${
+                      stabilityUploadStatus === "success"
+                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                        : stabilityUploadStatus === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20"
+                    }`}>
+                      {stabilityUploadMsg}
+                    </p>
+                  )}
+                  <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${
+                    stabilityUploading
+                      ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                      : "border-blue-400/40 text-blue-600 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/60"
+                  }`}>
+                    {stabilityUploading ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating all stability reports…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                        </svg>
+                        Upload Stability Study Files (.pdf, .docx)
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.docx"
+                      multiple
+                      className="hidden"
+                      disabled={stabilityUploading}
+                      onChange={(e) => {
+                        if (e.target.files?.length) handleStabilityAllUpload(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                  <p className="mt-2 text-[10px] text-muted">The §14 (Overview), §16 (Shelf Life), §17 (In-Use) and §18 (Shipping) DMF sections are also auto-filled from the generated reports. You can still upload files individually per field below.</p>
+                </div>
+              )}
+
               {currentSection.fields.map((field) => (
                 <RegulatoryFieldEditor
                   key={field.id}
@@ -378,6 +496,8 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                   label={field.label}
                   hint={field.hint}
                   textarea={field.textarea}
+                  allowUpload={field.allowUpload}
+                  documentId={doc._id}
                   value={getFieldValue(currentSection.id, field.id)}
                   onChange={(v) => setFieldValue(currentSection.id, field.id, v)}
                 />
