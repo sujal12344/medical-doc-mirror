@@ -83,6 +83,8 @@ export function parseSectionFieldKey(
   const sortedSectionIds = [...validBySection.keys()].sort(
     (a, b) => b.length - a.length,
   );
+
+  // --- Strict match: key = "sectionId.fieldId" (fieldId may itself contain dots) ---
   for (const sectionId of sortedSectionIds) {
     const prefix = `${sectionId}.`;
     if (!key.startsWith(prefix)) continue;
@@ -91,8 +93,26 @@ export function parseSectionFieldKey(
       return { sectionId, fieldId };
     }
   }
+
+  // --- Lenient fallback: GPT may drop a leading numeric segment from the fieldId ---
+  // e.g. GPT returns "s1.1a" but real fieldId is "1.1a" (key should be "s1.1.1a")
+  for (const sectionId of sortedSectionIds) {
+    const prefix = `${sectionId}.`;
+    if (!key.startsWith(prefix)) continue;
+    const partialFieldId = key.slice(prefix.length); // e.g. "1a" when fieldId is "1.1a"
+    const fieldSet = validBySection.get(sectionId);
+    if (!fieldSet) continue;
+    // Find any valid fieldId that ends with ".partialFieldId" or equals partialFieldId
+    for (const fieldId of fieldSet) {
+      if (fieldId === partialFieldId || fieldId.endsWith(`.${partialFieldId}`)) {
+        return { sectionId, fieldId };
+      }
+    }
+  }
+
   return null;
 }
+
 
 export function completionPctForSection(
   framework: RegulatoryFramework,

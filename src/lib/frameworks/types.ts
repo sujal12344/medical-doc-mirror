@@ -4,6 +4,7 @@ export type FrameworkField = {
   hint: string;
   textarea?: boolean;
   allowUpload?: boolean;
+  fieldType?: "text" | "image";
 };
 
 export type FrameworkSection = {

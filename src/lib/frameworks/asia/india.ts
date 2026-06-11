@@ -192,8 +192,80 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s20", title: "20.0 Labelling", description: "Labels and IFU", fields: [
-          { id: "20", label: "Complete Labelling Set", hint: "Outer box, primary label, IFU", textarea: true }
+        id: "s20", title: "20.0 Labelling", description: "Structured product label fields — upload label image to auto-populate via OCR", fields: [
+          {
+            id: "20.upload",
+            label: "Upload Label Artwork (OCR Auto-Fill)",
+            hint: "Upload the label artwork image or PDF. OCR will extract text fields and crop the company logo.",
+            textarea: false,
+            allowUpload: true
+          },
+          {
+            id: "20.logo",
+            label: "Company Logo",
+            hint: "Company/brand logo image — will display as a preview",
+            fieldType: "image"
+          },
+          {
+            id: "20.symbols_upload",
+            label: "Upload Symbols Sheet (Cropping)",
+            hint: "Upload a symbols sheet image or PDF containing your official symbol graphics (LOT, IVD, Mfg, Exp, Storage) to crop them for the Word template.",
+            textarea: false,
+            allowUpload: true
+          },
+          {
+            id: "20.productName",
+            label: "Product Name",
+            hint: "Full commercial product name as printed on the label (e.g. Q-Line® Albumin)"
+          },
+          {
+            id: "20.packSize",
+            label: "Pack Size",
+            hint: "Pack size / kit configuration as printed on the label (e.g. 2 x 50 mL)"
+          },
+          {
+            id: "20.batchNo",
+            label: "Batch No. [LOT]",
+            hint: "Batch / lot number as printed on the label (e.g. ALB-2101-001)"
+          },
+          {
+            id: "20.deviceType",
+            label: "Device Type [IVD]",
+            hint: "Regulatory device type symbol on label (e.g. IVD — In Vitro Diagnostic Medical Device)"
+          },
+          {
+            id: "20.mfgDate",
+            label: "Mfg. Date 🏭",
+            hint: "Manufacturing date as printed on the label using the hourglass-filled symbol (e.g. July.2021)"
+          },
+          {
+            id: "20.expDate",
+            label: "Exp. Date ⌛",
+            hint: "Expiry / use-by date as printed on the label using the hourglass symbol (e.g. July.2023)"
+          },
+          {
+            id: "20.storage",
+            label: "Storage Conditions 🌡️",
+            hint: "Storage temperature / conditions printed on the label (e.g. Store at 15–30°C)"
+          },
+          {
+            id: "20.mrp",
+            label: "MRP (Maximum Retail Price)",
+            hint: "Price as printed on the label (e.g. XXXX – Incl of taxes)"
+          },
+          {
+            id: "20.manufacturer",
+            label: "Manufacturer Name & Address",
+            hint: "Full legal manufacturer name and registered address as printed on label",
+            textarea: true
+          },
+          {
+            id: "20.ifu",
+            label: "Instructions for Use (IFU)",
+            hint: "Upload IFU document (.pdf or .docx) to extract full text, or edit manually.",
+            textarea: true,
+            allowUpload: true
+          }
         ]
       },
       {
@@ -306,11 +378,92 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s8", title: "Labelling", description: "Labels, IFU, and packaging per CDSCO requirements", fields: [
-          { id: "8.1", label: "Device Labels", hint: "All labels: primary packaging, secondary packaging, shipping labels per MDR 2017", textarea: true },
-          { id: "8.2", label: "Instructions for Use", hint: "Complete IFU with indications, contraindications, warnings, and operating instructions", textarea: true },
-          { id: "8.3", label: "Packaging", hint: "Packaging specifications and materials for all configurations", textarea: true },
-          { id: "8.4", label: "Implant Card", hint: "Patient implant card if applicable per MDR 2017 Schedule 5", textarea: true },
+        id: "s8", title: "Labelling", description: "Structured product label fields — upload label image to auto-populate via OCR", fields: [
+          {
+            id: "8.upload",
+            label: "Upload Label Artwork (OCR Auto-Fill)",
+            hint: "Upload the label artwork image or PDF. OCR will extract text fields and crop the company logo.",
+            textarea: false,
+            allowUpload: true
+          },
+          {
+            id: "8.logo",
+            label: "Company Logo",
+            hint: "Company/brand logo image — will display as a preview",
+            fieldType: "image"
+          },
+          {
+            id: "8.symbols_upload",
+            label: "Upload Symbols Sheet (Cropping)",
+            hint: "Upload a symbols sheet image or PDF containing your official symbol graphics (LOT, MD, Mfg, Exp, Storage) to crop them for the Word template.",
+            textarea: false,
+            allowUpload: true
+          },
+          {
+            id: "8.productName",
+            label: "Product Name",
+            hint: "Full commercial product name as printed on the label (e.g. Q-Line® Albumin)"
+          },
+          {
+            id: "8.packSize",
+            label: "Pack Size",
+            hint: "Pack size / kit configuration as printed on the label (e.g. 2 x 50 mL)"
+          },
+          {
+            id: "8.batchNo",
+            label: "Batch No. [LOT]",
+            hint: "Batch / lot number as printed on the label (e.g. ALB-2101-001)"
+          },
+          {
+            id: "8.deviceType",
+            label: "Device Type [MD]",
+            hint: "Device type classification (e.g. medical device class, sterility status)"
+          },
+          {
+            id: "8.mfgDate",
+            label: "Mfg. Date 🏭",
+            hint: "Manufacturing date as printed on the label using the hourglass-filled symbol"
+          },
+          {
+            id: "8.expDate",
+            label: "Exp. Date ⌛",
+            hint: "Expiry / use-by date as printed on the label using the hourglass symbol"
+          },
+          {
+            id: "8.storage",
+            label: "Storage Conditions 🌡️",
+            hint: "Storage temperature / conditions printed on the label"
+          },
+          {
+            id: "8.mrp",
+            label: "MRP (Maximum Retail Price)",
+            hint: "Price as printed on the label (e.g. XXXX – Incl of taxes)"
+          },
+          {
+            id: "8.manufacturer",
+            label: "Manufacturer Name & Address",
+            hint: "Full legal manufacturer name and registered address as printed on label (per MDR 2017 §10)",
+            textarea: true
+          },
+          {
+            id: "8.ifu",
+            label: "Instructions for Use (IFU)",
+            hint: "Upload IFU document (.pdf or .docx) to extract full text, or edit manually.",
+            textarea: true,
+            allowUpload: true
+          },
+          {
+            id: "8.packaging",
+            label: "Packaging Specifications",
+            hint: "Packaging specifications and materials for all configurations",
+            textarea: true
+          },
+          {
+            id: "8.implantCard",
+            label: "Implant Card",
+            hint: "Patient implant card if applicable per MDR 2017 Schedule 5",
+            textarea: true
+          },
         ]
       },
       {

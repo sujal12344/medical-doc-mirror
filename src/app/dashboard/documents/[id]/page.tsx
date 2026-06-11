@@ -17,6 +17,7 @@ type DocData = {
   status: string;
   version: number;
   sections: Record<string, { fields: Record<string, string>; completionPct: number }>;
+  updatedAt?: string | Date;
 };
 
 type ProductForIndex = {
@@ -107,6 +108,26 @@ export default function DocumentEditorPage() {
     });
   }, [id]);
 
+  const refetchDocument = useCallback(async () => {
+    try {
+      const r = await fetch(`/api/documents/${id}`);
+      const data = await r.json();
+      if (data.document) {
+        setDoc((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            sections: normalizeDocumentSections(data.document.sections),
+            version: data.document.version,
+            updatedAt: data.document.updatedAt,
+          };
+        });
+      }
+    } catch (err) {
+      console.error("Failed to refetch document:", err);
+    }
+  }, [id]);
+
   const getFieldValue = useCallback((sectionId: string, fieldId: string) => {
     return doc?.sections?.[sectionId]?.fields?.[fieldId] || "";
   }, [doc]);
@@ -137,6 +158,23 @@ export default function DocumentEditorPage() {
   }
 
   async function createVersion() {
+    if (!doc || !framework) return;
+    setSaving(true);
+    // Save every section that has any field value before snapshotting the version
+    await Promise.all(
+      framework.sections.map((s) => {
+        const fields: Record<string, string> = {};
+        s.fields.forEach((f) => { fields[f.id] = getFieldValue(s.id, f.id); });
+        const hasContent = Object.values(fields).some((v) => v.trim());
+        if (!hasContent) return Promise.resolve();
+        return fetch(`/api/documents/${id}/sections`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sectionId: s.id, fields }),
+        });
+      }),
+    );
+    setSaving(false);
     const note = prompt("Version note (optional):");
     await fetch(`/api/documents/${id}/versions`, {
       method: "POST",
@@ -145,7 +183,12 @@ export default function DocumentEditorPage() {
     });
     const r = await fetch(`/api/documents/${id}`);
     const data = await r.json();
-    if (data.document) setDoc(data.document);
+    if (data.document) {
+      setDoc({
+        ...data.document,
+        sections: normalizeDocumentSections(data.document.sections),
+      });
+    }
   }
 
   const runAutofill = useCallback(async (opts?: { isInitial?: boolean }) => {
@@ -387,8 +430,12 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
           })}
         </div>
         <div className="mt-4 space-y-2">
-          <button onClick={createVersion} className="w-full text-xs px-3 py-2 bg-surface2 border border-border rounded-lg hover:border-accent/30 transition text-muted font-medium">
-            Save Version
+          <button
+            onClick={createVersion}
+            disabled={saving}
+            className="w-full text-xs px-3 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm"
+          >
+            {saving ? "Saving…" : "Save Document"}
           </button>
         </div>
       </div>
@@ -497,22 +544,20 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                   hint={field.hint}
                   textarea={field.textarea}
                   allowUpload={field.allowUpload}
+                  fieldType={field.fieldType}
                   documentId={doc._id}
                   value={getFieldValue(currentSection.id, field.id)}
                   onChange={(v) => setFieldValue(currentSection.id, field.id, v)}
+                  onUploadComplete={refetchDocument}
+                  allFields={doc?.sections?.[currentSection.id]?.fields || {}}
+                  documentVersion={doc?.version}
+                  documentUpdatedAt={doc?.updatedAt}
+                  documentTitle={doc?.title}
                 />
               ))}
+
             </div>
 
-            <div className="sticky bottom-0 mt-8 -mx-6 px-6 py-4 bg-gradient-to-t from-[var(--background)] via-[var(--background)] to-transparent border-t border-border/80">
-              <button
-                onClick={() => saveSection(currentSection.id)}
-                disabled={saving}
-                className="px-6 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition disabled:opacity-50 shadow-sm"
-              >
-                {saving ? "Saving…" : `Save ${currentSection.title}`}
-              </button>
-            </div>
           </div>
         ) : (
           <p className="text-muted">Select a section from the left</p>

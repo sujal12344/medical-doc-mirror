@@ -155,6 +155,7 @@ export default function NewProductPage() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
   const [uploading, setUploading] = useState(false);
   const [productId, setProductId] = useState<string | null>(null);
+  const [pendingSourceDoc, setPendingSourceDoc] = useState<{ originalName: string; extractedText: string } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const autofillInputRef = useRef<HTMLInputElement>(null);
   const [dragOver, setDragOver] = useState(false);
@@ -209,6 +210,29 @@ export default function NewProductPage() {
 
   function upd(field: string, value: string | boolean | string[] | null) {
     setForm((p) => ({ ...p, [field]: value }));
+  }
+
+  // ── Save extracted doc text to uploadedDocs on the product ──────────────────
+  async function saveDocToProduct(pId: string, originalName: string, extractedText: string) {
+    try {
+      const res = await fetch(`/api/products/${pId}/upload`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ originalName, extractedText }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        console.log(`[new-product] Saved "${originalName}" (${extractedText.length} chars) → uploadedDocs (total: ${data.totalDocs})`);
+        setUploadedFiles((prev) => [
+          ...prev.filter((f) => f.originalName !== originalName),
+          { fileId: data.files?.[0]?.fileId ?? crypto.randomUUID(), originalName, charCount: extractedText.length, status: "done" as const },
+        ]);
+      } else {
+        console.warn("[new-product] Failed to save doc to uploadedDocs:", data.error);
+      }
+    } catch (err) {
+      console.warn("[new-product] saveDocToProduct error:", err);
+    }
   }
 
   // ── Autofill via RAG — upload triggers chunk → embed → upsert → query → fill ──
@@ -326,6 +350,15 @@ export default function NewProductPage() {
         ivdFertility:            data.ivdFertility            ?? prev.ivdFertility,
       }));
       setAutofillDone(true);
+
+      // ── Persist extracted text to uploadedDocs ───────────────────────────
+      if (productId) {
+        // Product already exists — save immediately
+        await saveDocToProduct(productId, file.name, text);
+      } else {
+        // Will be saved right after product creation
+        setPendingSourceDoc({ originalName: file.name, extractedText: text });
+      }
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -391,7 +424,14 @@ export default function NewProductPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Failed"); return; }
       clearRegistrationDraft();
-      setProductId(data.product._id);
+      const newProductId: string = data.product._id;
+      setProductId(newProductId);
+
+      // Flush pending IFU/doc text that was autofilled before product existed
+      if (pendingSourceDoc) {
+        await saveDocToProduct(newProductId, pendingSourceDoc.originalName, pendingSourceDoc.extractedText);
+        setPendingSourceDoc(null);
+      }
     } catch { setError("Connection error"); }
     finally { setLoading(false); }
   }

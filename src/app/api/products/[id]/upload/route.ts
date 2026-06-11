@@ -34,6 +34,36 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const product = await Product.findOne({ _id: id, userId: (user as Record<string, unknown>)._id });
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
+    const contentType = req.headers.get("content-type") || "";
+
+    // ── JSON shortcut: { originalName, extractedText } ────────────────────────
+    // Used when the caller already has the extracted text (e.g. autofill on new-product page).
+    if (contentType.includes("application/json")) {
+      const body = await req.json() as { originalName?: string; extractedText?: string };
+      const originalName = (body.originalName || "document.pdf").trim();
+      const extractedText = (body.extractedText || "").slice(0, 200_000);
+      if (!extractedText) {
+        return NextResponse.json({ error: "extractedText is required" }, { status: 400 });
+      }
+      const fileId = randomUUID();
+      product.uploadedDocs.push({
+        fileId,
+        originalName,
+        mimeType: "application/pdf",
+        sizeBytes: Buffer.byteLength(extractedText, "utf8"),
+        extractedText,
+        uploadedAt: new Date(),
+      });
+      await product.save();
+      console.log(`[upload] Saved doc "${originalName}" (${extractedText.length} chars) to product ${id} via JSON`);
+      return NextResponse.json({
+        uploaded: 1,
+        files: [{ fileId, originalName, charCount: extractedText.length }],
+        totalDocs: product.uploadedDocs.length,
+      });
+    }
+
+    // ── Multipart: actual file uploads ────────────────────────────────────────
     const formData = await req.formData();
     const files = formData.getAll("files") as File[];
 

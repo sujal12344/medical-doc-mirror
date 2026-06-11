@@ -95,6 +95,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       s.fields.map((f) => `${s.id}|${f.id}|${f.label}|${f.hint}`)
     );
 
+    // Build a concrete example from the first field in the framework so the prompt is unambiguous
+    const exampleEntry = fw.sections[0]?.fields[0];
+    const exampleKey = exampleEntry
+      ? `${fw.sections[0].id}.${exampleEntry.id}`
+      : "s1.1.1a";
+    const exampleKey2 = fw.sections[1]?.fields[0]
+      ? `${fw.sections[1].id}.${fw.sections[1].fields[0].id}`
+      : "s2.2.0";
+
+    console.log(`${LOG} fieldList sample (first 5)`, fieldList.slice(0, 5));
+    console.log(`${LOG} key format example`, { exampleKey, exampleKey2 });
+
     const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
     const completion = await client.chat.completions.create({
@@ -105,7 +117,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           content: `You are a regulatory documentation expert. Given source documents from a medical device manufacturer, extract data and fill regulatory form fields.
 
 RULES:
-- Output ONLY valid JSON: keys must be "sectionId.fieldId" where sectionId is s1, s2, s10, etc. and fieldId is the EXACT id from the list (e.g. "s1.1.1a", "s2.2.1c") — fieldIds often contain dots.
+- Output ONLY valid JSON.
+- Each key MUST be "sectionId.fieldId" — concatenate the EXACT sectionId and the EXACT fieldId from the field list, joined by a single dot.
+- EXAMPLE: for a field listed as "${fw.sections[0]?.id}|${exampleEntry?.id}|...", the correct JSON key is "${exampleKey}". For "${fw.sections[1]?.id}|${fw.sections[1]?.fields[0]?.id}|...", use "${exampleKey2}".
+- FieldIds often contain dots themselves (e.g. 1.1a, 2.1c, 20.productName). Always use the FULL fieldId exactly as shown in the FIELDS list.
 - For field 1.2 (Regulatory Status in India): if predicate on CDSCO list → "Yes — approved" + predicate name; else "New device".
 - For field 2.1c (Disorder/Condition): state the clinical disorder/condition detected — NOT the full intended-use paragraph (that belongs in 2.0 / 2.2).
 - If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values).
@@ -133,6 +148,7 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
     });
 
     const raw = completion.choices[0]?.message?.content || "{}";
+    console.log(`${LOG} GPT raw response (first 500 chars)`, raw.slice(0, 500));
 
     let parsed: Record<string, string> = {};
     try {
@@ -142,6 +158,7 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
       console.error(`${LOG} GPT JSON parse failed`, { rawPreview: preview(raw, 200) });
       return NextResponse.json({ error: "AI returned invalid JSON", raw }, { status: 500 });
     }
+    console.log(`${LOG} GPT parsed keys (all)`, Object.keys(parsed));
 
     const gptKeys = Object.keys(parsed);
     const rejected: { key: string; reason: string }[] = [];
