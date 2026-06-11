@@ -78,11 +78,11 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s5", title: "5.0 Design and Manufacturing Information", description: "Design, process, and manufacturing site information", fields: [
-          { id: "5.1", label: "Device Design", hint: "Critical ingredients, design sites", textarea: true, allowUpload: true },
-          { id: "5.2", label: "Manufacturing Process", hint: "Technologies, assembly, testing, packaging", textarea: true, allowUpload: true },
-          { id: "5.3", label: "Manufacturing Sites", hint: "Name and address of manufacturing sites", textarea: true },
-          { id: "5.4", label: "Critical Raw Materials", hint: "Antigens, antibodies, enzymes, buffers, preservatives", textarea: true, allowUpload: true },
-          { id: "5.5", label: "Design and Development Sites", hint: "Locations where design activities are performed", textarea: true }
+          { id: "5.0", label: "5.0 Design and Manufacturing Information (Essential Requirements Checklist Table)", hint: "Table fields: No, Essential Requirement, Applies (Yes/No/NA), Applicable Std /Procedure, Response", textarea: true, allowUpload: true },
+          { id: "5.1", label: "5.1 Device Design", hint: "Description with Kit contents table", textarea: true },
+          { id: "5.2", label: "5.2 Manufacturing Process", hint: "Description with a flow sheet diagram", textarea: true },
+          { id: "5.3", label: "5.3 QC Flow Chart", hint: "QC flow chart", textarea: true },
+          { id: "5.4", label: "5.4 Manufacturing Site", hint: "Manufacturing Site", textarea: true }
         ]
       },
       {

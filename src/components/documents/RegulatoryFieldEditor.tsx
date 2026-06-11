@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { MermaidChart } from "./MermaidChart";
 
 type Props = {
   fieldId: string;
@@ -142,6 +143,13 @@ export function RegulatoryFieldEditor({ fieldId, label, hint, textarea, value, o
                 strong: ({node, ...props}) => <strong className="font-semibold text-foreground" {...props} />,
                 em: ({node, ...props}) => <em className="italic text-muted" {...props} />,
                 hr: ({node, ...props}) => <hr className="my-4 border-border/50" {...props} />,
+                code: ({node, className, children, ...props}) => {
+                  const match = /language-mermaid/.exec(className || "");
+                  if (match) {
+                    return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
+                  }
+                  return <code className={className} {...props}>{children}</code>;
+                }
               }}
             >
               {value}

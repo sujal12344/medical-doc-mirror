@@ -6,6 +6,7 @@ import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { FRAMEWORKS } from "@/lib/frameworks";
+import { queryProductDocuments } from "@/lib/productVectorIndex";
 import {
   applyPrefillToSections,
   buildProductContextForDmfAutofill,
@@ -87,8 +88,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       );
     }
 
+    let pineconeContext = "";
+    if (hasUploadedDocs) {
+      try {
+        const productNamespaceId = product.vectorNamespaceId || String(product._id);
+        const queryText = `${product.name} standard formulation pH packaging kit contents manufacturing process compounding QC test parameters acceptance criteria manufacturing site address European Material Reference ${product.description || ""}`.slice(0, 500);
+        console.log(`${LOG} Querying Pinecone namespace: product_${String((user as Record<string, unknown>)._id)}_${productNamespaceId} with query: "${queryText}"`);
+        const retrieved = await queryProductDocuments(
+          String((user as Record<string, unknown>)._id),
+          productNamespaceId,
+          queryText,
+          20
+        );
+        if (retrieved && retrieved.trim()) {
+          pineconeContext = retrieved;
+          console.log(`${LOG} Successfully retrieved ${pineconeContext.length} chars of context from Pinecone.`);
+        }
+      } catch (queryErr) {
+        console.warn(`${LOG} Pinecone query failed/skipped:`, queryErr);
+      }
+    }
+
     const truncated = hasUploadedDocs
-      ? combinedText.slice(0, 80_000)
+      ? (pineconeContext
+        ? `--- Vector Database Retrieved Context ---\n${pineconeContext}\n\n--- Full Document Sample ---\n${combinedText.slice(0, 40000)}`
+        : combinedText.slice(0, 80_000))
       : productContext;
 
     const fieldList = fw.sections.flatMap((s) =>
@@ -104,14 +128,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           role: "system",
           content: `You are a regulatory documentation expert. Given source documents from a medical device manufacturer, extract data and fill regulatory form fields.
 
-RULES:
-- Output ONLY valid JSON: keys must be "sectionId.fieldId" where sectionId is s1, s2, s10, etc. and fieldId is the EXACT id from the list (e.g. "s1.1.1a", "s2.2.1c") — fieldIds often contain dots.
-- For field 1.2 (Regulatory Status in India): if predicate on CDSCO list → "Yes — approved" + predicate name; else "New device".
-- For field 2.1c (Disorder/Condition): state the clinical disorder/condition detected — NOT the full intended-use paragraph (that belongs in 2.0 / 2.2).
-- If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values).
-- NEVER copy field labels or hints as values.
-- Keep values concise but complete. For tables, use pipe-delimited rows.
-- Respond with ONLY the JSON object, no markdown fences, no explanation.`,
+"sectionId.fieldId": "The output must be a single flat JSON object where each key maps exactly to a regulatory field identifier (e.g., 's5.5.0', 's5.5.1'). All specific values must be dynamically extracted by the language model from the appended manufacturer documents at runtime based on the guidelines below.",
+"s5.5.0": "Generate a markdown-formatted Essential Requirements Checklist (ERC) table with columns: No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response. Inspect the source text to adapt the responses to the physical state and chemical nature of the device components. Audit and ensure compliance on these key operational vectors:\n- Row 1.1: Detail analytical performance stability and list all tested interfering or cross-reacting compounds or endogenous proteins declared in the instructions for use (IFU).\n- Row 1.2: State the specific primary containment strategy (e.g., fluid-sealed bottles or moisture-resistant vials) designed to eliminate leakage risks during transport and handling.\n- Rows 2.1 & 2.2: Verify whether biological active ingredients, animal-derived vectors, or hazardous chemical preservatives are utilized, outlining risk-mitigation packaging protocols.\n- Row 2.5 & 2.7: Detail the specific microbiological state or bioburden release testing specifications alongside the standard-compliant stability validation thresholds (e.g., EN ISO 23640 / EN 23640 accelerated thermal protocols).\n- Rows 3.1, 3.2 & 3.3: Explicitly declare systemic compatibility, instrument or platform interoperability profiles (e.g., validation parameters for specialized automated analyzer equipment or manual configurations), and environmental risk insulation boundaries.\n- Row 8.7: Output the exact mathematical formula, calculation factor, or calibration algorithm supplied by the manufacturer to compute the patient's quantitative or qualitative analytical result.",
+"s5.5.1": "Provide a complete structural Device Design narrative along with a Kit Contents configuration table detailing the physical and chemical composition of the system. Extract and detail the exact chemical formulation matrix, concentrations, active ingredients, core buffers, surfactants, and preservatives for all reagents and reference standard/calibrator solutions. Incorporate the quantitative intermediate bulk control boundaries (such as target pH ranges or physical appearance metrics) and the commercial packaging presentation limits.",
+"s5.5.2": "Provide a detailed operational narrative of the compounding and manufacturing pipeline, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must accurately trace the step-by-step production flow from initial raw material selection, dispensing, and formulation compounding, through an in-process inspection validation node (featuring a loop back to blending on failure or progression on passing), to automated volumetric primary container dispensing/filling. Conclude the sequence at the final batch quality control verification gate and movement to temperature-controlled storage. Explicitly embed the exact analytical release parameters, tolerances, sensitivity boundaries, and performance testing metrics from the source material into the quality control node.",
+"s5.5.3": "Provide an operational summary of downstream quality control actions, secondary packaging logic, and release protocols, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must trace the terminal gates of the batch run: primary sorting, assigning serialization markers (extracting actual batch/lot identifiers, manufacturing dates, and expiration intervals from the file), secondary kit assembly (enclosing active components and printed technical instructions/IFU literature), Quality Assurance batch record review with administrative release authorization, and dispatch to logistics distribution networks.",
+"s5.5.4": "Extract and format the exact legal corporate identity and complete physical industrial address of the certified manufacturing facility. Additionally, explicitly document the scientific traceability network, calibration baselines, or international reference standard materials used to anchor and validate the analytical measurement units of the assay system."`
         },
         {
           role: "user",
