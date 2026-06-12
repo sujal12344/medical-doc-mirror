@@ -3,6 +3,7 @@
 import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { MermaidChart } from "./MermaidChart";
 
 type Props = {
   fieldId: string;
@@ -329,6 +330,13 @@ td,th{border:1px solid #ccc;padding:6px 10px;}th{background:#f0f0f0;font-weight:
                   // eslint-disable-next-line @next/next/no-img-element
                   return <img className="max-w-full max-h-96 object-contain rounded-lg border border-border p-1 bg-surface" {...props} />;
                 },
+                code: ({node, className, children, ...props}) => {
+                  const match = /language-mermaid/.exec(className || "");
+                  if (match) {
+                    return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
+                  }
+                  return <code className={className} {...props}>{children}</code>;
+                }
               }}
             >
               {value}

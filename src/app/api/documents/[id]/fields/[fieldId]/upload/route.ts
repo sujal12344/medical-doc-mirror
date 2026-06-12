@@ -9,7 +9,7 @@ import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { FRAMEWORKS } from "@/lib/frameworks";
-import { indexProductDocument } from "@/lib/productVectorIndex";
+import { indexProductDocument, queryProductDocuments } from "@/lib/productVectorIndex";
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs";
 
@@ -930,7 +930,31 @@ ${combinedDocxText}`,
       console.error("[field-upload] Pinecone indexing skipped or failed:", indexErr);
     }
 
-    // 4. Generate the targeted table or content using OpenAI
+    // 4. Query Pinecone database if configured
+    let pineconeContext = "";
+    try {
+      const queryText = `${fieldLabel} ${fieldHint} ${product.name} formulation manufacturing QC procedure criteria`;
+      console.log(`[field-upload] Querying Pinecone in namespace: ${namespace} with query: "${queryText}"`);
+      const retrieved = await queryProductDocuments(
+        String((user as Record<string, unknown>)._id),
+        productNamespaceId,
+        queryText,
+        15
+      );
+      if (retrieved && retrieved.trim()) {
+        pineconeContext = retrieved;
+        console.log(`[field-upload] Successfully retrieved ${pineconeContext.length} chars of context from Pinecone.`);
+      }
+    } catch (queryErr) {
+      console.warn("[field-upload] Pinecone context retrieval failed/skipped:", queryErr);
+    }
+
+    // Combine newly uploaded document text and Pinecone context so all information is available
+    const docSourceContent = pineconeContext
+      ? `--- Vector DB Matches (IFU & CoA Context) ---\n${pineconeContext}\n\n--- Newly Uploaded Document Content ---\n${combinedText}`
+      : combinedText;
+
+    // 5. Generate the targeted table or content using OpenAI
     if (!env.OPENAI_API_KEY) {
       return NextResponse.json({ error: "OPENAI_API_KEY not configured" }, { status: 500 });
     }
@@ -938,24 +962,116 @@ ${combinedDocxText}`,
     const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
     const isStabilityField = stabilityFields.includes(fieldId) || stabilitySections.includes(sectionId);
 
-    let promptText = `We uploaded a study report/raw data file for field "${fieldLabel}" (${fieldId}).
-Field description/hint: ${fieldHint}
+    const fieldsToGenerate = fieldId === "5.0" ? ["5.0", "5.1", "5.2", "5.3", "5.4"] : [fieldId];
+    const generatedValues: Record<string, string> = {};
 
-Please extract and generate the specific table or content required for this field from the document content below.
+    // Example Configuration Objects to pass along with your execution flow 
+    // (Populate these dynamically from your database or user input for each unique device)
+    const deviceConfig = {
+      section5_0: {
+        ercRowAudits: [
+          "Row 1.1: Detail specific analytical performance characteristics and listing of tested interfering substances from the source documentation.",
+          "Row 1.2: Detail the physical presentation of liquid/solid components to mitigate the risk of product leakage or chemical exposure during transport.",
+          "Rows 2.1 & 2.2: Identify whether biological or hazardous substances are utilized, and explain the precise containment or risk mitigation measures implemented.",
+          "Row 2.5 & 2.7: Detail the bioburden, sterility validation protocols, or microbiological state baseline along with stability recovery metrics matching the product specifications.",
+          "Rows 3.1, 3.2 & 3.3: Clearly declare equipment interoperability boundaries (e.g., manual methods, semi-automated systems, or fully-automated analyzer applications).",
+          "Row 8.7 (Mathematical Approach): Explicitly output the exact quantitative calculation formulas, calibration models, or mathematical logic used to compute patient analytical results."
+        ]
+      },
+      section5_1: {
+        structureGuidelines: [
+          "Narrative explanation of the device's design, operational principles, and structural composition.",
+          "Exact active chemical formulation, raw material components, buffers, stabilizers, or biological targets from the documentation.",
+          "Intermediate bulk specifications (such as target pH ranges, visual appearance, or density thresholds) and final commercial configuration pack sizes.",
+          "A structured Kit Contents Table mapping components, physical packaging format, and filling quantities."
+        ]
+      },
+      section5_2: {
+        processSteps: "Raw Material Blending/Compounding -> In-Process Inspection Decision Gate (with a loop back on failure, or progression on passing) -> Primary Container Dispensing/Filling -> Finished Product Quality Control Validation Gate -> Temperature-Controlled Finished Product Storage."
+      },
+      section5_3: {
+        packagingSteps: "Primary Sorting & Batch/Lot Traceability Stamping (Lot number, Manufacturing date, Expiration date tracking) -> Secondary Kit Packaging (enclosing primary elements and required technical literature/Instructions for Use) -> Quality Assurance Batch Record Verification & Authorization -> Distribution Logistics."
+      }
+    };
 
-RULES:
-- Return the data formatted as a Markdown table (using pipe-delimited rows: | Aspect | Subject | ... |).
-- Include appropriate headers.
-- Extract ONLY the relevant values matching this field. Do not include unrelated study results.
-- CRITICAL: If the document does not contain relevant data for this field, state clearly what information is missing. Do NOT generate mock data, placeholder text, or fabricated values.
-- Do not wrap the response in markdown blocks like \`\`\`markdown or \`\`\`json. Output the raw text of the table/content directly.
-- Avoid introducing any conversational explanations or remarks. Just return the extracted table/data.
+    await Promise.all(
+      fieldsToGenerate.map(async (targetFieldId) => {
+        let targetPrompt = "";
 
-Document Content:
-${combinedText.slice(0, 100000)}`;
+        if (targetFieldId === "5.0") {
+          targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
+Your task is to generate the Essential Requirements Checklist (ERC) table for section 5.0 of the IVD Technical File for the device specified in the source documentation.
 
-    if (isStabilityField) {
-      promptText = `We uploaded stability study report(s) for field "${fieldLabel}" (${fieldId}).
+The output must be a fully compliant markdown-formatted table with the exact columns:
+No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response
+
+Audits/Corrections to perform (Extract device-specific metrics from the source documentation to replace generic templates):
+${deviceConfig.section5_0.ercRowAudits.map(audit => `- ${audit}`).join("\n")}
+
+Source text and reference context from uploaded documents:
+${docSourceContent.slice(0, 120000)}
+
+Output only the raw Markdown table. No code blocks, no conversational text.`;
+
+        } else if (targetFieldId === "5.1") {
+          targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
+Your task is to generate Section 5.1 Device Design for the medical device described in the attached documentation.
+
+Structure the response to fulfill these requirements:
+${deviceConfig.section5_1.structureGuidelines.map(guideline => `- ${guideline}`).join("\n")}
+
+Source text and reference context from uploaded documents:
+${docSourceContent.slice(0, 120000)}
+
+Output only the raw Markdown content. No code blocks, no conversational text.`;
+
+        } else if (targetFieldId === "5.2") {
+          targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
+Your task is to generate Section 5.2 Manufacturing Process for the medical device described in the attached documentation.
+
+Generate a comprehensive narrative description of the bulk manufacturing process, followed by PROCESS MAP 1 using Mermaid.js flow diagram syntax.
+
+The flowchart logic must capture the physical process pipeline from:
+${deviceConfig.section5_2.processSteps}
+
+For the "Finished Product QC Release Gate" or final quality appraisal node, extract and embed the exact analytical acceptance criteria, performance specifications, tolerances, and stability thresholds directly from the source batch test records or Certificates of Analysis. Do not use placeholder criteria.
+
+Source text and reference context from uploaded documents:
+${docSourceContent.slice(0, 120000)}
+
+Output only the raw Markdown content. No code blocks (except the mermaid fence for the diagram), no conversational text.`;
+
+        } else if (targetFieldId === "5.3") {
+          targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
+Your task is to generate Section 5.3 QC & Packaging Flow Chart for the medical device described in the attached documentation.
+
+Generate a brief operational description of the packaging phase, followed by PROCESS MAP 2 (QC & Packaging Flow Chart) using Mermaid.js flow diagram syntax.
+
+The flowchart logic must trace the secondary stage downstream milestones from:
+${deviceConfig.section5_3.packagingSteps}
+
+Extract specific lot markers, shelf life durations, and component enclosures from the source text to ground the map logic in the actual batch record.
+
+Source text and reference context from uploaded documents:
+${docSourceContent.slice(0, 120000)}
+
+Output only the raw Markdown content. No code blocks (except the mermaid fence for the diagram), no conversational text.`;
+
+        } else if (targetFieldId === "5.4") {
+          targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
+Your task is to generate Section 5.4 Manufacturing Site for the device described in the attached documentation.
+
+Please extract and format:
+1. The legal manufacturing entity name and the complete physical industrial address.
+2. The calibration traceability profile or international standard reference materials used to calibrate the testing metrics, if mentioned in the documentation.
+
+Source text and reference context from uploaded documents:
+${docSourceContent.slice(0, 120000)}
+
+Output only the raw Markdown content. No code blocks, no conversational text.`;
+
+        } else if (isStabilityField) {
+          targetPrompt = `We uploaded stability study report(s) for field "${fieldLabel}" (${fieldId}).
 Field description/hint: ${fieldHint}
 
 Generate a comprehensive, professional stability report in Markdown format. The report MUST follow this standard structure, but adapt flexibly — not every report will have every section, and the data tables may differ between study types:
@@ -1011,27 +1127,46 @@ CRITICAL RULES:
 
 Document Content:
 ${combinedText.slice(0, 100000)}`;
-    }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are a medical device regulatory affairs expert specializing in CDSCO Device Master File (DMF) requirements. Your job is to extract exact raw data from study reports and format it into professional regulatory tables or reports.`,
-        },
-        {
-          role: "user",
-          content: promptText,
-        },
-      ],
-      max_tokens: 3000,
-      temperature: 0.1,
-    });
+        } else {
+          targetPrompt = `We uploaded a study report/raw data file for field "${fieldLabel}" (${fieldId}).
+Field description/hint: ${fieldHint}
 
-    const generatedTable = completion.choices[0]?.message?.content?.trim() || "";
+Please extract and generate the specific table or content required for this field from the document content below.
 
-    // 5. Update the field value in the document sections Map
+RULES:
+- Return the data formatted as a Markdown table (using pipe-delimited rows: | Aspect | Subject | ... |).
+- Include appropriate headers.
+- Extract ONLY the relevant values matching this field. Do not include unrelated study results.
+- If the document does not contain relevant data, generate an outline of the expected table based on CDSCO requirements and use placeholders or mock data (and clearly state so).
+- Do not wrap the response in markdown blocks like \`\`\`markdown or \`\`\`json. Output the raw text of the table/content directly.
+- Avoid introducing any conversational explanations or remarks. Just return the extracted table/data.
+
+Document Content:
+${combinedText.slice(0, 100000)}`;
+        }
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content: `You are a medical device regulatory affairs expert specializing in CDSCO Device Master File (DMF) requirements. Your job is to extract exact raw data from study reports and format it into professional regulatory tables or reports.`,
+            },
+            {
+              role: "user",
+              content: targetPrompt,
+            },
+          ],
+          max_tokens: 3000,
+          temperature: 0.1,
+        });
+
+        generatedValues[targetFieldId] = completion.choices[0]?.message?.content?.trim() || "";
+      })
+    );
+
+    // 6. Update the field values in the document sections Map
     if (!doc.sections) {
       doc.sections = new Map();
     }
@@ -1039,7 +1174,7 @@ ${combinedText.slice(0, 100000)}`;
     const currentSectionData = doc.sections.get(sectionId) || { fields: {}, completionPct: 0 };
     currentSectionData.fields = {
       ...currentSectionData.fields,
-      [fieldId]: generatedTable,
+      ...generatedValues,
     };
 
     // Recalculate completion percentage
@@ -1047,7 +1182,10 @@ ${combinedText.slice(0, 100000)}`;
     if (secObj) {
       const totalFields = secObj.fields.length;
       const filledCount = secObj.fields.filter(
-        (f) => (f.id === fieldId ? generatedTable : currentSectionData.fields[f.id])?.trim()
+        (f) => {
+          const val = generatedValues[f.id] !== undefined ? generatedValues[f.id] : currentSectionData.fields[f.id];
+          return val?.trim();
+        }
       ).length;
       currentSectionData.completionPct = Math.round((filledCount / totalFields) * 100);
     }
@@ -1061,7 +1199,7 @@ ${combinedText.slice(0, 100000)}`;
       fileName: uploadedFileNames.join(", "),
       chunksIndexed,
       namespace,
-      value: generatedTable,
+      value: generatedValues[fieldId] || "",
     });
 
   } catch (error) {

@@ -6,6 +6,7 @@ import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 import { env } from "@/lib/env";
 import { FRAMEWORKS } from "@/lib/frameworks";
+import { queryProductDocuments } from "@/lib/productVectorIndex";
 import {
   applyPrefillToSections,
   buildProductContextForDmfAutofill,
@@ -87,8 +88,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       );
     }
 
+    let pineconeContext = "";
+    if (hasUploadedDocs) {
+      try {
+        const productNamespaceId = product.vectorNamespaceId || String(product._id);
+        const queryText = `${product.name} standard formulation pH packaging kit contents manufacturing process compounding QC test parameters acceptance criteria manufacturing site address European Material Reference ${product.description || ""}`.slice(0, 500);
+        console.log(`${LOG} Querying Pinecone namespace: product_${String((user as Record<string, unknown>)._id)}_${productNamespaceId} with query: "${queryText}"`);
+        const retrieved = await queryProductDocuments(
+          String((user as Record<string, unknown>)._id),
+          productNamespaceId,
+          queryText,
+          20
+        );
+        if (retrieved && retrieved.trim()) {
+          pineconeContext = retrieved;
+          console.log(`${LOG} Successfully retrieved ${pineconeContext.length} chars of context from Pinecone.`);
+        }
+      } catch (queryErr) {
+        console.warn(`${LOG} Pinecone query failed/skipped:`, queryErr);
+      }
+    }
+
     const truncated = hasUploadedDocs
-      ? combinedText.slice(0, 80_000)
+      ? (pineconeContext
+        ? `--- Vector Database Retrieved Context ---\n${pineconeContext}\n\n--- Full Document Sample ---\n${combinedText.slice(0, 40000)}`
+        : combinedText.slice(0, 80_000))
       : productContext;
 
     const fieldList = fw.sections.flatMap((s) =>
