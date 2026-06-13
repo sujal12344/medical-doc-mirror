@@ -89,6 +89,12 @@ export default function DocumentEditorPage() {
   const [stabilityUploading, setStabilityUploading] = useState(false);
   const [stabilityUploadStatus, setStabilityUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [stabilityUploadMsg, setStabilityUploadMsg] = useState("");
+  const [analyticalUploading, setAnalyticalUploading] = useState(false);
+  const [analyticalUploadStatus, setAnalyticalUploadStatus] = useState<"idle" | "success" | "error">("idle");
+  const [analyticalUploadMsg, setAnalyticalUploadMsg] = useState("");
+  const [section5Uploading, setSection5Uploading] = useState(false);
+  const [section5UploadStatus, setSection5UploadStatus] = useState<"idle" | "success" | "error">("idle");
+  const [section5UploadMsg, setSection5UploadMsg] = useState("");
   const chatFileRef = useRef<HTMLInputElement>(null);
   const initialAutofillStarted = useRef(false);
 
@@ -271,9 +277,9 @@ export default function DocumentEditorPage() {
       if (r.ok && data.success) {
         // Update stability reports section fields
         const reportFieldMap: Record<string, { sectionId: string; fieldId: string }> = {
-          sr_inuse:      { sectionId: "s_stability_reports", fieldId: "sr_inuse" },
-          sr_accelerated:{ sectionId: "s_stability_reports", fieldId: "sr_accelerated" },
-          sr_shipping:   { sectionId: "s_stability_reports", fieldId: "sr_shipping" },
+          sr_inuse: { sectionId: "s_stability_reports", fieldId: "sr_inuse" },
+          sr_accelerated: { sectionId: "s_stability_reports", fieldId: "sr_accelerated" },
+          sr_shipping: { sectionId: "s_stability_reports", fieldId: "sr_shipping" },
           // DMF auto-fill sections also updated by backend
         };
         for (const [fieldId, mapping] of Object.entries(reportFieldMap)) {
@@ -282,9 +288,9 @@ export default function DocumentEditorPage() {
         }
         // Also update DMF textbox sections in local state
         const dmfMap: Record<string, { sectionId: string; fieldId: string; sourceKey: string }> = {
-          "17.0a": { sectionId: "s17_inuse",  fieldId: "17.0a", sourceKey: "sr_inuse" },
-          "16.0a": { sectionId: "s16_shelf",  fieldId: "16.0a", sourceKey: "sr_accelerated" },
-          "18.0a": { sectionId: "s18_shipping",fieldId: "18.0a", sourceKey: "sr_shipping" },
+          "17.0a": { sectionId: "s17_inuse", fieldId: "17.0a", sourceKey: "sr_inuse" },
+          "16.0a": { sectionId: "s16_shelf", fieldId: "16.0a", sourceKey: "sr_accelerated" },
+          "18.0a": { sectionId: "s18_shipping", fieldId: "18.0a", sourceKey: "sr_shipping" },
         };
         for (const mapping of Object.values(dmfMap)) {
           const content = (data.results as Record<string, string>)[mapping.sourceKey];
@@ -310,6 +316,93 @@ export default function DocumentEditorPage() {
     }
   }
 
+  async function handleAnalyticalAllUpload(files: FileList) {
+    if (!files.length || !doc) return;
+    setAnalyticalUploading(true);
+    setAnalyticalUploadStatus("idle");
+    setAnalyticalUploadMsg(`Processing ${files.length} file(s)... Generating all analytical and sensitivity reports…`);
+
+    const fd = new FormData();
+    for (const file of Array.from(files)) {
+      fd.append("file", file);
+    }
+
+    try {
+      const r = await fetch(`/api/documents/${id}/analytical-all`, { method: "POST", body: fd });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        // Update local state for all fields
+        const fieldMap: Record<string, { sectionId: string; fieldId: string }> = {
+          "7": { sectionId: "s7", fieldId: "7" },
+          "7.1": { sectionId: "s7", fieldId: "7.1" },
+          "7.2": { sectionId: "s7", fieldId: "7.2" },
+          "7.3": { sectionId: "s7", fieldId: "7.3" },
+          "8.1": { sectionId: "s8", fieldId: "8.1" },
+          "9.1": { sectionId: "s9", fieldId: "9.1" },
+          "10.0a": { sectionId: "s10_sensitivity", fieldId: "10.0a" },
+          "10.1": { sectionId: "s10_sensitivity", fieldId: "10.1" },
+        };
+        for (const [fieldId, mapping] of Object.entries(fieldMap)) {
+          const content = (data.results as Record<string, string>)[fieldId];
+          if (content !== undefined) setFieldValue(mapping.sectionId, mapping.fieldId, content);
+        }
+
+        setAnalyticalUploadStatus("success");
+        setAnalyticalUploadMsg(
+          `✅ Generated analytical, specimen type, reproducibility and sensitivity studies from "${data.filesUploaded}" successfully.`
+        );
+      } else {
+        setAnalyticalUploadStatus("error");
+        setAnalyticalUploadMsg(data.error || "Failed to generate analytical reports.");
+      }
+    } catch {
+      setAnalyticalUploadStatus("error");
+      setAnalyticalUploadMsg("Network error: failed to connect to analytical upload service.");
+    } finally {
+      setAnalyticalUploading(false);
+    }
+  }
+
+  async function handleSection5Upload(files: FileList) {
+    if (!files.length || !doc) return;
+    setSection5Uploading(true);
+    setSection5UploadStatus("idle");
+    setSection5UploadMsg(`Processing ${files.length} file(s)… Generating Section 5 design & manufacturing content…`);
+
+    const fd = new FormData();
+    for (const file of Array.from(files)) {
+      fd.append("file", file);
+    }
+
+    try {
+      // Field 5.0 triggers generation of all section 5 fields (5.0–5.4)
+      const r = await fetch(`/api/documents/${id}/fields/5.0/upload`, { method: "POST", body: fd });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        // The backend stores generatedValues for all 5.x fields; refresh doc from server
+        const refreshRes = await fetch(`/api/documents/${id}`);
+        const refreshData = await refreshRes.json();
+        if (refreshData.document) {
+          const { normalizeDocumentSections } = await import("@/lib/normalizeDocument");
+          setDoc({
+            ...refreshData.document,
+            sections: normalizeDocumentSections(refreshData.document.sections),
+          });
+        }
+        setSection5UploadStatus("success");
+        setSection5UploadMsg(`✅ Section 5 generated from "${data.fileName}" successfully.`);
+      } else {
+        setSection5UploadStatus("error");
+        setSection5UploadMsg(data.error || "Failed to generate Section 5 content.");
+      }
+    } catch {
+      setSection5UploadStatus("error");
+      setSection5UploadMsg("Network error: failed to connect to upload service.");
+    } finally {
+      setSection5Uploading(false);
+    }
+  }
+
   async function sendChat() {
     if (!chatInput.trim() || chatLoading) return;
     const msg = chatInput.trim();
@@ -324,7 +417,8 @@ export default function DocumentEditorPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           messages: [
-            { role: "system", content: `You are a regulatory documentation expert. Help the user fill out their ${framework?.documentType || "regulatory"} document for ${framework?.countryName || "their target market"}. ${ctx}${docCtx}
+            {
+              role: "system", content: `You are a regulatory documentation expert. Help the user fill out their ${framework?.documentType || "regulatory"} document for ${framework?.countryName || "their target market"}. ${ctx}${docCtx}
 
 IMPORTANT: When the user asks to fill a specific field, respond with the exact value AND include this machine-readable tag at the end: [FILL:sectionId:fieldId:value]. For example: [FILL:sec1:field1:HIV-1/2 Antibody]` },
             { role: "user", content: msg },
@@ -364,7 +458,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
   const currentSection: FrameworkSection | undefined = framework.sections.find((s) => s.id === activeSection);
   const sectionPct = currentSection ? (doc.sections?.[currentSection.id]?.completionPct ?? 0) : 0;
   const sectionFilled = currentSection
-    ? currentSection.fields.filter((f) => getFieldValue(currentSection.id, f.id).trim()).length
+    ? currentSection.fields.filter((f) => String(getFieldValue(currentSection.id, f.id)).trim().length > 0).length
     : 0;
 
   return (
@@ -430,6 +524,118 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
             </div>
 
             <div className="space-y-5">
+              {/* Section 5 combined upload panel */}
+              {currentSection.id === "s5" && (
+                <div className="rounded-xl border border-dashed border-violet-400/50 bg-violet-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-400/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-violet-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate Section 5 — Design & Manufacturing</p>
+                      <p className="text-xs text-muted">Upload your IFU, COA or manufacturing documents to auto-generate all §5 fields: the Essential Requirements Checklist, Device Design, Manufacturing Process, QC Flow Chart, and Manufacturing Site.</p>
+                    </div>
+                  </div>
+                  {section5UploadMsg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${section5UploadStatus === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : section5UploadStatus === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-violet-500/10 text-violet-600 dark:text-violet-300 border border-violet-500/20"
+                      }`}>
+                      {section5UploadMsg}
+                    </p>
+                  )}
+                  <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${section5Uploading
+                    ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                    : "border-violet-400/40 text-violet-600 dark:text-violet-300 bg-violet-500/10 hover:bg-violet-500/20 hover:border-violet-400/60"
+                    }`}>
+                    {section5Uploading ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating Section 5 content…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                        </svg>
+                        Upload Design & Manufacturing Documents (.pdf, .docx)
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.docx"
+                      multiple
+                      className="hidden"
+                      disabled={section5Uploading}
+                      onChange={(e) => {
+                        if (e.target.files?.length) handleSection5Upload(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+
+              {/* Combined Analytical Studies Upload Panel — shown ONLY on Section 7 */}
+              {currentSection.id === "s7" && (
+                <div className="rounded-xl border border-dashed border-indigo-400/50 bg-indigo-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-400/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate Analytical Studies, Specimen Type, Reproducibility & Sensitivity Reports</p>
+                      <p className="text-xs text-muted">Upload your performance validation report or raw study data. This will simultaneously auto-fill §7 (Analytical Studies), §8 (Specimen Type), §9 (Reproducibility), and §10 (Analytical Sensitivity) fields with precise tables and details.</p>
+                    </div>
+                  </div>
+                  {analyticalUploadMsg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${analyticalUploadStatus === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : analyticalUploadStatus === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20"
+                      }`}>
+                      {analyticalUploadMsg}
+                    </p>
+                  )}
+                  <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${analyticalUploading
+                    ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                    : "border-indigo-400/40 text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 hover:border-indigo-400/60"
+                    }`}>
+                    {analyticalUploading ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating all analytical reports…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                        </svg>
+                        Upload Analytical Study Files (.pdf, .docx)
+                      </>
+                    )}
+                    <input
+                      type="file"
+                      accept=".pdf,.docx"
+                      multiple
+                      className="hidden"
+                      disabled={analyticalUploading}
+                      onChange={(e) => {
+                        if (e.target.files?.length) handleAnalyticalAllUpload(e.target.files);
+                        e.target.value = "";
+                      }}
+                    />
+                  </label>
+                </div>
+              )}
+
               {/* Combined Stability Upload Panel — shown ONLY on the Stability Reports section */}
               {currentSection.id === "s_stability_reports" && (
                 <div className="rounded-xl border border-dashed border-blue-400/50 bg-blue-500/5 p-5">
@@ -445,21 +651,19 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                     </div>
                   </div>
                   {stabilityUploadMsg && (
-                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${
-                      stabilityUploadStatus === "success"
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                        : stabilityUploadStatus === "error"
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${stabilityUploadStatus === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : stabilityUploadStatus === "error"
                         ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
                         : "bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20"
-                    }`}>
+                      }`}>
                       {stabilityUploadMsg}
                     </p>
                   )}
-                  <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${
-                    stabilityUploading
-                      ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
-                      : "border-blue-400/40 text-blue-600 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/60"
-                  }`}>
+                  <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${stabilityUploading
+                    ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                    : "border-blue-400/40 text-blue-600 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/60"
+                    }`}>
                     {stabilityUploading ? (
                       <>
                         <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />

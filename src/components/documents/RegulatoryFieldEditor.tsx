@@ -22,7 +22,30 @@ export function RegulatoryFieldEditor({ fieldId, label, hint, textarea, value, o
   const [uploadError, setUploadError] = useState("");
   const [fileName, setFileName] = useState("");
 
-  const hasContent = value.trim().length > 0;
+  const formatObjectToMarkdown = (obj: any, level = 0): string => {
+    if (obj === null || obj === undefined) return "";
+    if (typeof obj !== "object") return String(obj);
+    if (Array.isArray(obj)) {
+      return obj.map((item) => {
+        if (typeof item === "object" && item !== null) {
+          return formatObjectToMarkdown(item, level);
+        }
+        return `- ${item}`;
+      }).join("\n");
+    }
+    return Object.entries(obj).map(([key, val]) => {
+      const headingPrefix = "#".repeat(Math.min(6, level + 2));
+      if (typeof val === "object" && val !== null) {
+        return `${headingPrefix} ${key}\n${formatObjectToMarkdown(val, level + 1)}`;
+      }
+      return `**${key}**: ${val}`;
+    }).join("\n\n");
+  };
+
+  const safeValue = typeof value === "string" 
+    ? (value === "[object Object]" ? "" : value) 
+    : formatObjectToMarkdown(value);
+  const hasContent = safeValue.trim().length > 0;
 
   const handleFieldFileUpload = async (files: FileList | File[]) => {
     if (!documentId || !files.length) return;
@@ -53,10 +76,10 @@ export function RegulatoryFieldEditor({ fieldId, label, hint, textarea, value, o
       setUploading(false);
     }
   };
-  const filled = value.trim().length > 0;
+  const filled = safeValue.trim().length > 0;
   const showStructured = hasContent && view === "structured";
 
-  const rows = textarea ? Math.min(24, Math.max(5, value.split("\n").length + 1)) : undefined;
+  const rows = textarea ? Math.min(24, Math.max(5, safeValue.split("\n").length + 1)) : undefined;
 
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden">
@@ -124,26 +147,26 @@ export function RegulatoryFieldEditor({ fieldId, label, hint, textarea, value, o
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                h1: ({node, ...props}) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground" {...props} />,
-                h2: ({node, ...props}) => <h2 className="text-lg font-bold mt-5 mb-2.5 text-foreground" {...props} />,
-                h3: ({node, ...props}) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
-                h4: ({node, ...props}) => <h4 className="text-sm font-semibold mt-3 mb-1.5 text-foreground" {...props} />,
-                p: ({node, ...props}) => <p className="text-xs text-foreground leading-relaxed mb-3 last:mb-0" {...props} />,
-                ul: ({node, ...props}) => <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
-                ol: ({node, ...props}) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
-                table: ({node, ...props}) => (
+                h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground" {...props} />,
+                h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-5 mb-2.5 text-foreground" {...props} />,
+                h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
+                h4: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-3 mb-1.5 text-foreground" {...props} />,
+                p: ({ node, ...props }) => <p className="text-xs text-foreground leading-relaxed mb-3 last:mb-0" {...props} />,
+                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                table: ({ node, ...props }) => (
                   <div className="overflow-x-auto mb-4 border border-border rounded-lg">
                     <table className="w-full text-left text-xs" {...props} />
                   </div>
                 ),
-                thead: ({node, ...props}) => <thead className="bg-surface2" {...props} />,
-                th: ({node, ...props}) => <th className="px-3 py-2 font-semibold text-foreground border-b border-border/60" {...props} />,
-                td: ({node, ...props}) => <td className="px-3 py-2 text-foreground border-b border-border/60 align-top" {...props} />,
-                tr: ({node, ...props}) => <tr className="last:border-0" {...props} />,
-                strong: ({node, ...props}) => <strong className="font-semibold text-foreground" {...props} />,
-                em: ({node, ...props}) => <em className="italic text-muted" {...props} />,
-                hr: ({node, ...props}) => <hr className="my-4 border-border/50" {...props} />,
-                code: ({node, className, children, ...props}) => {
+                thead: ({ node, ...props }) => <thead className="bg-surface2" {...props} />,
+                th: ({ node, ...props }) => <th className="px-3 py-2 font-semibold text-foreground border-b border-border/60" {...props} />,
+                td: ({ node, ...props }) => <td className="px-3 py-2 text-foreground border-b border-border/60 align-top" {...props} />,
+                tr: ({ node, ...props }) => <tr className="last:border-0" {...props} />,
+                strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
+                em: ({ node, ...props }) => <em className="italic text-muted" {...props} />,
+                hr: ({ node, ...props }) => <hr className="my-4 border-border/50" {...props} />,
+                code: ({ node, className, children, ...props }) => {
                   const match = /language-mermaid/.exec(className || "");
                   if (match) {
                     return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
@@ -152,13 +175,13 @@ export function RegulatoryFieldEditor({ fieldId, label, hint, textarea, value, o
                 }
               }}
             >
-              {value}
+              {safeValue}
             </ReactMarkdown>
           </div>
         ) : textarea ? (
           <textarea
             rows={rows}
-            value={value}
+            value={safeValue}
             onChange={(e) => onChange(e.target.value)}
             className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y min-h-[120px]"
             placeholder={`Enter ${label.toLowerCase()}…`}
@@ -166,7 +189,7 @@ export function RegulatoryFieldEditor({ fieldId, label, hint, textarea, value, o
         ) : (
           <input
             type="text"
-            value={value}
+            value={safeValue}
             onChange={(e) => onChange(e.target.value)}
             className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
             placeholder={`Enter ${label.toLowerCase()}…`}
@@ -194,17 +217,17 @@ export function RegulatoryFieldEditor({ fieldId, label, hint, textarea, value, o
             {!uploading && (
               <label className="cursor-pointer inline-flex items-center justify-center px-3 py-1.5 border border-border hover:bg-surface2 text-[11px] font-semibold text-foreground rounded-lg transition shadow-sm mt-1">
                 Upload Files (.docx, .pdf)
-                <input 
-                  type="file" 
-                  accept=".pdf,.docx" 
+                <input
+                  type="file"
+                  accept=".pdf,.docx"
                   multiple
-                  className="hidden" 
+                  className="hidden"
                   onChange={(e) => {
                     if (e.target.files?.length) {
                       handleFieldFileUpload(e.target.files);
                     }
                     e.target.value = "";
-                  }} 
+                  }}
                 />
               </label>
             )}

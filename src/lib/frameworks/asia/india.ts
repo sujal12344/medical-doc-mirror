@@ -78,7 +78,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s5", title: "5.0 Design and Manufacturing Information", description: "Design, process, and manufacturing site information", fields: [
-          { id: "5.0", label: "5.0 Design and Manufacturing Information (Essential Requirements Checklist Table)", hint: "Table fields: No, Essential Requirement, Applies (Yes/No/NA), Applicable Std /Procedure, Response", textarea: true, allowUpload: true },
+          { id: "5.0", label: "5.0 Design and Manufacturing Information (Essential Requirements Checklist Table)", hint: "Table fields: No, Essential Requirement, Applies (Yes/No/NA), Applicable Std /Procedure, Response", textarea: true },
           { id: "5.1", label: "5.1 Device Design", hint: "Description with Kit contents table", textarea: true },
           { id: "5.2", label: "5.2 Manufacturing Process", hint: "Description with a flow sheet diagram", textarea: true },
           { id: "5.3", label: "5.3 QC Flow Chart", hint: "QC flow chart", textarea: true },
@@ -92,34 +92,30 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "6.3", label: "Validation Protocol", hint: "Study design and acceptance criteria", textarea: true },
           { id: "6.4", label: "Validation Results", hint: "Summary of validation findings", textarea: true },
           { id: "6.5", label: "Validation Conclusion", hint: "Overall conclusion and compliance statement", textarea: true },
-          { id: "6.6", label: "Table 4. Precision Table", hint: "Upload precision study raw data or report to populate", textarea: true, allowUpload: true },
-          { id: "6.7", label: "Table 5. Accuracy Table", hint: "Upload accuracy/method comparison study report to populate", textarea: true, allowUpload: true }
         ]
       },
       {
         id: "s7", title: "7.0 Analytical Studies", description: "Conformity demonstration studies", fields: [
-          { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true }
+          { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true },
+          { id: "7.1", label: "Table 4. Precision Table", hint: "Precision study results — auto-generated from the batch upload above", textarea: true },
+          { id: "7.2", label: "Table 5. Accuracy Table", hint: "Accuracy/method comparison study results — auto-generated from the batch upload above", textarea: true },
+          { id: "7.3", label: "Table 6. Linearity Table", hint: "Linearity study results — auto-generated from the batch upload above", textarea: true }
         ]
       },
       {
-        id: "s8", title: "8.0 Specimen Type", description: "Specimen stability and matrix comparison", fields: [
-          { id: "8a", label: "Specimen Stability", hint: "Each matrix stability conditions", textarea: true },
-          { id: "8b", label: "Matrix Comparison", hint: "Number of samples, statistical methods", textarea: true }
+        id: "s8", title: "8.0 Specimen Type", description: "Specimen Type", fields: [
+          { id: "8.1", label: "Specimen Type", hint: "Type of specimen used in the study", textarea: true },
         ]
       },
       {
         id: "s9", title: "9.0 Analytical Performance Characteristics", description: "Accuracy, trueness, precision, repeatability, and reproducibility", fields: [
-          { id: "9.1", label: "Accuracy (Trueness & Precision)", hint: "Study designs, results, conclusions", textarea: true },
-          { id: "9.1a", label: "Repeatability", hint: "Within-run precision studies", textarea: true },
-          { id: "9.2", label: "Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
-          { id: "13", label: "Measuring Range", hint: "Linear range, LoD, hook effect", textarea: true },
-          { id: "14.1", label: "Cut-Off Calculation Method", hint: "Formula, statistical approach, ROC analysis", textarea: true }
+          { id: "9.1", label: "Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
         ]
       },
       {
         id: "s10_sensitivity", title: "10.0 Analytical Sensitivity", description: "Analytical sensitivity / detection limit studies (LoB, LoD, LoQ)", fields: [
           { id: "10.0a", label: "Analytical Sensitivity Overview", hint: "Brief description of detection limit studies", textarea: true },
-          { id: "10.1", label: "Table 6: Analytical Sensitivity Study", hint: "Upload sensitivity study report to populate the LoD/LoQ table", textarea: true, allowUpload: true }
+          { id: "10.1", label: "Analytical Sensitivity Study Table", hint: "Sensitivity study results — auto-generated from the batch upload in §7", textarea: true }
         ]
       },
       {

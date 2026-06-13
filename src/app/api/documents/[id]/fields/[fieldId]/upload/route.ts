@@ -425,7 +425,7 @@ ${combinedText.slice(0, 100000)}`;
       const filledCount = secObj.fields.filter(
         (f) => {
           const val = generatedValues[f.id] !== undefined ? generatedValues[f.id] : currentSectionData.fields[f.id];
-          return val?.trim();
+          return String(val || "").trim();
         }
       ).length;
       currentSectionData.completionPct = Math.round((filledCount / totalFields) * 100);
