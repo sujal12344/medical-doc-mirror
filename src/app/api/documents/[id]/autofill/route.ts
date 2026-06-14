@@ -119,6 +119,18 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       s.fields.map((f) => `${s.id}|${f.id}|${f.label}|${f.hint}`)
     );
 
+    // Build a concrete example from the first field in the framework so the prompt is unambiguous
+    const exampleEntry = fw.sections[0]?.fields[0];
+    const exampleKey = exampleEntry
+      ? `${fw.sections[0].id}.${exampleEntry.id}`
+      : "s1.1.1a";
+    const exampleKey2 = fw.sections[1]?.fields[0]
+      ? `${fw.sections[1].id}.${fw.sections[1].fields[0].id}`
+      : "s2.2.0";
+
+    console.log(`${LOG} fieldList sample (first 5)`, fieldList.slice(0, 5));
+    console.log(`${LOG} key format example`, { exampleKey, exampleKey2 });
+
     const client = new OpenAI({ apiKey: env.OPENAI_API_KEY });
 
     const completion = await client.chat.completions.create({
@@ -128,7 +140,19 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
           role: "system",
           content: `You are a regulatory documentation expert. Given source documents from a medical device manufacturer, extract data and fill regulatory form fields.
 
-"sectionId.fieldId": "The output must be a single flat JSON object where each key maps exactly to a regulatory field identifier (e.g., 's5.5.0', 's5.5.1'). All specific values must be dynamically extracted by the language model from the appended manufacturer documents at runtime based on the guidelines below.",
+RULES:
+- Output ONLY valid JSON.
+- Each key MUST be "sectionId.fieldId" — concatenate the EXACT sectionId and the EXACT fieldId from the field list, joined by a single dot.
+- EXAMPLE: for a field listed as "${fw.sections[0]?.id}|${exampleEntry?.id}|...", the correct JSON key is "${exampleKey}". For "${fw.sections[1]?.id}|${fw.sections[1]?.fields[0]?.id}|...", use "${exampleKey2}".
+- FieldIds often contain dots themselves (e.g. 1.1a, 2.1c, 20.productName). Always use the FULL fieldId exactly as shown in the FIELDS list.
+- For field 1.2 (Regulatory Status in India): if predicate on CDSCO list → "Yes — approved" + predicate name; else "New device".
+- For field 2.1c (Disorder/Condition): state the clinical disorder/condition detected — NOT the full intended-use paragraph (that belongs in 2.0 / 2.2).
+- If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values).
+- NEVER copy field labels or hints as values.
+- Keep values concise but complete. For tables, use pipe-delimited rows.
+- Respond with ONLY the JSON object, no markdown fences, no explanation.
+
+Guidance for specific fields:
 "s5.5.0": "Generate a markdown-formatted Essential Requirements Checklist (ERC) table with columns: No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response. Inspect the source text to adapt the responses to the physical state and chemical nature of the device components. Audit and ensure compliance on these key operational vectors:\n- Row 1.1: Detail analytical performance stability and list all tested interfering or cross-reacting compounds or endogenous proteins declared in the instructions for use (IFU).\n- Row 1.2: State the specific primary containment strategy (e.g., fluid-sealed bottles or moisture-resistant vials) designed to eliminate leakage risks during transport and handling.\n- Rows 2.1 & 2.2: Verify whether biological active ingredients, animal-derived vectors, or hazardous chemical preservatives are utilized, outlining risk-mitigation packaging protocols.\n- Row 2.5 & 2.7: Detail the specific microbiological state or bioburden release testing specifications alongside the standard-compliant stability validation thresholds (e.g., EN ISO 23640 / EN 23640 accelerated thermal protocols).\n- Rows 3.1, 3.2 & 3.3: Explicitly declare systemic compatibility, instrument or platform interoperability profiles (e.g., validation parameters for specialized automated analyzer equipment or manual configurations), and environmental risk insulation boundaries.\n- Row 8.7: Output the exact mathematical formula, calculation factor, or calibration algorithm supplied by the manufacturer to compute the patient's quantitative or qualitative analytical result.",
 "s5.5.1": "Provide a complete structural Device Design narrative along with a Kit Contents configuration table detailing the physical and chemical composition of the system. Extract and detail the exact chemical formulation matrix, concentrations, active ingredients, core buffers, surfactants, and preservatives for all reagents and reference standard/calibrator solutions. Incorporate the quantitative intermediate bulk control boundaries (such as target pH ranges or physical appearance metrics) and the commercial packaging presentation limits.",
 "s5.5.2": "Provide a detailed operational narrative of the compounding and manufacturing pipeline, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must accurately trace the step-by-step production flow from initial raw material selection, dispensing, and formulation compounding, through an in-process inspection validation node (featuring a loop back to blending on failure or progression on passing), to automated volumetric primary container dispensing/filling. Conclude the sequence at the final batch quality control verification gate and movement to temperature-controlled storage. Explicitly embed the exact analytical release parameters, tolerances, sensitivity boundaries, and performance testing metrics from the source material into the quality control node.",
@@ -159,6 +183,7 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
     });
 
     const raw = completion.choices[0]?.message?.content || "{}";
+    console.log(`${LOG} GPT raw response (first 500 chars)`, raw.slice(0, 500));
 
     let parsed: Record<string, string> = {};
     try {
@@ -168,6 +193,7 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
       console.error(`${LOG} GPT JSON parse failed`, { rawPreview: preview(raw, 200) });
       return NextResponse.json({ error: "AI returned invalid JSON", raw }, { status: 500 });
     }
+    console.log(`${LOG} GPT parsed keys (all)`, Object.keys(parsed));
 
     const gptKeys = Object.keys(parsed);
     const rejected: { key: string; reason: string }[] = [];

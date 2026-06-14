@@ -36,9 +36,25 @@ export function getProductDmfPrefill(
   const deviceClass = (product.deviceClass || "").trim();
   const patientPopulation = (product.patientPopulation || "").trim();
 
+  console.log("[dmf-prefill] ── INPUT ────────────────────────────────");
+  console.log("[dmf-prefill] frameworkId   :", frameworkId);
+  console.log("[dmf-prefill] product.name  :", name || "(empty)");
+  console.log("[dmf-prefill] manufacturer  :", manufacturer || "(empty)");
+  console.log("[dmf-prefill] deviceType    :", product.deviceType || "(empty)");
+  console.log("[dmf-prefill] deviceClass   :", deviceClass || "(empty)");
+  console.log("[dmf-prefill] intendedUse   :", intendedUse ? `${intendedUse.slice(0, 80)}…` : "(empty)");
+  console.log("[dmf-prefill] description   :", description ? `${description.slice(0, 80)}…` : "(empty)");
+  console.log("[dmf-prefill] patientPop    :", patientPopulation || "(empty)");
+  console.log("[dmf-prefill] predicateExists:", pred?.predicateExists ?? "(not set)");
+
   const set = (sectionId: string, fieldId: string, value: string) => {
     const v = value.trim();
-    if (v) out[`${sectionId}.${fieldId}`] = v;
+    if (v) {
+      out[`${sectionId}.${fieldId}`] = v;
+      console.log(`[dmf-prefill]   SET ${sectionId}.${fieldId} = "${v.slice(0, 60)}${v.length > 60 ? "…" : ""}"`);
+    } else {
+      console.log(`[dmf-prefill]   SKIP ${sectionId}.${fieldId} (empty value)`);
+    }
   };
 
   const predicateComparison = formatPredicateComparison(product, pred);
@@ -57,6 +73,12 @@ export function getProductDmfPrefill(
     set("s2", "2.1c", disorderConditionIvD);
     set("s2", "2.1g", patientPopulation);
     set("s2", "2.4", predicateComparison);
+    // Labelling section — pre-fill from registered product (only stable fields)
+    set("s20", "20.productName", name);
+    set("s20", "20.deviceType", "IVD \u2014 In Vitro Diagnostic Medical Device");
+    // Note: 20.logo and 20.manufacturer come from label image OCR upload, not prefill
+    console.log(`[dmf-prefill] ── OUTPUT: ${Object.keys(out).length} fields set ─────────────────`);
+    console.log("[dmf-prefill] Keys:", Object.keys(out));
     return out;
   }
 
@@ -68,9 +90,17 @@ export function getProductDmfPrefill(
     set("s1", "1.2", regulatoryStatusIndia);
     set("s2", "2.2", intendedUse);
     set("s2", "2.13", predicateComparison);
+    // Labelling section — pre-fill from registered product (only stable fields)
+    const mdDeviceType = (product.deviceType || "").trim() || "Medical Device";
+    set("s8", "8.productName", name);
+    set("s8", "8.deviceType", mdDeviceType);
+    // Note: 8.logo and 8.manufacturer come from label image OCR upload, not prefill
+    console.log(`[dmf-prefill] ── OUTPUT: ${Object.keys(out).length} fields set ─────────────────`);
+    console.log("[dmf-prefill] Keys:", Object.keys(out));
     return out;
   }
 
+  console.log("[dmf-prefill] WARNING: unknown frameworkId, returning empty prefill");
   return out;
 }
 

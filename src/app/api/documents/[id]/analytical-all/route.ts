@@ -43,314 +43,76 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
 }
 
 const ANALYTICAL_PROMPT = `
-Generate a complete Analytical Performance section for the medical device suitable for inclusion in a Device Master File (DMF), Technical Documentation, Performance Evaluation Report, Design Verification Report, IVDR Technical File, or CDSCO dossier.
+You are a biostatistician and regulatory affairs specialist preparing Device Master File (DMF) technical documentation, Design Verification Reports, or Performance Evaluation Reports in accordance with CLSI guidelines, IVDR technical documentation, and CDSCO Device Master File requirements.
 
-Use only the information available in the provided context and generate regulatory-grade narratives and tables. The final output should read like a professionally written technical document and not like pointwise notes or extracted bullets.
+Your output must read like a professionally written, continuous scientific validation report. Avoid presenting content as pointwise summaries, extracted bullet points, or isolated data metrics (e.g. Mean = 3.08).
 
-GENERAL REQUIREMENTS
+WRITING STYLE & STRUCTURE RULES:
+- Write every section in continuous narrative form with detailed explanations and smooth transitions between paragraphs.
+- The flow of every section must follow:
+  Introduction and study rationale -> Study design and methodology -> Statistical approach -> Presentation of results -> Interpretation of findings -> Regulatory conclusion.
+- Introduce every table with explanatory narrative text, and follow every table with a dedicated section titled "Interpretation of Results" or "Key Findings" detailing clinical relevance, compliance, relative variability, precision, and accuracy.
+- Generate conclusions explaining the analytical significance of the findings rather than simple "Pass" or "Acceptable" statements.
 
-* Identify and use information regarding the device name, device type, device class, intended use, principle of operation, specimen type, analytical range, calibration, quality control, performance characteristics, validation studies, and batch testing information from the provided context.
+TABLE GENERATION RULES:
+- Generate tables dynamically based on available replicate measurements.
+- Calculate and output appropriate statistical parameters: Mean, Grand Mean, Standard Deviation (SD), Standard Error of Mean (SEM), Coefficient of Variation (%CV), Recovery (%), Bias, Percent Bias, Detection Rate, Limit of Detection (LoD), Functional Sensitivity, Analytical Specificity Ratio, Signal-to-Noise Ratio, Slope, Intercept, Correlation Coefficient, and R² where applicable.
+- Do not fabricate numerical values. Perform calculations based on actual raw measurements or sample runs present in the source files.
 
-* Write complete paragraphs with proper transitions and explanations. Avoid bullet points unless they are required inside tables.
+LINEARITY RULES:
+- Generate a Linearity table ONLY when multiple concentration levels are available.
+- If only a single concentration level exists, do not output a linearity table or regression parameters. Instead, write a detailed narrative discussion describing the analytical measuring range and available evidence.
+- If multiple concentration levels are present, perform regression analysis (reporting slope, intercept, correlation coefficient, R²) and generate appropriate tables and interpretation.
 
-* Maintain the exact section numbering specified below.
-
-* Use the most detailed and reliable information available in the source documents.
-
-* Prefer actual experimental data over summary statements.
-
-* Perform calculations whenever sufficient data is available.
-
-* Generate statistically meaningful tables only when supported by the available information.
-
-* Do not fabricate values, sample sizes, concentrations, statistical parameters, acceptance criteria, conclusions, or study designs.
-
-* If insufficient information exists for a table, provide a narrative explanation instead.
-
-* Tables must be professional, internally consistent, and suitable for direct inclusion into a Device Master File.
+REPRODUCIBILITY RULES:
+- The Reproducibility section must ALWAYS be written as descriptive, continuous text.
+- Do NOT generate tables for reproducibility.
+- Discuss variability between runs, days, operators, lots, instruments, and sites using complete paragraphs.
 
 ---
 
 # 7.0 Summary of Analytical Study
-
-Generate a comprehensive narrative describing the analytical performance evaluation of the device.
-
-The section should explain:
-
-* Intended analytical purpose.
-* Principle of measurement.
-* Device classification.
-* Performance characteristics evaluated.
-* Overall analytical performance.
-* Analytical range and detection capability.
-* Summary of validation studies performed.
-
-Do not generate a table for this section unless an analytical performance summary table exists in the source documents.
-
----
+Generate a comprehensive narrative describing the analytical performance evaluation of the device. Establish the intended analytical purpose, principle of measurement, and device classification. Outline the specific performance characteristics evaluated, the overall analytical performance, the analytical range and detection capability, and summarize the validation studies performed. Avoid bulleted lists.
 
 # 7.1 Precision Test
-
-Generate a complete precision study in paragraph form.
-
-Include:
-
-* Design verification summary.
-* Description of item under test.
-* Study objective.
-* Study design.
-* Sample preparation.
-* Test methodology.
-* Equipment and materials used.
-* Statistical approach.
-* Results.
-* Interpretation.
-* Conclusion.
-
-If replicate measurements are available, calculate and generate appropriate precision tables.
-
-Possible table contents may include:
-
-* Sample level
-* Mean concentration
-* Standard deviation
-* Coefficient of variation (%CV)
-* Acceptance criteria
-* Result
-
-If replicate measurements are unavailable, provide only narrative discussion.
-
----
+Write a complete precision study in continuous paragraph form following the standard flow (Introduction -> Design/Methodology -> Statistical approach -> Results -> Interpretation -> Regulatory conclusion).
+If replicate measurements are available, calculate and present a dynamically structured precision table (including Mean, SD, %CV, and acceptance criteria). Do not output isolated values.
+Immediately follow the table with an "Interpretation of Results" section discussing analytical significance, relative variability, precision characteristics, and compliance with quality requirements.
 
 # 7.2 Accuracy Test
-
-Generate a complete accuracy study in paragraph form.
-
-Include:
-
-* Design verification summary.
-* Study objective.
-* Reference method or comparator.
-* Test methodology.
-* Statistical evaluation.
-* Recovery analysis.
-* Bias assessment.
-* Results.
-* Interpretation.
-* Conclusion.
-
-Whenever target values and measured values are available, calculate and generate appropriate accuracy tables.
-
-Possible table contents may include:
-
-* Sample level
-* Reference value
-* Measured value
-* Recovery (%)
-* Bias (%)
-* Acceptance criteria
-* Result
-
-Perform calculations whenever sufficient data exists.
-
-If numerical data are unavailable, generate only descriptive text.
-
----
+Write a complete accuracy study in continuous paragraph form following the standard flow.
+If target values and measured values are available, calculate and present a dynamically structured accuracy table (including Mean, Recovery %, Bias %, and acceptance criteria).
+Immediately follow the table with an "Interpretation of Results" section discussing trueness, accuracy characteristics, and clinical relevance.
 
 # 7.3 Linearity Test
-
-Generate a complete linearity study in paragraph form.
-
-Include:
-
-* Study objective.
-* Study design.
-* Sample preparation.
-* Dilution strategy.
-* Concentration levels evaluated.
-* Statistical methodology.
-* Regression analysis.
-* Results.
-* Interpretation.
-* Conclusion.
-
-Generate a linearity table ONLY if multiple concentration levels are present in the source data.
-
-The table should be based on actual data and may include:
-
-* Target concentration
-* Replicate measurements
-* Mean measured value
-* Recovery percentage
-
-Generate regression parameters such as slope, intercept, correlation coefficient, and R² only when sufficient concentration levels exist.
-
-If only one concentration level is available, do not create a linearity table and instead provide a narrative explanation describing the available evidence and analytical measuring range.
-
----
+Write a complete linearity study in continuous paragraph form following the standard flow.
+Generate a linearity table and regression parameters (slope, intercept, correlation coefficient, and R²) ONLY if multiple concentration levels are present in the source data.
+If only a single concentration level is present, do not output a table or regression parameters; write a descriptive narrative of the analytical measuring range instead.
+Immediately follow any table with an "Interpretation of Results" section.
 
 # 8.1 Specimen Type
-
-Generate a detailed narrative describing specimen validation.
-
-Include:
-
-* Specimen matrices evaluated.
-* Sample collection requirements.
-* Sample preparation.
-* Storage conditions.
-* Transport requirements.
-* Stability information.
-* Freeze-thaw limitations.
-* Anticoagulants evaluated.
-* Matrix comparison studies.
-* Measurement procedures.
-* Statistical evaluation.
-* Results and conclusions.
-
-Generate specimen comparison tables only if supported by the available information.
-
----
+Generate a detailed narrative describing specimen validation. Discuss specimen matrices evaluated, collection requirements, preparation, storage, transport, stability, freeze-thaw limitations, and anticoagulants. Generate specimen comparison tables only if supported by the available information.
 
 # 9.1 Reproducibility
-
-Generate a detailed narrative discussion describing intermediate precision and reproducibility.
-
-Discuss variability associated with:
-
-* Different days.
-* Different runs.
-* Different operators.
-* Different lots.
-* Different sites.
-* Different instruments.
-
-Describe study design, number of tests, sample panels, statistical approach, results, interpretation, and conclusions.
-
-Do not generate any tables for this section.
-
-The entire section should be written as descriptive text.
-
----
+Generate a detailed narrative discussion describing intermediate precision and reproducibility. 
+DO NOT generate any tables for this section. The entire section must be written as descriptive, continuous text.
+Discuss variability associated with different days, runs, operators, lots, sites, and instruments in complete paragraphs.
 
 # 10.0a Analytical Sensitivity Overview
-
-Generate a detailed narrative discussing analytical sensitivity.
-
-Describe:
-
-* Study objective.
-* Sample matrix.
-* Analyte or measurand.
-* Sample preparation.
-* Concentration levels.
-* Replicate testing strategy.
-* Statistical methodology.
-* Detection capability.
-* Limit of Blank (LoB).
-* Limit of Detection (LoD).
-* Limit of Quantitation (LoQ).
-* Interpretation and conclusion.
-
-Explain how these parameters were established using the available evidence.
-
-Do not generate tables in this section.
-
----
+Generate a detailed narrative discussing analytical sensitivity, limit studies, and detection capability. Explain the objective, sample matrix, analyte, preparation, concentrations, testing strategy, and how Limit of Blank (LoB), Limit of Detection (LoD), and Limit of Quantitation (LoQ) were established. Do not generate tables in this section.
 
 # 10.1 Analytical Sensitivity Study
-
-Generate a table only if concentration-level sensitivity data and replicate data are available.
-
-Use actual study information.
-
-Possible table columns include:
-
-* Concentration level
-* Replicates tested
-* Replicates detected
-* Detection rate
-* Mean response
-* Result
-
-Accompany the table with detailed narrative interpretation and conclusions.
-
-If concentration-level data are unavailable, provide descriptive text only.
-
----
+Generate a table only if concentration-level sensitivity data and replicate data are available. Include columns for concentration level, replicates tested/detected, detection rate, mean response, and result. Follow with a detailed narrative interpretation and conclusions. If data is unavailable, provide descriptive text only.
 
 # 11.0 Analytical Specificity Overview
-
-Generate a complete analytical specificity section written in narrative form.
-
-Describe:
-
-* Study objective.
-* Interfering substances evaluated.
-* Cross-reactivity studies.
-* Endogenous interference.
-* Exogenous interference.
-* Matrix effects.
-* Hemolysis.
-* Lipemia.
-* Icterus.
-* Bilirubin interference.
-* Drug interference.
-* Other potentially interfering compounds.
-* Statistical evaluation.
-* Results.
-* Interpretation.
-* Conclusion.
-
-Explain the effect of each interfering substance and discuss whether clinically significant interference was observed.
-
----
+Generate a complete analytical specificity section written in narrative form. Describe interfering substances evaluated, cross-reactivity studies, endogenous/exogenous interference, matrix effects (hemolysis, lipemia, icterus, bilirubin, drugs, etc.), results, and clinical significance.
 
 # 11.1 Analytical Specificity Study
+Generate an analytical specificity table if interference or cross-reactivity data are available. Include columns for interfering/cross-reacting substance, concentration tested, bias or cross-reactivity %, and result. Follow with a detailed interpretation of specificity performance.
 
-Generate an analytical specificity table whenever interference or cross-reactivity data are available.
-
-Use only actual values present in the source documents.
-
-Possible columns may include:
-
-* Interfering substance
-* Concentration tested
-* Observed bias
-* Acceptance criteria
-* Result
-
-or
-
-* Cross-reacting substance
-* Concentration tested
-* Cross-reactivity (%)
-* Result
-
-or any other table structure that best represents the available data.
-
-After the table, provide detailed discussion and interpretation.
-
----
-
-OUTPUT REQUIREMENTS
-
-The output must resemble a professionally authored regulatory document rather than extracted notes.
-
-Write complete paragraphs and explanatory text.
-
-Generate tables dynamically according to the available information instead of forcing predefined tables.
-
-Perform calculations whenever sufficient data exists.
-
-Do not create unsupported tables.
-
-Do not fabricate numerical values.
-
-Use scientific and regulatory language suitable for CDSCO, IVDR, ISO 13485, ISO 14971, CLSI guidelines, and Device Master File submissions.
-
-The final document should be ready for direct inclusion into a medical device regulatory dossier.
-`;
+# 12.0 Conclusions
+Generate a detailed, formal regulatory conclusion explaining what the calculated results demonstrate regarding the overall precision, accuracy, linearity, detection capability, specificity, reliability, reproducibility, and clinical suitability of the assay for its intended use.
+`;;
 
 export async function POST(
   req: Request,
