@@ -87,6 +87,10 @@ export default function DocumentEditorPage() {
   const [autofilling, setAutofilling] = useState(false);
   const [initialAutofillDone, setInitialAutofillDone] = useState(false);
   const [chatDocContext, setChatDocContext] = useState("");
+  const [coaLoading, setCoaLoading] = useState(false);
+  const [coaDocContext, setCoaDocContext] = useState("");
+  const coaFileRef = useRef<HTMLInputElement>(null);
+  const [knowledgeBaseOpen, setKnowledgeBaseOpen] = useState(false);
   const [stabilityUploading, setStabilityUploading] = useState(false);
   const [stabilityUploadStatus, setStabilityUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [stabilityUploadMsg, setStabilityUploadMsg] = useState("");
@@ -222,7 +226,7 @@ export default function DocumentEditorPage() {
       const r = await fetch(`/api/documents/${id}/autofill`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ extraText: chatDocContext }),
+        body: JSON.stringify({ extraText: chatDocContext + (coaDocContext ? `\n\n=== COA DATA ===\n${coaDocContext}` : "") }),
       });
       const data = await r.json();
       if (r.ok) {
@@ -295,6 +299,43 @@ export default function DocumentEditorPage() {
       setChatMessages((prev) => [...prev, { role: "bot", text: "Upload failed" }]);
     }
     setChatLoading(false);
+  }
+
+  async function handleCoaFileUpload(files: FileList) {
+    if (!files.length) return;
+    const file = files[0];
+    setChatMessages((prev) => [...prev, { role: "user", text: `Uploading COA for Global Context and Label OCR: ${file.name}...` }]);
+    setCoaLoading(true);
+
+    const fd = new FormData();
+    fd.append("file", file);
+
+    try {
+      // Find the appropriate label upload field based on the framework
+      const labelUploadId = framework?.sections.some(s => s.id === "s20") ? "20.upload" : "8.upload";
+
+      // Run sequentially to prevent MongoDB VersionError race conditions on parallel saves
+      const chatRes = await fetch(`/api/documents/${id}/chat-upload`, { method: "POST", body: fd });
+      const labelRes = await fetch(`/api/documents/${id}/fields/${labelUploadId}/upload`, { method: "POST", body: fd });
+
+      const chatData = await chatRes.json();
+      const labelData = await labelRes.json();
+
+      if (chatRes.ok && labelRes.ok) {
+        setCoaDocContext((prev) => prev + "\n" + chatData.extractedText);
+        setChatMessages((prev) => [...prev, {
+          role: "bot",
+          text: `Uploaded COA "${chatData.fileName}". \n\n1. Global Context: ${chatData.charCount.toLocaleString()} chars added for Auto-fill.\n2. Label OCR: Successfully populated your Labelling section fields and cropped the Company Logo!`,
+        }]);
+        // Refresh the document data so the UI reflects the newly filled Labelling fields
+        refetchDocument();
+      } else {
+        setChatMessages((prev) => [...prev, { role: "bot", text: chatData.error || labelData.error || "Upload failed" }]);
+      }
+    } catch {
+      setChatMessages((prev) => [...prev, { role: "bot", text: "Upload failed" }]);
+    }
+    setCoaLoading(false);
   }
 
   async function handleStabilityAllUpload(files: FileList) {
@@ -450,6 +491,128 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
         ) : null}
         {currentSection ? (
           <div className={`max-w-4xl mx-auto p-6 pb-24 ${autofilling && !initialAutofillDone ? "pt-14" : ""}`}>
+            
+            {/* Global Document Upload (Knowledge Base) */}
+            <div className="mb-6 border border-border rounded-2xl bg-surface overflow-hidden">
+              <div className="flex items-center justify-between gap-3 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => setKnowledgeBaseOpen((o) => !o)}
+                  className="flex items-center gap-2 min-w-0 text-left hover:opacity-80 transition"
+                >
+                  <span className="text-sm font-semibold text-foreground">Knowledge Base</span>
+                  {chatDocContext && (
+                    <span className="text-[10px] font-medium text-muted px-2 py-0.5 rounded-full bg-surface2 border border-border">
+                      1 doc
+                    </span>
+                  )}
+                  <span className={`text-muted text-xs transition-transform ${knowledgeBaseOpen ? "rotate-180" : ""}`}>▼</span>
+                </button>
+                {!knowledgeBaseOpen ? (
+                  <button
+                    type="button"
+                    onClick={() => setKnowledgeBaseOpen(true)}
+                    className="text-xs font-semibold text-accent px-3 py-1.5 border border-accent/40 bg-accent/5 rounded-lg hover:bg-accent/10 transition shrink-0"
+                  >
+                    + Add document
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setKnowledgeBaseOpen(false)}
+                    className="text-xs text-muted hover:text-foreground shrink-0"
+                  >
+                    Collapse
+                  </button>
+                )}
+              </div>
+
+              {knowledgeBaseOpen && (
+                <div className="px-4 pb-4 pt-1 border-t border-border space-y-4">
+                  <p className="text-xs text-muted">
+                    Upload an IFU, brochure, or technical file to auto-populate the document fields via AI extraction.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">IFU document</p>
+                      <p className="text-[10px] text-muted mt-0.5">.pdf, .docx, .png, .jpg</p>
+                    </div>
+                    <div className="shrink-0">
+                      {chatLoading ? (
+                        <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent bg-accent/5 border border-accent/20 rounded-xl">
+                          <span className="w-3 h-3 border border-accent/40 border-t-accent rounded-full animate-spin" />
+                          Processing…
+                        </div>
+                      ) : chatDocContext ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
+                            ✅ Uploaded
+                            <button type="button" onClick={() => setChatDocContext("")}
+                              className="ml-1 text-muted hover:text-foreground">✕</button>
+                          </div>
+                          <button type="button" onClick={() => {
+                            if (!autofilling) {
+                              runAutofill({ isInitial: false });
+                            }
+                          }}
+                            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border rounded-xl transition ${autofilling ? "text-muted border-border bg-surface" : "text-accent border-accent/40 bg-accent/5 hover:bg-accent/10"}`}>
+                            {autofilling ? "Running…" : "🪄 Run Auto-fill"}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => chatFileRef.current?.click()}
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
+                            Upload IFU
+                          </button>
+                          <input ref={chatFileRef} type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp" multiple className="hidden" onChange={(e) => {
+                            if (e.target.files?.length) handleChatFileUpload(e.target.files);
+                            e.target.value = "";
+                          }} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-foreground">COA document</p>
+                      <p className="text-[10px] text-muted mt-0.5">.pdf, .docx, .png, .jpg</p>
+                    </div>
+                    <div className="shrink-0">
+                      {coaLoading ? (
+                        <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent bg-accent/5 border border-accent/20 rounded-xl">
+                          <span className="w-3 h-3 border border-accent/40 border-t-accent rounded-full animate-spin" />
+                          Processing…
+                        </div>
+                      ) : coaDocContext ? (
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
+                            ✅ Uploaded
+                            <button type="button" onClick={() => setCoaDocContext("")}
+                              className="ml-1 text-muted hover:text-foreground">✕</button>
+                          </div>
+                          {/* Autofill button is shared with Source Document, so no need for a duplicate autofill button here */}
+                        </div>
+                      ) : (
+                        <>
+                          <button type="button" onClick={() => coaFileRef.current?.click()}
+                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
+                            Upload COA
+                          </button>
+                          <input ref={coaFileRef} type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp" className="hidden" onChange={(e) => {
+                            if (e.target.files?.length) handleCoaFileUpload(e.target.files);
+                            e.target.value = "";
+                          }} />
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="mb-6 rounded-xl border border-border bg-surface2/60 p-4">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>

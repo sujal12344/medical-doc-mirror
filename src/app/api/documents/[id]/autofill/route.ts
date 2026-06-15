@@ -135,11 +135,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        {
+      messages: [        {
           role: "system",
           content: `You are a regulatory documentation expert. Given source documents from a medical device manufacturer, extract data and fill regulatory form fields.
-
+ 
 RULES:
 - Output ONLY valid JSON.
 - Each key MUST be "sectionId.fieldId" — concatenate the EXACT sectionId and the EXACT fieldId from the field list, joined by a single dot.
@@ -147,10 +146,28 @@ RULES:
 - FieldIds often contain dots themselves (e.g. 1.1a, 2.1c, 20.productName). Always use the FULL fieldId exactly as shown in the FIELDS list.
 - For field 1.2 (Regulatory Status in India): if predicate on CDSCO list → "Yes — approved" + predicate name; else "New device".
 - For field 2.1c (Disorder/Condition): state the clinical disorder/condition detected — NOT the full intended-use paragraph (that belongs in 2.0 / 2.2).
-- If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values).
+- If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values). EXCEPTION: You MUST always generate s4.4.upload (inferring device hazards) even if not stated in the source.
 - NEVER copy field labels or hints as values.
-- Keep values concise but complete. For tables, use pipe-delimited rows.
-- Respond with ONLY the JSON object, no markdown fences, no explanation.`,
+- Keep values concise but complete. For tables, you MUST output fully valid Markdown tables including the mandatory separator row (e.g., |---|---|). Do NOT output raw pipe-delimited strings without the separator row.
+- Respond with ONLY the JSON object, no markdown fences, no explanation.
+ 
+FIELD EXTRACTION GUIDELINES:
+- s4.4.summary (Risk Management Summary): You are a Senior ISO 14971:2019 Risk Management Expert. TASK: Generate a comprehensive, narrative Risk Management Summary and explanation. Explain the methodology used to identify device-specific hazards, assess risks, and implement controls. Summarize the overall residual risk profile of the device based on the source documents. Conclude that the medical benefits outweigh the residual risks, in accordance with ISO 14971 requirements. Write 3-4 highly professional paragraphs. DO NOT generate a table for this field.
+- s4.4.upload (Risk Management Report Table): You are a Senior ISO 14971:2019 Risk Management Expert. TASK: Generate a highly detailed, device-specific Risk Management Report table with hazards. OUTPUT REQUIREMENT: You MUST output a strictly valid Markdown table. You MUST start your response with the exact table headers and separators below:
+| Hazard ID | Component / Source | Associated Hazard | Initial S | Initial P | Initial R | Risk Control Measure (Mitigation) | Residual S | Residual P | Residual R |
+|---|---|---|---|---|---|---|---|---|---|
+Then generate the rows for each hazard. COLUMN DEFINITIONS: Hazard ID (Format: HZ-01, HZ-02, HZ-03, etc.); Initial/Residual S (1=Negligible, 2=Minor, 3=Serious); P (1=Remote, 2=Occasional, 3=Frequent). R = S × P. Risk Control Measure: Detail highly specific, practical ISO 14971 compliant controls (e.g. specific QC tests, exact storage validations, explicit labeling warnings), min 2 mitigations per hazard. Residual S MUST generally remain the same as Initial S (mitigation primarily reduces Probability). RISK IDENTIFICATION: Do NOT generate generic risks like "User error", "Environmental factors", or "Equipment failure". You MUST deeply analyze the source documents and extract ACTUAL device-specific components, reagents, biological materials, preservatives, manufacturing processes, storage requirements, performance characteristics, interferences, labeling warnings, and intended use as the "Component / Source". Generate a comprehensive risk profile of 8 to 15+ hazards that are clearly traceable to the uploaded device documentation. OUTPUT FORMAT: Return a fully formatted Markdown table with headers and separators. Do not generate placeholder text or explanations.
+- s5.5.0: Generate a markdown-formatted Essential Requirements Checklist (ERC) table with columns: No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response. Inspect the source text to adapt the responses to the physical state and chemical nature of the device components. Audit and ensure compliance on these key operational vectors:
+  * Row 1.1: Detail analytical performance stability and list all tested interfering or cross-reacting compounds or endogenous proteins declared in the instructions for use (IFU).
+  * Row 1.2: State the specific primary containment strategy (e.g., fluid-sealed bottles or moisture-resistant vials) designed to eliminate leakage risks during transport and handling.
+  * Rows 2.1 & 2.2: Verify whether biological active ingredients, animal-derived vectors, or hazardous chemical preservatives are utilized, outlining risk-mitigation packaging protocols.
+  * Row 2.5 & 2.7: Detail the specific microbiological state or bioburden release testing specifications alongside the standard-compliant stability validation thresholds (e.g., EN ISO 23640 / EN 23640 accelerated thermal protocols).
+  * Rows 3.1, 3.2 & 3.3: Explicitly declare systemic compatibility, instrument or platform interoperability profiles (e.g., validation parameters for specialized automated analyzer equipment or manual configurations), and environmental risk insulation boundaries.
+  * Row 8.7: Output the exact mathematical formula, calculation factor, or calibration algorithm supplied by the manufacturer to compute the patient's quantitative or qualitative analytical result.
+- s5.5.1: Provide a complete structural Device Design narrative along with a Kit Contents configuration table detailing the physical and chemical composition of the system. Extract and detail the exact chemical formulation matrix, concentrations, active ingredients, core buffers, surfactants, and preservatives for all reagents and reference standard/calibrator solutions. Incorporate the quantitative intermediate bulk control boundaries (such as target pH ranges or physical appearance metrics) and the commercial packaging presentation limits.
+- s5.5.2: Provide a detailed operational narrative of the compounding and manufacturing pipeline, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must accurately trace the step-by-step production flow from initial raw material selection, dispensing, and formulation compounding, through an in-process inspection validation node (featuring a loop back to blending on failure or progression on passing), to automated volumetric primary container dispensing/filling. Conclude the sequence at the final batch quality control verification gate and movement to temperature-controlled storage. Explicitly embed the exact analytical release parameters, tolerances, sensitivity boundaries, and performance testing metrics from the source material into the quality control node.
+- s5.5.3: Provide an operational summary of downstream quality control actions, secondary packaging logic, and release protocols, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must trace the terminal gates of the batch run: primary sorting, assigning serialization markers (extracting actual batch/lot identifiers, manufacturing dates, and expiration intervals from the file), secondary kit assembly (enclosing active components and printed technical instructions/IFU literature), Quality Assurance batch record review with administrative release authorization, and dispatch to logistics distribution networks.
+- s5.5.4: Extract and format the exact legal corporate identity and complete physical industrial address of the certified manufacturing facility. Additionally, explicitly document the scientific traceability network, calibration baselines, or international reference standard materials used to anchor and validate the analytical measurement units of the assay system.`,
         },
         {
           role: "user",

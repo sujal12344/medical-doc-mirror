@@ -298,7 +298,14 @@ export async function POST(
     }
 
     if (!sectionId) {
-      return NextResponse.json({ error: "Field not found in framework" }, { status: 404 });
+      // Fallback: If the UI field was hidden but we still want to trigger the master label processor
+      if (fieldId === "20.upload" && fw.sections.some(s => s.id === "s20")) {
+        sectionId = "s20";
+      } else if (fieldId === "8.upload" && fw.sections.some(s => s.id === "s8")) {
+        sectionId = "s8";
+      } else {
+        return NextResponse.json({ error: "Field not found in framework" }, { status: 404 });
+      }
     }
 
     const formData = await req.formData();

@@ -59,21 +59,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s4", title: "4.0 Risk Analysis and Control Summary.", description: "Risk management per ISO 14971", fields: [
-          { id: "4a", label: "Risk Analysis Summary", hint: "Risks identified and how controlled", textarea: true },
-          { id: "4b", label: "Possible Hazards", hint: "False positives/negatives, instability hazards", textarea: true },
-          { id: "4c", label: "Residual Risk Evaluation", hint: "Residual risks after mitigation measures", textarea: true },
-          { id: "4d", label: "Benefit-Risk Conclusion", hint: "Justification that benefits outweigh residual risks", textarea: true },
-          { id: "4e", label: "Risk Control Measures", hint: "Implemented controls and verification activities", textarea: true },
-          { id: "4.1", label: "Table 6.1: Risk Analysis Product. Q-Line® Albumin", hint: "Upload Risk Assessment report to generate product risk table", textarea: true, allowUpload: true },
-          { id: "4.2", label: "Table 6.2: Severity Table", hint: "Upload Risk Management file to generate severity definitions", textarea: true, allowUpload: true },
-          { id: "4.3", label: "Table 6.3: Probability Tables", hint: "Upload Risk Management file to generate probability definitions", textarea: true, allowUpload: true },
-          { id: "4.4", label: "Figure 6.1: Risk Assessment Matrix", hint: "Qualitative/semi-quantitative risk assessment matrix", textarea: true },
-          { id: "4.5", label: "Figure 6.2: Identify Hazards", hint: "Description/diagram of process to identify hazards", textarea: true },
-          { id: "4.6", label: "Figure 6.3: Risk Analysis", hint: "Outlines scope of risk analysis", textarea: true },
-          { id: "4.7", label: "Figure 6.4: Determining Risk Impact", hint: "Criteria for determining risk impact", textarea: true },
-          { id: "4.8", label: "Figure 6.5: Likelihood. the probability of a risk", hint: "Likelihood determination guidelines", textarea: true },
-          { id: "4.9", label: "Figure 6.6: Likelihood. the probability of a risk (alternate/detailed)", hint: "Alternate likelihood determination guidelines", textarea: true },
-          { id: "4.10", label: "Figure 6.7: Risk Estimation", hint: "Risk estimation flowchart", textarea: true }
+          { id: "4.upload", label: "Risk Management Report", hint: "Upload IFU file of device here to generate Risk Management Report table", textarea: true, allowUpload: true },
+          { id: "4.summary", label: "Risk Management Summary", hint: "Narrative summary and explanation of the risk management activities and conclusions", textarea: true }
         ]
       },
       {
@@ -193,26 +180,21 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s20", title: "20.0 Labelling", description: "Structured product label fields — upload label image to auto-populate via OCR", fields: [
+
           {
-            id: "20.upload",
-            label: "Upload Label Artwork (OCR Auto-Fill)",
-            hint: "Upload the label artwork image or PDF. OCR will extract text fields and crop the company logo.",
-            textarea: false,
-            allowUpload: true
+            id: "20.preview",
+            label: "Label Mock-up Preview",
+            hint: "Generated label artwork preview based on the fields below. Click Download .doc to export.",
+            readonly: true
           },
+
           {
             id: "20.logo",
             label: "Company Logo",
             hint: "Company/brand logo image — will display as a preview",
             fieldType: "image"
           },
-          {
-            id: "20.symbols_upload",
-            label: "Upload Symbols Sheet (Cropping)",
-            hint: "Upload a symbols sheet image or PDF containing your official symbol graphics (LOT, IVD, Mfg, Exp, Storage) to crop them for the Word template.",
-            textarea: false,
-            allowUpload: true
-          },
+
           {
             id: "20.productName",
             label: "Product Name",
@@ -445,13 +427,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
             hint: "Full legal manufacturer name and registered address as printed on label (per MDR 2017 §10)",
             textarea: true
           },
-          {
-            id: "8.ifu",
-            label: "Instructions for Use (IFU)",
-            hint: "Upload IFU document (.pdf or .docx) to extract full text, or edit manually.",
-            textarea: true,
-            allowUpload: true
-          },
+
           {
             id: "8.packaging",
             label: "Packaging Specifications",
