@@ -93,6 +93,7 @@ export default function DocumentEditorPage() {
   const [analyticalUploading, setAnalyticalUploading] = useState(false);
   const [analyticalUploadStatus, setAnalyticalUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [analyticalUploadMsg, setAnalyticalUploadMsg] = useState("");
+  const [analyticalTargetFile, setAnalyticalTargetFile] = useState<File | null>(null);
   const [section5Uploading, setSection5Uploading] = useState(false);
   const [section5UploadStatus, setSection5UploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [section5UploadMsg, setSection5UploadMsg] = useState("");
@@ -369,6 +370,10 @@ export default function DocumentEditorPage() {
     for (const file of Array.from(files)) {
       fd.append("file", file);
     }
+    // Attach target file if the user uploaded one
+    if (analyticalTargetFile) {
+      fd.append("targetFile", analyticalTargetFile);
+    }
 
     try {
       const r = await fetch(`/api/documents/${id}/analytical-all`, { method: "POST", body: fd });
@@ -629,59 +634,69 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
 
               {/* Combined Analytical Studies Upload Panel — shown ONLY on Section 7 */}
               {currentSection.id === "s7" && (
-                <div className="rounded-xl border border-dashed border-indigo-400/50 bg-indigo-500/5 p-5">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="rounded-xl border border-dashed border-indigo-400/50 bg-indigo-500/5 p-5 space-y-4">
+                  {/* Header */}
+                  <div className="flex items-center gap-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-400/30 flex items-center justify-center">
                       <svg className="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Generate Analytical Studies, Specimen Type, Reproducibility & Sensitivity Reports</p>
-                      <p className="text-xs text-muted">Upload your performance validation report or raw study data. This will simultaneously auto-fill §7 (Analytical Studies), §8 (Specimen Type), §9 (Reproducibility), and §10 (Analytical Sensitivity) fields with precise tables and details.</p>
+                      <p className="text-sm font-semibold text-foreground">Generate Analytical Studies, Specimen Type, Reproducibility &amp; Sensitivity Reports</p>
+                      <p className="text-xs text-muted">Upload your performance validation data. Sections §7, §8, §9 and §10 are auto-filled with precise tables.</p>
                     </div>
                   </div>
-                  {analyticalUploadMsg && (
-                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${analyticalUploadStatus === "success"
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                      : analyticalUploadStatus === "error"
-                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
-                        : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20"
-                      }`}>
-                      {analyticalUploadMsg}
-                    </p>
-                  )}
-                  <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${analyticalUploading
-                    ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
-                    : "border-indigo-400/40 text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 hover:border-indigo-400/60"
-                    }`}>
-                    {analyticalUploading ? (
-                      <>
-                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        Generating all analytical reports…
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-                        </svg>
-                        Upload Analytical Study Files (.pdf, .docx)
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept=".pdf,.docx"
-                      multiple
-                      className="hidden"
-                      disabled={analyticalUploading}
-                      onChange={(e) => {
-                        if (e.target.files?.length) handleAnalyticalAllUpload(e.target.files);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
+
+                  {/* Two-step workflow */}
+                  <div className="grid grid-cols-1 gap-3">
+                    <div className="rounded-lg border border-indigo-400/30 bg-indigo-500/5 p-3">
+                      <p className="text-[11px] font-semibold text-indigo-400 uppercase tracking-wide mb-2">Upload Lab / Performance Study Reports</p>
+                      <p className="text-[11px] text-muted mb-3">Upload the raw study data or performance validation report (can select multiple files).</p>
+                      {analyticalUploadMsg && (
+                        <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${analyticalUploadStatus === "success"
+                          ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                          : analyticalUploadStatus === "error"
+                            ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                            : "bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 border border-indigo-500/20"
+                          }`}>
+                          {analyticalUploadMsg}
+                        </p>
+                      )}
+                      <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${analyticalUploading
+                        ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                        : "border-indigo-400/40 text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 hover:border-indigo-400/60"
+                        }`}>
+                        {analyticalUploading ? (
+                          <>
+                            <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            Generating all analytical reports…
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
+                            </svg>
+                            Upload Analytical Study Files (.pdf, .docx)
+                          </>
+                        )}
+                        <input
+                          type="file"
+                          accept=".pdf,.docx"
+                          multiple
+                          className="hidden"
+                          disabled={analyticalUploading}
+                          onChange={(e) => {
+                            if (e.target.files?.length) handleAnalyticalAllUpload(e.target.files);
+                            e.target.value = "";
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </div>
                 </div>
               )}
+
 
               {/* Combined Stability Upload Panel — shown ONLY on the Stability Reports section */}
               {currentSection.id === "s_stability_reports" && (
@@ -761,7 +776,6 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               ))}
 
             </div>
-
           </div>
         ) : (
           <p className="text-muted">Select a section from the left</p>

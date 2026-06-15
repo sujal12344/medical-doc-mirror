@@ -42,77 +42,425 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
   }
 }
 
-const ANALYTICAL_PROMPT = `
-You are a biostatistician and regulatory affairs specialist preparing Device Master File (DMF) technical documentation, Design Verification Reports, or Performance Evaluation Reports in accordance with CLSI guidelines, IVDR technical documentation, and CDSCO Device Master File requirements.
 
-Your output must read like a professionally written, continuous scientific validation report. Avoid presenting content as pointwise summaries, extracted bullet points, or isolated data metrics (e.g. Mean = 3.08).
+function buildAnalyticalPrompt(targetContext: string): string {
+  const targetSection = targetContext.trim()
+    ? `
 
-WRITING STYLE & STRUCTURE RULES:
-- Write every section in continuous narrative form with detailed explanations and smooth transitions between paragraphs.
-- The flow of every section must follow:
-  Introduction and study rationale -> Study design and methodology -> Statistical approach -> Presentation of results -> Interpretation of findings -> Regulatory conclusion.
-- Introduce every table with explanatory narrative text, and follow every table with a dedicated section titled "Interpretation of Results" or "Key Findings" detailing clinical relevance, compliance, relative variability, precision, and accuracy.
-- Generate conclusions explaining the analytical significance of the findings rather than simple "Pass" or "Acceptable" statements.
+TARGET VALUES CONTEXT
+(Use these exact target/reference values in the Target column of precision and accuracy tables)
 
-TABLE GENERATION RULES:
-- Generate tables dynamically based on available replicate measurements.
-- Calculate and output appropriate statistical parameters: Mean, Grand Mean, Standard Deviation (SD), Standard Error of Mean (SEM), Coefficient of Variation (%CV), Recovery (%), Bias, Percent Bias, Detection Rate, Limit of Detection (LoD), Functional Sensitivity, Analytical Specificity Ratio, Signal-to-Noise Ratio, Slope, Intercept, Correlation Coefficient, and R² where applicable.
-- Do not fabricate numerical values. Perform calculations based on actual raw measurements or sample runs present in the source files.
+${targetContext}
 
-LINEARITY RULES:
-- Generate a Linearity table ONLY when multiple concentration levels are available.
-- If only a single concentration level exists, do not output a linearity table or regression parameters. Instead, write a detailed narrative discussion describing the analytical measuring range and available evidence.
-- If multiple concentration levels are present, perform regression analysis (reporting slope, intercept, correlation coefficient, R²) and generate appropriate tables and interpretation.
+--- END TARGET VALUES ---
+`
+    : "";
 
-REPRODUCIBILITY RULES:
-- The Reproducibility section must ALWAYS be written as descriptive, continuous text.
-- Do NOT generate tables for reproducibility.
-- Discuss variability between runs, days, operators, lots, instruments, and sites using complete paragraphs.
+  return `
+You are a biostatistician and regulatory affairs specialist preparing Device Master File (DMF), Design Verification Reports, and Performance Evaluation Reports in accordance with CLSI guidelines, IVDR requirements, and CDSCO Device Master File requirements.
 
----
+Your output must read like a professionally written scientific validation report. Avoid pointwise summaries and isolated numerical values.
 
-# 7.0 Summary of Analytical Study
-Generate a comprehensive narrative describing the analytical performance evaluation of the device. Establish the intended analytical purpose, principle of measurement, and device classification. Outline the specific performance characteristics evaluated, the overall analytical performance, the analytical range and detection capability, and summarize the validation studies performed. Avoid bulleted lists.
+==================================================
+WRITING STYLE REQUIREMENTS
+==================================================
 
-# 7.1 Precision Test
-Write a complete precision study in continuous paragraph form following the standard flow (Introduction -> Design/Methodology -> Statistical approach -> Results -> Interpretation -> Regulatory conclusion).
-If replicate measurements are available, calculate and present a dynamically structured precision table (including Mean, SD, %CV, and acceptance criteria). Do not output isolated values.
-Immediately follow the table with an "Interpretation of Results" section discussing analytical significance, relative variability, precision characteristics, and compliance with quality requirements.
+Every section must follow the sequence:
 
-# 7.2 Accuracy Test
-Write a complete accuracy study in continuous paragraph form following the standard flow.
-If target values and measured values are available, calculate and present a dynamically structured accuracy table (including Mean, Recovery %, Bias %, and acceptance criteria).
-Immediately follow the table with an "Interpretation of Results" section discussing trueness, accuracy characteristics, and clinical relevance.
+Introduction and study rationale
+→ Study design and methodology
+→ Statistical approach
+→ Presentation of results
+→ Interpretation of findings
+→ Regulatory conclusion
 
-# 7.3 Linearity Test
-Write a complete linearity study in continuous paragraph form following the standard flow.
-Generate a linearity table and regression parameters (slope, intercept, correlation coefficient, and R²) ONLY if multiple concentration levels are present in the source data.
-If only a single concentration level is present, do not output a table or regression parameters; write a descriptive narrative of the analytical measuring range instead.
-Immediately follow any table with an "Interpretation of Results" section.
+Write every section in continuous scientific paragraphs with smooth transitions.
 
-# 8.1 Specimen Type
-Generate a detailed narrative describing specimen validation. Discuss specimen matrices evaluated, collection requirements, preparation, storage, transport, stability, freeze-thaw limitations, and anticoagulants. Generate specimen comparison tables only if supported by the available information.
+Introduce every table with explanatory narrative text.
 
-# 9.1 Reproducibility
-Generate a detailed narrative discussion describing intermediate precision and reproducibility. 
-DO NOT generate any tables for this section. The entire section must be written as descriptive, continuous text.
-Discuss variability associated with different days, runs, operators, lots, sites, and instruments in complete paragraphs.
+Immediately after every table generate a section titled:
 
-# 10.0a Analytical Sensitivity Overview
-Generate a detailed narrative discussing analytical sensitivity, limit studies, and detection capability. Explain the objective, sample matrix, analyte, preparation, concentrations, testing strategy, and how Limit of Blank (LoB), Limit of Detection (LoD), and Limit of Quantitation (LoQ) were established. Do not generate tables in this section.
+Interpretation of Results
 
-# 10.1 Analytical Sensitivity Study
-Generate a table only if concentration-level sensitivity data and replicate data are available. Include columns for concentration level, replicates tested/detected, detection rate, mean response, and result. Follow with a detailed narrative interpretation and conclusions. If data is unavailable, provide descriptive text only.
+Discuss analytical significance, variability, clinical relevance, and regulatory compliance.
 
-# 11.0 Analytical Specificity Overview
-Generate a complete analytical specificity section written in narrative form. Describe interfering substances evaluated, cross-reactivity studies, endogenous/exogenous interference, matrix effects (hemolysis, lipemia, icterus, bilirubin, drugs, etc.), results, and clinical significance.
+Never output one-word conclusions such as:
 
-# 11.1 Analytical Specificity Study
-Generate an analytical specificity table if interference or cross-reactivity data are available. Include columns for interfering/cross-reacting substance, concentration tested, bias or cross-reactivity %, and result. Follow with a detailed interpretation of specificity performance.
+Pass
+Acceptable
+Within limits
 
-# 12.0 Conclusions
-Generate a detailed, formal regulatory conclusion explaining what the calculated results demonstrate regarding the overall precision, accuracy, linearity, detection capability, specificity, reliability, reproducibility, and clinical suitability of the assay for its intended use.
-`;;
+Instead provide scientific interpretations.
+
+==================================================
+TABLE FORMAT RULES
+==================================================
+
+ALL tables MUST be proper GitHub Flavored Markdown pipe tables.
+
+Example structure:
+
+| Day | Control Activity | % Recovery vs Day 0 | Visual Appearance | Result |
+|---|---|---|---|---|
+| 0 | ... | ... | ... | ... |
+| 1 | ... | ... | ... | ... |
+
+The example above illustrates formatting only.
+
+Never reproduce example values.
+
+Never output column-wise text or bullet lists instead of tables.
+
+Every table must contain:
+
+1. Header row
+2. Separator row
+3. Dynamically calculated rows
+
+Values must always come from uploaded documents.
+
+Never fabricate measurements.
+
+==================================================
+TARGET VALUES RULE
+==================================================
+
+${targetSection}
+
+If target values are available:
+
+Include a Target column.
+
+Calculate:
+
+Recovery (%) = (Mean / Target) × 100
+
+Bias = Mean − Target
+
+Percent Bias (%) = ((Mean − Target) / Target) × 100
+
+==================================================
+7.0 SUMMARY OF ANALYTICAL STUDY
+==================================================
+
+Generate a comprehensive scientific overview summarizing all analytical studies.
+
+The summary must:
+
+- Be written entirely in paragraph form.
+- Avoid bullets or numbering.
+- Synthesize precision, accuracy, sensitivity, specificity, linearity, and reproducibility findings.
+- Discuss overall analytical performance and clinical significance.
+
+==================================================
+7.1 PRECISION TEST
+==================================================
+
+Write a detailed precision study following:
+
+Introduction
+Study Design
+Statistical Approach
+Results
+Interpretation
+Regulatory Conclusion
+
+Include the following explanation:
+
+"To evaluate the precision of the parameters, the variation among repeated measurements (Rep 1, Rep 2 and Rep 3) is analyzed. Precision reflects the closeness of agreement among replicate measurements and is commonly expressed using the mean, standard deviation (SD), and coefficient of variation (%CV). Lower %CV values indicate superior repeatability and analytical consistency."
+
+If replicate measurements are available, calculate:
+
+• Mean (x̄)
+• Standard Deviation (SD)
+• Coefficient of Variation (%CV)
+
+Generate a Markdown table with columns:
+
+| S. No | Parameter | Unit | Target | Mean (x̄) | Standard Deviation (SD) | Coefficient of Variation (%CV) |
+|---|---|---|---|---|---|---|
+
+Rules:
+
+- Create one row for each analyte.
+- Parameter names must come from uploaded documents.
+- Calculate values dynamically.
+- Never hard-code analytes or numbers.
+- Use target values when available.
+
+After the table generate:
+
+Interpretation of Results
+
+Discuss:
+
+- Repeatability
+- Analytical precision
+- Relative variability
+- Compliance with CLSI recommendations
+
+==================================================
+7.2 ACCURACY TEST
+==================================================
+
+Write a detailed scientific discussion.
+
+Include:
+
+"To assess the accuracy of the parameters, the closeness between experimentally measured values and assigned target values is evaluated. Accuracy is quantified using the mean (x̄), Bias, and Percent Bias (%Bias). Lower percent bias values indicate superior trueness and better agreement with reference values."
+
+Calculate:
+
+Mean (x̄)
+
+Bias = Mean − Target
+
+Percent Bias (%) = ((Mean − Target)/Target) ×100
+
+Generate a Markdown table with columns:
+
+| S. No | Parameter | Unit | Target | Mean (x̄) | Bias (x̄−Target) | Percent Bias (%Bias) |
+|---|---|---|---|---|---|---|
+
+Rules:
+
+- Dynamically populate rows.
+- Use actual values from uploaded data.
+- Never copy examples.
+- Never fabricate values.
+
+After the table generate:
+
+Interpretation of Results
+
+Discuss:
+
+- Trueness
+- Systematic error
+- Accuracy characteristics
+- Clinical relevance
+
+==================================================
+7.3 LINEARITY TEST
+==================================================
+
+Write a complete linearity study.
+
+Generate a Linearity table ONLY when:
+
+- Multiple concentration levels exist, OR
+- Replicate values are available.
+
+Generate a Markdown table:
+
+| S. No | Parameter | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+|---|---|---|---|---|---|---|
+
+Rules:
+
+- Populate rows dynamically.
+- Use actual measurements.
+- Never hard-code values.
+
+If multiple concentration levels are present, additionally calculate:
+
+• Slope
+• Intercept
+• Correlation coefficient (R)
+• Coefficient of determination (R²)
+
+Generate additional regression tables when supported by the data.
+
+After every table generate:
+
+Interpretation of Results
+
+Discuss:
+
+- Linearity
+- Proportionality
+- Dynamic range
+- Regression characteristics
+
+If only a single concentration level exists, write descriptive narrative only.
+
+==================================================
+8.1 SPECIMEN TYPE
+==================================================
+
+Write a detailed narrative describing:
+
+- Specimen matrices
+- Collection requirements
+- Preparation
+- Storage conditions
+- Transportation requirements
+- Freeze-thaw limitations
+- Anticoagulants
+
+Generate specimen comparison tables only if supported by the uploaded documents.
+
+==================================================
+9.1 REPRODUCIBILITY
+==================================================
+
+Entire section must be narrative only.
+
+DO NOT GENERATE TABLES.
+
+Discuss:
+
+- Day-to-day variability
+- Runs
+- Operators
+- Lots
+- Sites
+- Instruments
+
+Follow the standard scientific structure.
+
+==================================================
+10.0 ANALYTICAL SENSITIVITY OVERVIEW
+==================================================
+
+Write a detailed narrative.
+
+Include:
+
+"Analytical sensitivity measures how effectively a laboratory assay detects very small differences or changes in analyte concentration. A highly sensitive assay produces measurable responses even when minute quantities of analyte are present."
+
+Include:
+
+"In clinical validation and laboratory diagnostics, the Limit of Detection (LoD), also referred to as functional sensitivity, represents the lowest concentration of analyte that can be reliably detected with approximately 95% confidence."
+
+According to CLSI EP17-A2:
+
+LoD = LoB + 1.645 × SD
+
+When true blank values are unavailable:
+
+LoD / Functional Sensitivity = 1.645 × SD
+
+Lower Detection Resolution:
+
+SEM = SD / √n
+
+Explain these concepts in paragraph form.
+
+==================================================
+10.1 ANALYTICAL SENSITIVITY STUDY
+==================================================
+
+Include:
+
+"Analytical sensitivity describes the ability of the assay to detect very small changes in analyte concentration. In a laboratory system, this responsiveness is reflected by measurement noise and detection capability."
+
+If replicate measurements are available, calculate:
+
+• Grand Mean
+• Standard Deviation (SD)
+• Functional Sensitivity (1.645 × SD)
+• Standard Error of Mean (SEM)
+
+Generate a Markdown table:
+
+| S. No | Parameter | Unit | Target | Grand Mean | Standard Deviation (SD) | LoD / Functional Sensitivity (1.645×SD) | Lower Detection Resolution (SEM) |
+|---|---|---|---|---|---|---|---|
+
+Rules:
+
+- One row per analyte.
+- Dynamically derive analytes from uploaded data.
+- Never hard-code Albumin, ALT, or example values.
+- Use only actual calculations.
+- Never fabricate measurements.
+
+After the table generate:
+
+Interpretation of Results
+
+Discuss:
+
+- Detection capability
+- Functional sensitivity
+- Measurement noise
+- Lower detection limits
+- Clinical significance
+
+==================================================
+11.0 ANALYTICAL SPECIFICITY OVERVIEW
+==================================================
+
+Write a detailed scientific discussion describing:
+
+- Interfering substances
+- Cross-reactivity
+- Matrix effects
+- Hemolysis
+- Lipemia
+- Icterus
+- Bilirubin
+- Drugs and metabolites
+
+Discuss clinical significance and assay robustness.
+
+==================================================
+11.1 ANALYTICAL SPECIFICITY STUDY
+==================================================
+
+Generate a Markdown table only if interference data or cross-reactivity information are available.
+
+Suggested columns:
+
+| Substance | Concentration Tested | Bias (%) | Cross-reactivity (%) | Result |
+|---|---|---|---|---|
+
+Follow with:
+
+Interpretation of Results
+
+==================================================
+12.0 CONCLUSIONS
+==================================================
+
+Generate a formal regulatory conclusion.
+
+Discuss:
+
+- Precision
+- Accuracy
+- Linearity
+- Sensitivity
+- Specificity
+- Reproducibility
+- Reliability
+- Clinical suitability
+
+The conclusion must be written entirely in continuous scientific paragraphs.
+
+==================================================
+GLOBAL RULES
+==================================================
+
+Examples are provided solely to demonstrate table structure.
+
+NEVER reproduce example analytes or numerical values.
+
+All analytes, rows, measurements, and calculations must be dynamically derived from uploaded source documents.
+
+Never fabricate measurements.
+
+If data required for a calculation are unavailable, explain this scientifically instead of inventing values.
+
+ALL tables MUST be valid GitHub Flavored Markdown tables containing:
+
+- Header row
+- Separator row
+- Dynamically generated rows
+
+Never output column-wise text or bullet lists in place of tables.
+`;
+}
 
 export async function POST(
   req: Request,
@@ -137,8 +485,32 @@ export async function POST(
 
     const formData = await req.formData();
     const files = formData.getAll("file") as File[];
+    const targetFile = formData.get("targetFile") as File | null;
     if (!files || files.length === 0)
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
+
+    // Extract target values text if a target file was provided
+    let targetContext = "";
+    if (targetFile) {
+      const targetBuffer = Buffer.from(await targetFile.arrayBuffer());
+      const targetLower = targetFile.name.toLowerCase();
+      try {
+        if (targetFile.type === "application/pdf" || targetLower.endsWith(".pdf")) {
+          targetContext = await extractTextFromPDF(targetBuffer);
+        } else if (
+          targetFile.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+          targetLower.endsWith(".docx")
+        ) {
+          targetContext = await extractTextFromDocx(targetBuffer);
+        } else if (targetFile.type.startsWith("text/") || targetLower.match(/\.(txt|csv|xml|json|md)$/i)) {
+          targetContext = targetBuffer.toString("utf-8");
+        }
+        targetContext = targetContext.slice(0, 30_000);
+        console.log(`[analytical-all] Target file "${targetFile.name}" extracted, ${targetContext.length} chars`);
+      } catch (e) {
+        console.error("[analytical-all] Target file extraction failed:", e);
+      }
+    }
 
     type FileEntry = { name: string; text: string };
     const fileEntries: FileEntry[] = [];
@@ -218,7 +590,7 @@ export async function POST(
         },
         {
           role: "user",
-          content: `${ANALYTICAL_PROMPT}\n\nSOURCE CONTEXT:\n${docSourceContent.slice(0, 120000)}`,
+          content: `${buildAnalyticalPrompt(targetContext)}\n\nSOURCE CONTEXT:\n${docSourceContent.slice(0, 120000)}`,
         },
       ],
       response_format: { type: "json_object" },
@@ -250,7 +622,10 @@ export async function POST(
 
     const formatObjectToMarkdown = (obj: any, level = 0): string => {
       if (obj === null || obj === undefined) return "";
-      if (typeof obj !== "object") return String(obj);
+      if (typeof obj !== "object") {
+        const str = String(obj);
+        return str.includes("||") ? str.trim().replace(/\|\|\s*$/, "").replace(/\|\|/g, "\n|") : str;
+      }
       if (Array.isArray(obj)) {
         return obj.map((item) => {
           if (typeof item === "object" && item !== null) {
@@ -264,7 +639,9 @@ export async function POST(
         if (typeof value === "object" && value !== null) {
           return `${headingPrefix} ${key}\n${formatObjectToMarkdown(value, level + 1)}`;
         }
-        return `**${key}**: ${value}`;
+        const strVal = String(value);
+        const cleanVal = strVal.includes("||") ? strVal.trim().replace(/\|\|\s*$/, "").replace(/\|\|/g, "\n|") : strVal;
+        return `**${key}**: ${cleanVal}`;
       }).join("\n\n");
     };
 

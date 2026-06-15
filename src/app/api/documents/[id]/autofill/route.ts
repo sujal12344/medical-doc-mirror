@@ -204,7 +204,10 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
 
     const formatObjectToMarkdown = (obj: any, level = 0): string => {
       if (obj === null || obj === undefined) return "";
-      if (typeof obj !== "object") return String(obj);
+      if (typeof obj !== "object") {
+        const str = String(obj);
+        return str.includes("||") ? str.trim().replace(/\|\|\s*$/, "").replace(/\|\|/g, "\n|") : str;
+      }
       if (Array.isArray(obj)) {
         return obj.map((item) => {
           if (typeof item === "object" && item !== null) {
@@ -218,7 +221,9 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
         if (typeof v === "object" && v !== null) {
           return `${headingPrefix} ${k}\n${formatObjectToMarkdown(v, level + 1)}`;
         }
-        return `**${k}**: ${v}`;
+        const strVal = String(v);
+        const cleanVal = strVal.includes("||") ? strVal.trim().replace(/\|\|\s*$/, "").replace(/\|\|/g, "\n|") : strVal;
+        return `**${k}**: ${cleanVal}`;
       }).join("\n\n");
     };
 
