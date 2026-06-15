@@ -164,10 +164,18 @@ Then generate the rows for each hazard. COLUMN DEFINITIONS: Hazard ID (Format: H
   * Row 2.5 & 2.7: Detail the specific microbiological state or bioburden release testing specifications alongside the standard-compliant stability validation thresholds (e.g., EN ISO 23640 / EN 23640 accelerated thermal protocols).
   * Rows 3.1, 3.2 & 3.3: Explicitly declare systemic compatibility, instrument or platform interoperability profiles (e.g., validation parameters for specialized automated analyzer equipment or manual configurations), and environmental risk insulation boundaries.
   * Row 8.7: Output the exact mathematical formula, calculation factor, or calibration algorithm supplied by the manufacturer to compute the patient's quantitative or qualitative analytical result.
-- s5.5.1: Provide a complete structural Device Design narrative along with a Kit Contents configuration table detailing the physical and chemical composition of the system. Extract and detail the exact chemical formulation matrix, concentrations, active ingredients, core buffers, surfactants, and preservatives for all reagents and reference standard/calibrator solutions. Incorporate the quantitative intermediate bulk control boundaries (such as target pH ranges or physical appearance metrics) and the commercial packaging presentation limits.
-- s5.5.2: Provide a detailed operational narrative of the compounding and manufacturing pipeline, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must accurately trace the step-by-step production flow from initial raw material selection, dispensing, and formulation compounding, through an in-process inspection validation node (featuring a loop back to blending on failure or progression on passing), to automated volumetric primary container dispensing/filling. Conclude the sequence at the final batch quality control verification gate and movement to temperature-controlled storage. Explicitly embed the exact analytical release parameters, tolerances, sensitivity boundaries, and performance testing metrics from the source material into the quality control node.
-- s5.5.3: Provide an operational summary of downstream quality control actions, secondary packaging logic, and release protocols, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must trace the terminal gates of the batch run: primary sorting, assigning serialization markers (extracting actual batch/lot identifiers, manufacturing dates, and expiration intervals from the file), secondary kit assembly (enclosing active components and printed technical instructions/IFU literature), Quality Assurance batch record review with administrative release authorization, and dispatch to logistics distribution networks.
-- s5.5.4: Extract and format the exact legal corporate identity and complete physical industrial address of the certified manufacturing facility. Additionally, explicitly document the scientific traceability network, calibration baselines, or international reference standard materials used to anchor and validate the analytical measurement units of the assay system.`,
+
+
+Guidance for specific fields:
+"s5.5.0": "Generate a markdown-formatted Essential Requirements Checklist (ERC) table with columns: No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response. Inspect the source text to adapt the responses to the physical state and chemical nature of the device components. Audit and ensure compliance on these key operational vectors:\n- Row 1.1: Detail analytical performance stability and list all tested interfering or cross-reacting compounds or endogenous proteins declared in the instructions for use (IFU).\n- Row 1.2: State the specific primary containment strategy (e.g., fluid-sealed bottles or moisture-resistant vials) designed to eliminate leakage risks during transport and handling.\n- Rows 2.1 & 2.2: Verify whether biological active ingredients, animal-derived vectors, or hazardous chemical preservatives are utilized, outlining risk-mitigation packaging protocols.\n- Row 2.5 & 2.7: Detail the specific microbiological state or bioburden release testing specifications alongside the standard-compliant stability validation thresholds (e.g., EN ISO 23640 / EN 23640 accelerated thermal protocols).\n- Rows 3.1, 3.2 & 3.3: Explicitly declare systemic compatibility, instrument or platform interoperability profiles (e.g., validation parameters for specialized automated analyzer equipment or manual configurations), and environmental risk insulation boundaries.\n- Row 8.7: Output the exact mathematical formula, calculation factor, or calibration algorithm supplied by the manufacturer to compute the patient's quantitative or qualitative analytical result.",
+"s5.5.1": "Provide a complete structural Device Design narrative along with a Kit Contents configuration table detailing the physical and chemical composition of the system. Extract and detail the exact chemical formulation matrix, concentrations, active ingredients, core buffers, surfactants, and preservatives for all reagents and reference standard/calibrator solutions. Incorporate the quantitative intermediate bulk control boundaries (such as target pH ranges or physical appearance metrics) and the commercial packaging presentation limits.",
+"s5.5.2": "Provide a detailed operational narrative of the compounding and manufacturing pipeline, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must accurately trace the step-by-step production flow from initial raw material selection, dispensing, and formulation compounding, through an in-process inspection validation node (featuring a loop back to blending on failure or progression on passing), to automated volumetric primary container dispensing/filling. Conclude the sequence at the final batch quality control verification gate and movement to temperature-controlled storage. Explicitly embed the exact analytical release parameters, tolerances, sensitivity boundaries, and performance testing metrics from the source material into the quality control node.",
+"s5.5.3": "Provide an operational summary of downstream quality control actions, secondary packaging logic, and release protocols, followed by a text-based process map using Mermaid.js flow diagram syntax. The diagram must trace the terminal gates of the batch run: primary sorting, assigning serialization markers (extracting actual batch/lot identifiers, manufacturing dates, and expiration intervals from the file), secondary kit assembly (enclosing active components and printed technical instructions/IFU literature), Quality Assurance batch record review with administrative release authorization, and dispatch to logistics distribution networks.",
+"s5.5.4": "Extract and format the exact legal corporate identity and complete physical industrial address of the certified manufacturing facility. Additionally, explicitly document the scientific traceability network, calibration baselines, or international reference standard materials used to anchor and validate the analytical measurement units of the assay system.",
+"s1.1.1d": "Extract or calculate the claimed shelf life of the device in months. Output ONLY the duration as 'X months' (e.g., '18 months' or '24 months') with no other words or description.",
+"s16_shelf.16.0a": "Provide a concise 5-6 lines description paragraph summarizing the accelerated stability studies. It MUST include the final conclusion of the stability test (e.g. shelf life claim validation). Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
+"s17_inuse.17.0a": "Provide a concise 5-6 lines description paragraph summarizing the open vial / in-use stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
+"s18_shipping.18.0a": "Provide a concise 5-6 lines description paragraph summarizing the shipping / transport stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph."`
         },
         {
           role: "user",
@@ -208,9 +216,39 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
 
     let filledCount = productPrefillCount;
 
+    const formatObjectToMarkdown = (obj: any, level = 0): string => {
+      if (obj === null || obj === undefined) return "";
+      if (typeof obj !== "object") {
+        const str = String(obj);
+        return str.includes("||") ? str.trim().replace(/\|\|\s*$/, "").replace(/\|\|/g, "\n|") : str;
+      }
+      if (Array.isArray(obj)) {
+        return obj.map((item) => {
+          if (typeof item === "object" && item !== null) {
+            return formatObjectToMarkdown(item, level);
+          }
+          return `- ${item}`;
+        }).join("\n");
+      }
+      return Object.entries(obj).map(([k, v]) => {
+        const headingPrefix = "#".repeat(Math.min(6, level + 2));
+        if (typeof v === "object" && v !== null) {
+          return `${headingPrefix} ${k}\n${formatObjectToMarkdown(v, level + 1)}`;
+        }
+        const strVal = String(v);
+        const cleanVal = strVal.includes("||") ? strVal.trim().replace(/\|\|\s*$/, "").replace(/\|\|/g, "\n|") : strVal;
+        return `**${k}**: ${cleanVal}`;
+      }).join("\n\n");
+    };
+
     for (const [key, value] of Object.entries(parsed)) {
-      if (!value || typeof value !== "string") {
-        rejected.push({ key, reason: "empty or non-string value" });
+      if (value === null || value === undefined) {
+        rejected.push({ key, reason: "empty value" });
+        continue;
+      }
+      const stringValue = formatObjectToMarkdown(value);
+      if (!stringValue.trim()) {
+        rejected.push({ key, reason: "empty string value" });
         continue;
       }
       const parsedKey = parseSectionFieldKey(key, validFieldIds);
@@ -224,7 +262,7 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
       const sFields = { ...sections[sectionId].fields };
 
       if (!sFields[fieldId]?.trim()) {
-        sFields[fieldId] = value;
+        sFields[fieldId] = stringValue;
         filledCount++;
         gptApplied.push(key);
       } else {

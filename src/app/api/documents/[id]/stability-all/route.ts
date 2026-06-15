@@ -43,6 +43,161 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
   }
 }
 
+// Helper to recalculate stability table recoveries for mathematical precision
+function recalculateTableRecoveries(markdown: string): string {
+  if (!markdown) return markdown;
+
+  const lines = markdown.split(/\r?\n/);
+  const updatedLines: string[] = [];
+
+  let inTable = false;
+  let tableHeaders: string[] = [];
+  let headerIndex = -1;
+  let dividerIndex = -1;
+  let rows: string[][] = [];
+  let rawRows: string[] = [];
+
+  const flushTable = () => {
+    if (rows.length === 0) {
+      if (headerIndex !== -1) updatedLines.push(lines[headerIndex]);
+      if (dividerIndex !== -1) updatedLines.push(lines[dividerIndex]);
+      tableHeaders = [];
+      headerIndex = -1;
+      dividerIndex = -1;
+      return;
+    }
+
+    const cleanHeaders = tableHeaders.map(h => h.trim().toLowerCase());
+    let valueColIdx = -1;
+    let recoveryColIdx = -1;
+    let resultColIdx = -1;
+    let timeColIdx = -1;
+
+    for (let i = 0; i < cleanHeaders.length; i++) {
+      const h = cleanHeaders[i];
+      if (h.includes("recovery")) {
+        recoveryColIdx = i;
+      } else if (h === "result") {
+        resultColIdx = i;
+      } else if (h.includes("activity") || h.includes("absorbance") || h.includes("measured") || h.includes("control") || h.includes("val")) {
+        valueColIdx = i;
+      } else if (h.includes("day") || h.includes("time") || h.includes("s. no") || h === "interval" || h.includes("point")) {
+        timeColIdx = i;
+      }
+    }
+
+    if (valueColIdx === -1 || recoveryColIdx === -1) {
+      updatedLines.push(lines[headerIndex]);
+      updatedLines.push(lines[dividerIndex]);
+      for (const row of rawRows) {
+        updatedLines.push(row);
+      }
+      rows = [];
+      rawRows = [];
+      headerIndex = -1;
+      dividerIndex = -1;
+      return;
+    }
+
+    let baselineVal: number | null = null;
+    
+    for (let r = 0; r < rows.length; r++) {
+      const row = rows[r];
+      const timeValStr = (timeColIdx !== -1 ? row[timeColIdx] : "").trim().toLowerCase();
+      if (timeValStr === "0" || timeValStr === "day 0" || timeValStr.startsWith("day 0") || timeValStr === "week 0" || timeValStr === "month 0" || r === 0) {
+        const valStr = row[valueColIdx].trim();
+        const match = valStr.match(/([0-9]+(?:\.[0-9]+)?)/);
+        if (match) {
+          baselineVal = parseFloat(match[1]);
+          break;
+        }
+      }
+    }
+
+    if (baselineVal === null || isNaN(baselineVal) || baselineVal === 0) {
+      if (rows.length > 0) {
+        const valStr = rows[0][valueColIdx].trim();
+        const match = valStr.match(/([0-9]+(?:\.[0-9]+)?)/);
+        if (match) {
+          baselineVal = parseFloat(match[1]);
+        }
+      }
+    }
+
+    const reconstructedRows: string[] = [];
+    for (let r = 0; r < rows.length; r++) {
+      const row = [...rows[r]];
+      const valStr = row[valueColIdx].trim();
+      const match = valStr.match(/([0-9]+(?:\.[0-9]+)?)/);
+      if (match && baselineVal && baselineVal !== 0) {
+        const currentVal = parseFloat(match[1]);
+        const recovery = (currentVal / baselineVal) * 100;
+        row[recoveryColIdx] = ` ${recovery.toFixed(1)} `;
+        if (resultColIdx !== -1) {
+          row[resultColIdx] = recovery >= 90 ? " Pass " : " Fail ";
+        }
+      } else {
+        if (r === 0) {
+          row[recoveryColIdx] = " 100.0 ";
+          if (resultColIdx !== -1) {
+            row[resultColIdx] = " Pass ";
+          }
+        }
+      }
+      reconstructedRows.push(`|${row.join("|")}|`);
+    }
+
+    updatedLines.push(lines[headerIndex]);
+    updatedLines.push(lines[dividerIndex]);
+    for (const r of reconstructedRows) {
+      updatedLines.push(r);
+    }
+
+    rows = [];
+    rawRows = [];
+    headerIndex = -1;
+    dividerIndex = -1;
+  };
+
+  for (let idx = 0; idx < lines.length; idx++) {
+    const line = lines[idx];
+    const isRow = line.trim().startsWith("|") && line.trim().endsWith("|");
+
+    if (isRow) {
+      const rawCells = line.trim().slice(1, -1).split("|");
+
+      if (!inTable) {
+        const nextLine = lines[idx + 1];
+        if (nextLine && nextLine.trim().startsWith("|") && nextLine.trim().includes("-")) {
+          inTable = true;
+          tableHeaders = rawCells;
+          headerIndex = idx;
+          dividerIndex = idx + 1;
+          idx++;
+          continue;
+        } else {
+          updatedLines.push(line);
+        }
+      } else {
+        rows.push(rawCells);
+        rawRows.push(line);
+      }
+    } else {
+      if (inTable) {
+        flushTable();
+        inTable = false;
+      }
+      updatedLines.push(line);
+    }
+  }
+
+  if (inTable) {
+    flushTable();
+  }
+
+  return updatedLines.join("\n");
+}
+
 // ─── Master Rules ─────────────────────────────────────────────────────────────
 
 const MASTER_RULES = `
@@ -124,6 +279,18 @@ Step 5 — Determine Result: Pass if Recovery ≥ 90%; Fail otherwise.
 Step 6 — Verify every row satisfies the recovery formula before output.
 
 CRITICAL: Do NOT hardcode 100%, 98%, 96% etc. Values must be derived from the generated measurement numbers. Every table cell must be mathematically consistent.
+
+EXAMPLE STABILITY TABLE:
+| Day | Control Activity | % Recovery vs Day 0 | Visual Appearance | Result |
+|---|---|---|---|---|
+| 0 | 3.1 g/dL | 100.0 | Clear | Pass |
+| 1 | 3.0 g/dL | 96.8 | Clear | Pass |
+| 2 | 2.9 g/dL | 93.5 | Clear | Pass |
+| 3 | 2.8 g/dL | 90.3 | Clear | Pass |
+| 4 | 2.7 g/dL | 87.1 | Slightly Pale | Pass |
+| 5 | 2.6 g/dL | 83.9 | Slightly Pale | Pass |
+| 6 | 2.5 g/dL | 80.6 | Slightly Pale | Pass |
+| 7 | 2.4 g/dL | 77.4 | Slightly Pale | Pass |
 `;
 
 // ─── Prompt builders ──────────────────────────────────────────────────────────
@@ -602,6 +769,19 @@ export async function POST(
       procedureContext = match ? match[0].slice(0, 8000) : "";
     }
 
+    // ── Fetch stability context from vector DB ────────────────────────────────
+    const STABILITY_QUERY = `${product.name} stability studies shelf life in-use stability thermal stress accelerated aging Arrhenius shipping transport conditions real-time stability`;
+    let stabilityVectorContext = "";
+    try {
+      stabilityVectorContext = await queryProductDocuments(userId, productNamespaceId, STABILITY_QUERY, 15);
+    } catch (e) {
+      console.warn("[stability-all] Stability vector context retrieval failed:", e);
+    }
+
+    const docSourceContent = stabilityVectorContext.trim()
+      ? `--- Vector DB Matches (IFU & Product Context) ---\n${stabilityVectorContext}\n\n--- Newly Uploaded Document Content ---\n${combinedText}`
+      : combinedText;
+
     if (!doc.sections) doc.sections = new Map();
 
     const generatedReports: Record<string, string> = {};
@@ -616,12 +796,12 @@ export async function POST(
             content:
               "You are a Regulatory Affairs Specialist generating professional IVD stability study reports for CDSCO DMF submissions. Follow instructions precisely. Output raw Markdown only.",
           },
-          { role: "user", content: buildInUsePrompt(combinedText, procedureContext) },
+          { role: "user", content: buildInUsePrompt(docSourceContent, procedureContext) },
         ],
         max_tokens: 4000,
         temperature: 0.1,
       });
-      generatedReports["sr_inuse"] = completion.choices[0]?.message?.content?.trim() || "";
+      generatedReports["sr_inuse"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
     } catch (e) {
       console.error("[stability-all] In-Use generation failed:", e);
     }
@@ -648,7 +828,8 @@ export async function POST(
             max_tokens: 4000,
             temperature: 0.1,
           });
-          accelReports.push(completion.choices[0]?.message?.content?.trim() || "");
+          const rawReport = completion.choices[0]?.message?.content?.trim() || "";
+          accelReports.push(recalculateTableRecoveries(rawReport));
         } catch (e) {
           console.error(`[stability-all] Accelerated (${entry.name}) failed:`, e);
         }
@@ -671,13 +852,13 @@ export async function POST(
             },
             {
               role: "user",
-              content: buildAcceleratedPrompt(combinedText, procedureContext, fileEntries[0]?.name ?? "uploaded document"),
+              content: buildAcceleratedPrompt(docSourceContent, procedureContext, fileEntries[0]?.name ?? "uploaded document"),
             },
           ],
           max_tokens: 4000,
           temperature: 0.1,
         });
-        generatedReports["sr_accelerated"] = completion.choices[0]?.message?.content?.trim() || "";
+        generatedReports["sr_accelerated"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
       } catch (e) {
         console.error("[stability-all] Accelerated generation failed:", e);
       }
@@ -693,12 +874,12 @@ export async function POST(
             content:
               "You are a Regulatory Affairs Specialist. Generate a professional Shipping Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only.",
           },
-          { role: "user", content: buildShippingPrompt(combinedText, procedureContext) },
+          { role: "user", content: buildShippingPrompt(docSourceContent, procedureContext) },
         ],
         max_tokens: 4000,
         temperature: 0.1,
       });
-      generatedReports["sr_shipping"] = completion.choices[0]?.message?.content?.trim() || "";
+      generatedReports["sr_shipping"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
     } catch (e) {
       console.error("[stability-all] Shipping generation failed:", e);
     }
@@ -723,14 +904,85 @@ export async function POST(
       doc.sections.set(t.sectionId, sd);
     }
 
-    // ── Auto-fill DMF textbox sections ────────────────────────────────────────
-    for (const m of DMF_AUTOFILL) {
-      const content = generatedReports[m.sourceFieldId];
-      if (!content) continue;
-      const sd = doc.sections.get(m.sectionId) || { fields: {}, completionPct: 100 };
-      sd.fields = { ...sd.fields, [m.fieldId]: content };
+    // ── Generate concise 5-6 line descriptions (no tables) and extract shelf life months ──
+    let conciseInUse = "";
+    let conciseShelfLife = "";
+    let conciseShipping = "";
+    let shelfLifeMonths = "";
+
+    try {
+      const summaryPrompt = `
+Analyze the following generated stability study reports.
+
+1. Generate a concise 5-6 line paragraph description for Section 17.0 (In-Use Stability). It must contain NO tables, NO markdown list markers, and NO bullet/pointwise list elements — only a clean, continuous technical narrative paragraph.
+2. Generate a concise 5-6 line paragraph description for Section 16.0 (Claimed Shelf Life). It MUST contain the final conclusion of the stability test (affirming whether the accelerated stability study validates the claimed shelf life). It must contain NO tables, NO markdown list markers, and NO bullet/pointwise list elements — only a clean, continuous technical narrative paragraph.
+3. Generate a concise 5-6 line paragraph description for Section 18.0 (Shipping Stability). It must contain NO tables, NO markdown list markers, and NO bullet/pointwise list elements — only a clean, continuous technical narrative paragraph.
+4. Extract or determine the claimed shelf life duration in months from the accelerated stability report or normal shelf life claims. Output ONLY the duration as "X months" (e.g. "18 months" or "24 months") with no other words or text.
+
+Your output must be a flat JSON object with keys:
+"inuse_desc": "5-6 lines description",
+"shelf_desc": "5-6 lines description including conclusion",
+"shipping_desc": "5-6 lines description",
+"shelf_months": "X months"
+
+---
+IN-USE REPORT:
+${generatedReports["sr_inuse"] || ""}
+
+ACCELERATED REPORT:
+${generatedReports["sr_accelerated"] || ""}
+
+SHIPPING REPORT:
+${generatedReports["sr_shipping"] || ""}
+`;
+
+      const summaryRes = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          { role: "system", content: "You are a Regulatory Affairs Specialist. Help write clean summary paragraphs and extract shelf life." },
+          { role: "user", content: summaryPrompt }
+        ],
+        response_format: { type: "json_object" },
+        temperature: 0.1,
+      });
+
+      const summaryObj = JSON.parse(summaryRes.choices[0]?.message?.content || "{}");
+      conciseInUse = summaryObj.inuse_desc || "";
+      conciseShelfLife = summaryObj.shelf_desc || "";
+      conciseShipping = summaryObj.shipping_desc || "";
+      shelfLifeMonths = summaryObj.shelf_months || "";
+    } catch (sumErr) {
+      console.error("[stability-all] Summarization failed:", sumErr);
+    }
+
+    // Save concise descriptions to s16_shelf, s17_inuse, s18_shipping and shelfLifeMonths to s1 (Claimed Shelf Life 1.1d)
+    if (conciseInUse) {
+      const sd = doc.sections.get("s17_inuse") || { fields: {}, completionPct: 100 };
+      sd.fields = { ...sd.fields, "17.0a": conciseInUse };
       sd.completionPct = 100;
-      doc.sections.set(m.sectionId, sd);
+      doc.sections.set("s17_inuse", sd);
+    }
+    if (conciseShelfLife) {
+      const sd = doc.sections.get("s16_shelf") || { fields: {}, completionPct: 100 };
+      sd.fields = { ...sd.fields, "16.0a": conciseShelfLife };
+      sd.completionPct = 100;
+      doc.sections.set("s16_shelf", sd);
+    }
+    if (conciseShipping) {
+      const sd = doc.sections.get("s18_shipping") || { fields: {}, completionPct: 100 };
+      sd.fields = { ...sd.fields, "18.0a": conciseShipping };
+      sd.completionPct = 100;
+      doc.sections.set("s18_shipping", sd);
+    }
+    if (shelfLifeMonths) {
+      const sd = doc.sections.get("s1") || { fields: {}, completionPct: 0 };
+      sd.fields = { ...sd.fields, "1.1d": shelfLifeMonths };
+      const secObj = fw.sections.find((s) => s.id === "s1");
+      if (secObj) {
+        const filled = secObj.fields.filter((f) => String(sd.fields[f.id] || "").trim()).length;
+        sd.completionPct = Math.round((filled / secObj.fields.length) * 100);
+      }
+      doc.sections.set("s1", sd);
     }
 
     // ── Generate overview for s14_stability ───────────────────────────────────

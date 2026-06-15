@@ -258,6 +258,137 @@ If any symbol is not visible or present, return null for that box key. If a text
 }
 
 
+function buildStabilityFieldPrompt(
+  fieldId: string,
+  fieldLabel: string,
+  fieldHint: string,
+  docContent: string
+): string {
+  return `We uploaded stability study report(s) for field "${fieldLabel}" (${fieldId}).
+Field description/hint: ${fieldHint}
+
+Generate a comprehensive, professional stability report in Markdown format. The report MUST follow this standard structure, but adapt flexibly — not every report will have every section, and the data tables may differ between study types:
+
+---
+
+**Product Name:** [extract from document]  
+**Lot No.:** [extract if present]  
+**Mfg. Date:** [extract if present] | **Exp. Date:** [extract if present]  
+**Testing Interval:** [extract if present]  
+**Quantity Sampled:** [extract if present]
+
+---
+
+### 1. Objective and Purpose of Testing
+[Extract and summarize the objective from the document. If not present, state the typical CDSCO objective for this stability type.]
+
+### 2. Storage Conditions
+[Extract storage temperature, humidity, light conditions from the document.]
+
+### 3. Calendar / Testing Schedule
+[If a testing calendar or schedule table is present, reproduce it as a Markdown table:
+| S. No. | Testing Interval | Expected Date | Testing Date |
+If not present, omit this section.]
+
+### 4. Product Description
+[Extract product name, intended use, description from the document.]
+
+### 5. Kit Content
+[If kit components / quantities are listed, reproduce as a Markdown table:
+| Component | Quantity |
+If not present, omit this section.]
+
+### 6. Procedure
+[Extract procedure details, wavelengths, temperature, reagent volumes, calculation formulas. Use bullet points and sub-tables as they appear in the document.]
+
+### 7. Study Results
+[Extract and reproduce the core stability data table. Use whatever columns are present in the document, for example:
+| Time Point | Measurement / Absorbance | % Recovery vs Day 0 | Visual Appearance | Result |
+The columns MUST match the actual data in the document — do not force a fixed structure.]
+
+### 8. Conclusion
+[Extract or summarize the conclusion from the document, including claimed stability duration, storage conditions, and compliance statement.]
+
+---
+
+CRITICAL RULES:
+- Extract real values from the document wherever possible. Do NOT invent data.
+- If a section has no data in the document, omit that section entirely — do not add placeholders.
+- Keep original tables as Markdown pipe-tables.
+- Do not wrap the response in \`\`\`markdown or any code block. Output raw Markdown directly.
+- Do not add any conversational explanation before or after. Output ONLY the report.
+
+Document Content:
+${docContent}`;
+}
+
+function buildAnalyticsFieldPrompt(
+  fieldId: string,
+  fieldLabel: string,
+  fieldHint: string,
+  docContent: string
+): string {
+  return `You are a biostatistician and regulatory affairs specialist preparing Device Master File (DMF) technical documentation, Design Verification Reports, or Performance Evaluation Reports in accordance with CLSI guidelines, IVDR technical documentation, and CDSCO Device Master File requirements.
+
+We uploaded analytical validation study reports/raw data for field "${fieldLabel}" (${fieldId}).
+Field description/hint: ${fieldHint}
+
+Your output must read like a professionally written, continuous scientific validation report. Avoid presenting content as pointwise summaries, extracted bullet points, or isolated data metrics (e.g. Mean = 3.08).
+
+WRITING STYLE & STRUCTURE RULES:
+- Write the section in continuous narrative form with detailed explanations and smooth transitions between paragraphs.
+- The flow of the section must follow:
+  Introduction and study rationale -> Study design and methodology -> Statistical approach -> Presentation of results -> Interpretation of findings -> Regulatory conclusion.
+- Introduce every table with explanatory narrative text, and follow every table with a dedicated section titled "Interpretation of Results" or "Key Findings" detailing clinical relevance, compliance, relative variability, precision, and accuracy.
+- Do not output isolated values or one-line statements (e.g. Mean = 3.08). Explain the significance in paragraph form first, then show the corresponding table.
+- Generate conclusions explaining the analytical significance of the findings rather than simple "Pass" or "Acceptable" statements.
+
+TABLE GENERATION & CALCULATION RULES:
+- Generate tables dynamically based on available replicate measurements.
+- Calculate and output appropriate statistical parameters: Mean, Grand Mean, Standard Deviation (SD), Standard Error of Mean (SEM), Coefficient of Variation (%CV), Recovery (%), Bias, Percent Bias, Detection Rate, Limit of Detection (LoD), Functional Sensitivity, Analytical Specificity Ratio, Signal-to-Noise Ratio, Slope, Intercept, Correlation Coefficient, and R² where applicable.
+- Do not fabricate numerical values. Perform calculations based on actual raw measurements or sample runs present in the source files.
+
+LINEARITY RULES:
+- Generate a Linearity table ONLY when multiple concentration levels are available.
+- If only a single concentration level exists, do not output a linearity table or regression parameters. Instead, write a detailed narrative discussion describing the analytical measuring range and available evidence.
+- If multiple concentration levels are present, perform regression analysis (reporting slope, intercept, correlation coefficient, R²) and generate appropriate tables and interpretation.
+
+REPRODUCIBILITY RULES:
+- If this field relates to reproducibility, it must ALWAYS be written as descriptive, continuous text.
+- Do NOT generate tables for reproducibility.
+- Discuss variability between runs, days, operators, lots, instruments, and sites using complete paragraphs.
+
+Do not wrap the response in \`\`\`markdown or any code block. Output raw Markdown directly.
+Do not add any conversational explanation before or after. Output ONLY the report.
+
+Document Content:
+${docContent}`;
+}
+
+function buildGeneralFieldPrompt(
+  fieldId: string,
+  fieldLabel: string,
+  fieldHint: string,
+  docContent: string
+): string {
+  return `We uploaded a study report/raw data file for field "${fieldLabel}" (${fieldId}).
+Field description/hint: ${fieldHint}
+
+Please extract and generate the specific table or content required for this field from the document content below.
+
+RULES:
+- Return the data formatted as a Markdown table (using pipe-delimited rows: | Aspect | Subject | ... |).
+- Include appropriate headers.
+- Extract ONLY the relevant values matching this field. Do not include unrelated study results.
+- If the document does not contain relevant data, generate an outline of the expected table based on CDSCO requirements and use placeholders or mock data (and clearly state so).
+- Do not wrap the response in markdown blocks like \`\`\`markdown or \`\`\`json. Output the raw text of the table/content directly.
+- Avoid introducing any conversational explanations or remarks. Just return the extracted table/data.
+
+Document Content:
+${docContent}`;
+}
+
+
 export async function POST(
   req: Request,
   { params }: { params: Promise<{ id: string; fieldId: string }> }
@@ -968,6 +1099,9 @@ ${combinedDocxText}`,
 
     const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
     const isStabilityField = stabilityFields.includes(fieldId) || stabilitySections.includes(sectionId);
+    const analyticsSections = ["s7", "s8", "s9", "s10_sensitivity", "s11_specificity"];
+    const analyticsFields = ["7", "7.1", "7.2", "7.3", "8.1", "9.1", "10.0a", "10.1", "11.0a", "11.1"];
+    const isAnalyticsField = analyticsFields.includes(fieldId) || analyticsSections.includes(sectionId);
 
     const fieldsToGenerate = fieldId === "5.0" ? ["5.0", "5.1", "5.2", "5.3", "5.4"] : [fieldId];
     const generatedValues: Record<string, string> = {};
@@ -1078,79 +1212,11 @@ ${docSourceContent.slice(0, 120000)}
 Output only the raw Markdown content. No code blocks, no conversational text.`;
 
         } else if (isStabilityField) {
-          targetPrompt = `We uploaded stability study report(s) for field "${fieldLabel}" (${fieldId}).
-Field description/hint: ${fieldHint}
-
-Generate a comprehensive, professional stability report in Markdown format. The report MUST follow this standard structure, but adapt flexibly — not every report will have every section, and the data tables may differ between study types:
-
----
-
-**Product Name:** [extract from document]  
-**Lot No.:** [extract if present]  
-**Mfg. Date:** [extract if present] | **Exp. Date:** [extract if present]  
-**Testing Interval:** [extract if present]  
-**Quantity Sampled:** [extract if present]
-
----
-
-### 1. Objective and Purpose of Testing
-[Extract and summarize the objective from the document. If not present, state the typical CDSCO objective for this stability type.]
-
-### 2. Storage Conditions
-[Extract storage temperature, humidity, light conditions from the document.]
-
-### 3. Calendar / Testing Schedule
-[If a testing calendar or schedule table is present, reproduce it as a Markdown table:
-| S. No. | Testing Interval | Expected Date | Testing Date |
-If not present, omit this section.]
-
-### 4. Product Description
-[Extract product name, intended use, description from the document.]
-
-### 5. Kit Content
-[If kit components / quantities are listed, reproduce as a Markdown table:
-| Component | Quantity |
-If not present, omit this section.]
-
-### 6. Procedure
-[Extract procedure details, wavelengths, temperature, reagent volumes, calculation formulas. Use bullet points and sub-tables as they appear in the document.]
-
-### 7. Study Results
-[Extract and reproduce the core stability data table. Use whatever columns are present in the document, for example:
-| Time Point | Measurement / Absorbance | % Recovery vs Day 0 | Visual Appearance | Result |
-The columns MUST match the actual data in the document — do not force a fixed structure.]
-
-### 8. Conclusion
-[Extract or summarize the conclusion from the document, including claimed stability duration, storage conditions, and compliance statement.]
-
----
-
-CRITICAL RULES:
-- Extract real values from the document wherever possible. Do NOT invent data.
-- If a section has no data in the document, omit that section entirely — do not add placeholders.
-- Keep original tables as Markdown pipe-tables.
-- Do not wrap the response in \`\`\`markdown or any code block. Output raw Markdown directly.
-- Do not add any conversational explanation before or after. Output ONLY the report.
-
-Document Content:
-${combinedText.slice(0, 100000)}`;
-
+          targetPrompt = buildStabilityFieldPrompt(targetFieldId, fieldLabel, fieldHint, docSourceContent.slice(0, 120000));
+        } else if (isAnalyticsField) {
+          targetPrompt = buildAnalyticsFieldPrompt(targetFieldId, fieldLabel, fieldHint, docSourceContent.slice(0, 120000));
         } else {
-          targetPrompt = `We uploaded a study report/raw data file for field "${fieldLabel}" (${fieldId}).
-Field description/hint: ${fieldHint}
-
-Please extract and generate the specific table or content required for this field from the document content below.
-
-RULES:
-- Return the data formatted as a Markdown table (using pipe-delimited rows: | Aspect | Subject | ... |).
-- Include appropriate headers.
-- Extract ONLY the relevant values matching this field. Do not include unrelated study results.
-- If the document does not contain relevant data, generate an outline of the expected table based on CDSCO requirements and use placeholders or mock data (and clearly state so).
-- Do not wrap the response in markdown blocks like \`\`\`markdown or \`\`\`json. Output the raw text of the table/content directly.
-- Avoid introducing any conversational explanations or remarks. Just return the extracted table/data.
-
-Document Content:
-${combinedText.slice(0, 100000)}`;
+          targetPrompt = buildGeneralFieldPrompt(targetFieldId, fieldLabel, fieldHint, docSourceContent.slice(0, 120000));
         }
 
         const completion = await openai.chat.completions.create({
@@ -1191,7 +1257,7 @@ ${combinedText.slice(0, 100000)}`;
       const filledCount = secObj.fields.filter(
         (f) => {
           const val = generatedValues[f.id] !== undefined ? generatedValues[f.id] : currentSectionData.fields[f.id];
-          return val?.trim();
+          return String(val || "").trim();
         }
       ).length;
       currentSectionData.completionPct = Math.round((filledCount / totalFields) * 100);
