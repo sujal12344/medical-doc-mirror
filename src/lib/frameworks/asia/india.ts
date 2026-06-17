@@ -112,8 +112,13 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s12_traceability", title: "12.0 Metrological traceability of calibrator and control material values:", description: "Traceability chain of calibrators and controls", fields: [
-          { id: "12.0a", label: "Metrological Traceability Details", hint: "Upload traceability documentation to populate calibration hierarchy", textarea: true, allowUpload: true }
+        id: "s12_traceability", title: "12.0 Metrological traceability of calibrator and control material values:", description: "Traceability chain of calibrators and controls per ISO 17511, ISO 18113, and ISO 13485", fields: [
+          {
+            id: "12.0a",
+            label: "Table: Metrological Traceability Hierarchy",
+            hint: "Auto-generated from Phase 1 IFU and product data. Click 'Run Auto-fill' to populate the traceability hierarchy table and regulatory narrative.",
+            textarea: true
+          }
         ]
       },
       {
@@ -267,6 +272,11 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "22.13", label: "Calibrator Details", hint: "Reference materials and calibration hierarchy", textarea: true },
           { id: "22.14", label: "Control Material Details", hint: "Positive, negative and internal controls", textarea: true },
           { id: "22.12a", label: "Table 22.1. List Of Standards", hint: "Upload standards certificate or list to populate standards table", textarea: true, allowUpload: true }
+        ]
+      },
+      {
+        id: "s_coa", title: "COA Generation", description: "Upload Value Sheet for automatic COA generation", fields: [
+          { id: "coa.upload", label: "Value Sheet", hint: "Upload Value Sheet to generate Certificate of Analysis", textarea: true, allowUpload: true }
         ]
       },
     ],
@@ -451,9 +461,13 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "10.1", label: "CDSCO Import License", hint: "Import license number and validity per Medical Device Rules 2017" },
           { id: "10.2", label: "Free Sale Certificate", hint: "Certificate of free sale from country of origin regulatory authority" },
           { id: "10.3", label: "ISO 13485 Certificate", hint: "Current ISO 13485 QMS certificate issued by accredited certification body" },
-          { id: "10.4", label: "Manufacturing License", hint: "Manufacturing license from country of origin regulatory authority" },
           { id: "10.5", label: "Wholesale License", hint: "Wholesale license details for Indian importer/distributor" },
           { id: "10.6", label: "Test Reports from Approved Labs", hint: "Test reports from CDSCO-recognized or NABL-accredited laboratories", textarea: true },
+        ]
+      },
+      {
+        id: "s_coa", title: "COA Generation", description: "Upload Value Sheet for automatic COA generation", fields: [
+          { id: "coa.upload", label: "Value Sheet", hint: "Upload Value Sheet to generate Certificate of Analysis", textarea: true, allowUpload: true }
         ]
       },
     ],

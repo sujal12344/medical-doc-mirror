@@ -128,6 +128,23 @@ export function RegulatoryFieldEditor({
     }
   };
   const handleDownload = () => {
+    const zipMatch = safeValue.match(/\[ZIP_DATA\]:\s*#\s*\((data:application\/zip;base64,[A-Za-z0-9+/=]+)\)/) || safeValue.match(/data-zip="(data:application\/zip;base64,[A-Za-z0-9+/=]+)"/);
+    if (zipMatch) {
+      const a = document.createElement("a");
+      a.href = zipMatch[1];
+      a.download = `COA_Batches_${fieldId}.zip`;
+      a.click();
+      return;
+    }
+    
+    if (safeValue.startsWith("data:application/zip")) {
+      const a = document.createElement("a");
+      a.href = safeValue;
+      a.download = `COA_Batches_${fieldId}.zip`;
+      a.click();
+      return;
+    }
+    
     if (isImageValue) {
       // Download image directly
       const a = document.createElement("a");
@@ -271,6 +288,8 @@ td,th{border:1px solid #ccc;padding:6px 10px;}th{background:#f0f0f0;font-weight:
   const showStructured = hasContent && view === "structured";
   const rows = textarea ? Math.min(24, Math.max(5, value.split("\n").length + 1)) : undefined;
 
+  const displayValue = safeValue.replace(/\[ZIP_DATA\]:\s*#\s*\((data:application\/zip;base64,[A-Za-z0-9+/=]+)\)/g, '').replace(/<div data-zip=".*?"><\/div>/g, '').trim();
+
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border bg-surface2/80 px-4 py-3">
@@ -304,7 +323,7 @@ td,th{border:1px solid #ccc;padding:6px 10px;}th{background:#f0f0f0;font-weight:
               onClick={handleDownload}
               className="rounded-lg border border-border px-3 py-1.5 text-[11px] font-semibold text-muted hover:bg-surface2 hover:text-foreground transition shadow-sm"
             >
-              {isImageValue ? "Download Image" : "Download .doc"}
+              {safeValue.includes('[ZIP_DATA]:') || safeValue.includes('data-zip="data:application/zip') || safeValue.startsWith("data:application/zip") ? "Download .zip" : isImageValue ? "Download Image" : "Download .doc"}
             </button>
           )}
           {hasContent && !isImageField && !isLabellingPreviewField ? (
@@ -408,30 +427,57 @@ td,th{border:1px solid #ccc;padding:6px 10px;}th{background:#f0f0f0;font-weight:
                 }
               }}
             >
-              {safeValue}
+              {displayValue}
             </ReactMarkdown>
           </div>
           )
         ) : textarea ? (
           <textarea
             rows={rows}
-            value={safeValue}
+            value={displayValue}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y min-h-[120px]"
+            disabled={safeValue.startsWith("[ZIP_DATA]:")}
+            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y min-h-[120px] disabled:opacity-70 disabled:cursor-not-allowed"
             placeholder={`Enter ${label.toLowerCase()}…`}
           />
         ) : (
           <input
             type="text"
-            value={safeValue}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            value={displayValue}
+            onChange={(e) => {
+              const content = "base64_data_here";
+              const finalValue = `[ZIP_DATA]: # (data:application/zip;base64,${content})\n\n${e.target.value}`;
+              onChange(finalValue);
+            }}
+            disabled={safeValue.startsWith("[ZIP_DATA]:")}
+            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent disabled:opacity-70 disabled:cursor-not-allowed"
             placeholder={`Enter ${label.toLowerCase()}…`}
           />
         )}
 
-
-      </div>
+        {allowUpload && !showStructured && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => document.getElementById(`upload-${fieldId}`)?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-lg hover:bg-accent/10 transition disabled:opacity-50"
+            >
+              {uploading ? "Uploading..." : "Upload File"}
+            </button>
+            <input
+              id={`upload-${fieldId}`}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) handleFieldFileUpload(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            {uploadError && <span className="text-xs text-red-500">{uploadError}</span>}
+            {fileName && !uploadError && <span className="text-xs text-muted">Uploaded: {fileName}</span>}
+          </div>
+        )}      </div>
     </div>
   );
 }

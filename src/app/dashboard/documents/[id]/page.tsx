@@ -629,55 +629,30 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               {knowledgeBaseOpen && (
                 <div className="px-4 pb-4 pt-1 border-t border-border space-y-4">
                   <p className="text-xs text-muted">
-                    Upload an IFU, brochure, or technical file to auto-populate the document fields via AI extraction.
+                    Auto-populate document fields using your Phase 1 Product Data (IFU, Brochures, etc) or upload additional reference documents below.
                   </p>
 
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
                     <div className="min-w-0">
-                      <p className="text-xs font-semibold text-foreground">IFU document</p>
-                      <p className="text-[10px] text-muted mt-0.5">.pdf, .docx, .png, .jpg</p>
+                      <p className="text-xs font-semibold text-foreground">IFU Auto-fill</p>
+                      <p className="text-[10px] text-muted mt-0.5">Use existing IFU & product registration data from phase 1</p>
                     </div>
                     <div className="shrink-0">
-                      {chatLoading ? (
-                        <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent bg-accent/5 border border-accent/20 rounded-xl">
-                          <span className="w-3 h-3 border border-accent/40 border-t-accent rounded-full animate-spin" />
-                          Processing…
-                        </div>
-                      ) : chatDocContext ? (
-                        <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
-                            ✅ Uploaded
-                            <button type="button" onClick={() => setChatDocContext("")}
-                              className="ml-1 text-muted hover:text-foreground">✕</button>
-                          </div>
-                          <button type="button" onClick={() => {
-                            if (!autofilling) {
-                              runAutofill({ isInitial: false });
-                            }
-                          }}
-                            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border rounded-xl transition ${autofilling ? "text-muted border-border bg-surface" : "text-accent border-accent/40 bg-accent/5 hover:bg-accent/10"}`}>
-                            {autofilling ? "Running…" : "🪄 Run Auto-fill"}
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <button type="button" onClick={() => chatFileRef.current?.click()}
-                            className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
-                            Upload IFU
-                          </button>
-                          <input ref={chatFileRef} type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp" multiple className="hidden" onChange={(e) => {
-                            if (e.target.files?.length) handleChatFileUpload(e.target.files);
-                            e.target.value = "";
-                          }} />
-                        </>
-                      )}
+                      <button type="button" onClick={() => {
+                        if (!autofilling) {
+                          runAutofill({ isInitial: false });
+                        }
+                      }}
+                        className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold border rounded-xl transition ${autofilling ? "text-muted border-border bg-surface" : "text-accent border-accent/40 bg-accent/5 hover:bg-accent/10"}`}>
+                        {autofilling ? "Running…" : "🪄 Run Auto-fill"}
+                      </button>
                     </div>
                   </div>
 
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 rounded-xl border border-border bg-surface2/40">
                     <div className="min-w-0">
                       <p className="text-xs font-semibold text-foreground">COA document</p>
-                      <p className="text-[10px] text-muted mt-0.5">.pdf, .docx, .png, .jpg</p>
+                      <p className="text-[10px] text-muted mt-0.5">.pdf, .docx, .doc, .png, .jpg</p>
                     </div>
                     <div className="shrink-0">
                       {coaLoading ? (
@@ -700,7 +675,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                             className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-xl hover:bg-accent/10 transition">
                             Upload COA
                           </button>
-                          <input ref={coaFileRef} type="file" accept=".pdf,.docx,.png,.jpg,.jpeg,.webp" className="hidden" onChange={(e) => {
+                          <input ref={coaFileRef} type="file" accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.webp" className="hidden" onChange={(e) => {
                             if (e.target.files?.length) handleCoaFileUpload(e.target.files);
                             e.target.value = "";
                           }} />

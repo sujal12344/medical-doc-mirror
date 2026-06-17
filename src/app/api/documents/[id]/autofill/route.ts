@@ -175,7 +175,8 @@ Guidance for specific fields:
 "s1.1.1d": "Extract or calculate the claimed shelf life of the device in months. Output ONLY the duration as 'X months' (e.g., '18 months' or '24 months') with no other words or description.",
 "s16_shelf.16.0a": "Provide a concise 5-6 lines description paragraph summarizing the accelerated stability studies. It MUST include the final conclusion of the stability test (e.g. shelf life claim validation). Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
 "s17_inuse.17.0a": "Provide a concise 5-6 lines description paragraph summarizing the open vial / in-use stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
-"s18_shipping.18.0a": "Provide a concise 5-6 lines description paragraph summarizing the shipping / transport stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph."`
+"s18_shipping.18.0a": "Provide a concise 5-6 lines description paragraph summarizing the shipping / transport stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
+"s12_traceability.12.0a": "You are a senior regulatory affairs expert specialised in ISO 17511 metrological traceability. Generate the complete 'Metrological Traceability of Calibrator and Control Material Values' section for the Device Master File. OUTPUT MUST CONTAIN TWO PARTS:\n\nPART 1 — TRACEABILITY HIERARCHY TABLE: Generate a strictly valid Markdown pipe table with the following exact headers and separator row:\n| Level | Description | Responsibility |\n|---|---|---|\nInclude rows for all applicable traceability levels extracted from the source documents (Primary Reference Standard, Secondary Reference Material, Master Calibrator, Product Calibrator, Quality Control Material). For each level, describe the specific reference material or standard used and the responsible party (e.g., manufacturer, NIST, JCTLM, IRMM, accredited reference laboratory). Infer conservatively using ISO 17511 principles where explicit data is not stated — do NOT make unsupported claims.\n\nPART 2 — REGULATORY NARRATIVE: After the table, write 2 concise regulatory paragraphs (no bullet points, no headers) explaining: (1) how calibrator/control values are assigned and traceability is established, (2) how values are verified lot-to-lot and monitored throughout the product lifecycle. Maintain CDSCO, ISO 17511, ISO 18113, and ISO 13485 aligned writing style. Do NOT include risk or hazard content."`
         },
         {
           role: "user",
@@ -303,6 +304,67 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
     console.log(`${LOG} sections before save`, sectionSummary);
 
     persistSections(doc, sections, { log: true });
+
+    // ── Dedicated traceability table generation (12.0a) ──────────────────────
+    // Run as a separate focused call so it's never dropped by the main autofill
+    if (fw.sections.some((s) => s.id === "s12_traceability")) {
+      try {
+        const existingTraceability = (sections["s12_traceability"]?.fields?.["12.0a"] || "").trim();
+        if (!existingTraceability) {
+          console.log(`${LOG} Generating metrological traceability table (12.0a)...`);
+          const traceabilityCompletion = await client.chat.completions.create({
+            model: "gpt-4o-mini",
+            max_tokens: 2000,
+            temperature: 0.1,
+            messages: [
+              {
+                role: "system",
+                content: `You are a senior regulatory affairs expert specialised in ISO 17511 metrological traceability. Generate the complete "Metrological Traceability of Calibrator and Control Material Values" section for the Device Master File.
+
+OUTPUT MUST CONTAIN EXACTLY TWO PARTS — no preamble, no headings beyond what is specified:
+
+PART 1 — Output a strictly valid Markdown pipe table with these exact headers:
+| Level | Description | Responsibility |
+|---|---|---|
+Include rows for all applicable traceability levels (Primary Reference Standard, Secondary Reference Material, Master Calibrator, Product Calibrator, Quality Control Material). For each row: Level = short name, Description = what material/method is used, Responsibility = who is responsible (e.g., manufacturer, NIST, JCTLM, IRMM, accredited lab). Infer conservatively using ISO 17511 — do NOT fabricate unsupported claims.
+
+PART 2 — After the table, write exactly 2 regulatory paragraphs of plain prose (no bullet points, no sub-headers) explaining: (1) how calibrator/control values are assigned and traceability is established; (2) how values are verified lot-to-lot and monitored throughout the product lifecycle. Use CDSCO, ISO 17511, ISO 18113, and ISO 13485 aligned language.`,
+              },
+              {
+                role: "user",
+                content: `Product: ${(product as { name?: string }).name || "IVD Diagnostic Product"}
+
+Source Documents:
+${truncated.slice(0, 15000)}
+
+Generate the metrological traceability section now. Start directly with the markdown table — no introductory text.`,
+              },
+            ],
+          });
+
+          const traceabilityContent = traceabilityCompletion.choices[0]?.message?.content?.trim() || "";
+          if (traceabilityContent) {
+            if (!sections["s12_traceability"]) {
+              sections["s12_traceability"] = { fields: {}, completionPct: 0 };
+            }
+            sections["s12_traceability"].fields["12.0a"] = traceabilityContent;
+            const secDef = fw.sections.find((s) => s.id === "s12_traceability");
+            if (secDef) {
+              const filled = secDef.fields.filter((f) => sections["s12_traceability"]?.fields?.[f.id]?.trim()).length;
+              sections["s12_traceability"].completionPct = Math.round((filled / secDef.fields.length) * 100);
+            }
+            filledCount++;
+            console.log(`${LOG} Traceability table generated (${traceabilityContent.length} chars)`);
+          }
+        } else {
+          console.log(`${LOG} Traceability field 12.0a already filled — skipping dedicated call`);
+        }
+      } catch (traceErr) {
+        console.error(`${LOG} Traceability generation failed:`, traceErr);
+      }
+    }
+
+    persistSections(doc, sections, { log: false });
     await doc.save();
 
     console.log(`${LOG} saved`, {

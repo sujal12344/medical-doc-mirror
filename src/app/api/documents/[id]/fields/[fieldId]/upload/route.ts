@@ -56,8 +56,21 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
       .map((val) => val.replace(/<[^>]+>/g, ""))
       .join(" ");
   } catch (error) {
-    console.error("Error extracting text from docx:", error);
-    return "";
+    console.error("Error extracting text from docx via JSZip:", error);
+    try {
+      const rawString = buffer.toString("utf8");
+      if (rawString.includes("<html") || rawString.includes("<body") || rawString.includes("<w:WordDocument")) {
+         return rawString.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      } else if (rawString.startsWith("{\\rtf")) {
+         return rawString.replace(/\\[a-z]+[0-9]* ?/g, " ").replace(/[{}]/g, " ").replace(/\s+/g, " ").trim();
+      } else {
+         const stripped = rawString.replace(/[^\x20-\x7E]/g, "").trim();
+         return stripped.length > 50 ? stripped : "";
+      }
+    } catch (fallbackError) {
+      console.error("Docx extraction fallback also failed:", fallbackError);
+      return "";
+    }
   }
 }
 
@@ -453,58 +466,92 @@ export async function POST(
       
       const isImage = file.type.startsWith("image/") || nameLower.match(/\.(png|jpg|jpeg|webp|gif|bmp)$/i) !== null;
       const isPdf = file.type === "application/pdf" || nameLower.endsWith(".pdf");
-      const isDocx = file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || nameLower.endsWith(".docx");
+      const isDocx = file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || nameLower.endsWith(".docx") || nameLower.endsWith(".doc");
       
       if (isDocx) {
-        console.log(`[field-upload] Master label upload (DOCX) detected for field ${fieldId}`);
-        const zip = await JSZip.loadAsync(buffer);
-        
-        let headerText = "";
-        const headerXmlFile = zip.file("word/header1.xml");
-        if (headerXmlFile) {
-          const xml = await headerXmlFile.async("string");
-          const tMatch = xml.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g) || [];
-          headerText = tMatch.map(t => t.replace(/<[^>]+>/g, "")).join(" | ");
-        }
-        
-        let bodyText = "";
-        const docXmlFile = zip.file("word/document.xml");
-        if (docXmlFile) {
-          const xml = await docXmlFile.async("string");
-          const tMatch = xml.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g) || [];
-          bodyText = tMatch.map(t => t.replace(/<[^>]+>/g, "")).join(" ");
-        }
-        
-        const combinedDocxText = `Header Section:\n${headerText}\n\nBody Section:\n${bodyText}`;
-        
+        console.log(`[field-upload] Master label upload (DOCX/DOC) detected for field ${fieldId}`);
+        let combinedDocxText = "";
         let logoBase64 = "";
-        const headerRelsFile = zip.file("word/_rels/header1.xml.rels");
-        if (headerRelsFile) {
-          const xml = await headerRelsFile.async("string");
-          const imgMatch = xml.match(/<Relationship\b[^>]*Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/image"[^>]*Target="([^"]+)"/);
-          if (imgMatch) {
-            const target = imgMatch[1];
-            const imgFile = zip.file(`word/${target}`);
-            if (imgFile) {
-              const imgBuffer = await imgFile.async("nodebuffer");
-              const ext = target.split(".").pop() || "png";
-              logoBase64 = `data:image/${ext === "jpg" ? "jpeg" : ext};base64,${imgBuffer.toString("base64")}`;
+        let artworkBase64 = "";
+
+        try {
+          const zip = await JSZip.loadAsync(buffer);
+          
+          let headerText = "";
+          const headerXmlFile = zip.file("word/header1.xml");
+          if (headerXmlFile) {
+            const xml = await headerXmlFile.async("string");
+            const tMatch = xml.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g) || [];
+            headerText = tMatch.map((t: string) => t.replace(/<[^>]+>/g, "")).join(" | ");
+          }
+          
+          let bodyText = "";
+          const docXmlFile = zip.file("word/document.xml");
+          if (docXmlFile) {
+            const xml = await docXmlFile.async("string");
+            const tMatch = xml.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g) || [];
+            bodyText = tMatch.map((t: string) => t.replace(/<[^>]+>/g, "")).join(" ");
+          }
+          
+          combinedDocxText = `Header Section:\n${headerText}\n\nBody Section:\n${bodyText}`;
+          
+          const headerRelsFile = zip.file("word/_rels/header1.xml.rels");
+          if (headerRelsFile) {
+            const xml = await headerRelsFile.async("string");
+            const imgMatch = xml.match(/<Relationship\b[^>]*Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/image"[^>]*Target="([^"]+)"/);
+            if (imgMatch) {
+              const target = imgMatch[1];
+              const imgFile = zip.file(`word/${target}`);
+              if (imgFile) {
+                const imgBuffer = await imgFile.async("nodebuffer");
+                const ext = target.split(".").pop() || "png";
+                logoBase64 = `data:image/${ext === "jpg" ? "jpeg" : ext};base64,${imgBuffer.toString("base64")}`;
+              }
             }
           }
-        }
-        
-        let artworkBase64 = "";
-        const docRelsFile = zip.file("word/_rels/document.xml.rels");
-        if (docRelsFile) {
-          const xml = await docRelsFile.async("string");
-          const imgMatches = [...xml.matchAll(/<Relationship\b[^>]*Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/image"[^>]*Target="([^"]+)"/g)];
-          if (imgMatches.length > 0) {
-            const target = imgMatches[0][1];
-            const imgFile = zip.file(`word/${target}`);
-            if (imgFile) {
-              const imgBuffer = await imgFile.async("nodebuffer");
-              const ext = target.split(".").pop() || "png";
-              artworkBase64 = `data:image/${ext === "jpg" ? "jpeg" : ext};base64,${imgBuffer.toString("base64")}`;
+          
+          const docRelsFile = zip.file("word/_rels/document.xml.rels");
+          if (docRelsFile) {
+            const xml = await docRelsFile.async("string");
+            const imgMatches = [...xml.matchAll(/<Relationship\b[^>]*Type="http:\/\/schemas\.openxmlformats\.org\/officeDocument\/2006\/relationships\/image"[^>]*Target="([^"]+)"/g)];
+            if (imgMatches.length > 0) {
+              const target = imgMatches[0][1];
+              const imgFile = zip.file(`word/${target}`);
+              if (imgFile) {
+                const imgBuffer = await imgFile.async("nodebuffer");
+                const ext = target.split(".").pop() || "png";
+                artworkBase64 = `data:image/${ext === "jpg" ? "jpeg" : ext};base64,${imgBuffer.toString("base64")}`;
+              }
+            }
+          }
+        } catch (zipError) {
+          console.log(`[field-upload] JSZip failed (likely binary .doc format). Falling back to word-extractor...`);
+          try {
+            const WordExtractor = require("word-extractor");
+            const extractor = new WordExtractor();
+            const extracted = await extractor.extract(buffer);
+            const bodyText = extracted.getBody();
+            combinedDocxText = `Body Section:\n${bodyText}`;
+          } catch (weError) {
+            console.warn(`[field-upload] word-extractor failed. Using raw string fallback.`);
+            const rawString = buffer.toString("utf8");
+            
+            // Basic detection of HTML disguised as .doc
+            if (rawString.includes("<html") || rawString.includes("<body") || rawString.includes("<w:WordDocument")) {
+               console.log("[field-upload] Fallback: Detected HTML disguised as .doc");
+               const stripped = rawString.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+               combinedDocxText = `Body Section (Raw HTML Extraction):\n${stripped.slice(0, 100000)}`;
+            } else if (rawString.startsWith("{\\rtf")) {
+               console.log("[field-upload] Fallback: Detected RTF disguised as .doc");
+               const stripped = rawString.replace(/\\[a-z]+[0-9]* ?/g, " ").replace(/[{}]/g, " ").replace(/\s+/g, " ").trim();
+               combinedDocxText = `Body Section (Raw RTF Extraction):\n${stripped.slice(0, 100000)}`;
+            } else {
+               const stripped = rawString.replace(/[^\x20-\x7E]/g, "").trim();
+               if (stripped.length > 50) {
+                 combinedDocxText = `Body Section (Raw Text Extraction):\n${stripped.slice(0, 100000)}`;
+               } else {
+                 return NextResponse.json({ error: "Failed to parse legacy binary .doc file. Please resave as .docx and upload." }, { status: 400 });
+               }
             }
           }
         }
@@ -753,7 +800,7 @@ ${combinedDocxText}`,
           accept: ".pdf,.docx,.png,.jpg,.jpeg,.webp"
         });
       } else {
-        return NextResponse.json({ error: "Unsupported label file format. Upload an image, PDF, or DOCX." }, { status: 400 });
+        return NextResponse.json({ error: "Unsupported label file format. Upload an image, PDF, DOCX, or DOC." }, { status: 400 });
       }
     }
 
@@ -957,12 +1004,138 @@ ${combinedDocxText}`,
         chunksIndexed: 0,
         namespace: "",
         value: extractedText.trim(),
-        accept: ".pdf,.docx,.png,.jpg,.jpeg,.webp"
+        accept: ".pdf,.docx,.doc,.png,.jpg,.jpeg,.webp"
       });
     }
 
-    let combinedText = "";
+    // ── Metrological Traceability Table (12.0a) ──────────────────────────────
+    if (fieldId === "12.0a") {
+      const file = files[0];
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const nameLower = file.name.toLowerCase();
+
+      let extractedText = "";
+      const isImage = file.type.startsWith("image/") || nameLower.match(/\.(png|jpg|jpeg|webp|gif|bmp)$/i) !== null;
+      const isPdf = file.type === "application/pdf" || nameLower.endsWith(".pdf");
+      const isDocxFile =
+        file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
+        nameLower.endsWith(".docx") ||
+        nameLower.endsWith(".doc");
+
+      if (isDocxFile) {
+        extractedText = await extractTextFromDocx(buffer);
+      } else if (isPdf) {
+        extractedText = await extractTextFromPDF(buffer);
+      } else if (isImage) {
+        const openaiVision = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+        extractedText = await ocrImageWithVision(openaiVision, buffer, file.type || "image/png");
+      } else {
+        return NextResponse.json({ error: "Unsupported file format. Upload PDF, DOCX, DOC, or an image." }, { status: 400 });
+      }
+
+      if (!extractedText.trim()) {
+        return NextResponse.json({ error: "No text could be extracted from the uploaded file." }, { status: 400 });
+      }
+
+      // Gather existing product/document context
+      let productName = product?.name || "";
+      doc.sections?.forEach((secData: any) => {
+        const f = secData.fields || {};
+        if (f["1.name"]) productName = f["1.name"];
+        if (f["1.1a"]) productName = f["1.1a"];
+        if (!productName && f["1.product_name"]) productName = f["1.product_name"];
+      });
+
+      const systemPrompt = `Generate the "Metrological Traceability of Calibrator and Control Material Values" section for the Device Master File.
+Requirements:
+* Generate a professional traceability hierarchy table with the following columns:
+
+  Level | Description | Responsibility
+
+* Construct the table using information extracted from the uploaded IFU, product documentation, intended use, analytical principle, calibrator/control information, and value assignment procedures.
+
+* Include applicable traceability levels such as:
+
+  * Primary Reference
+  * Secondary Calibrator
+  * Product Calibrator
+  * Control Material
+
+* Prioritize explicit evidence from the source documents, including:
+
+  * Reference methods
+  * Reference materials
+  * Master calibrators
+  * Value assignment procedures
+  * Consensus studies
+  * Inter-laboratory studies
+  * Verification and validation activities
+  * Lot-to-lot consistency assessments
+
+* If a traceability level is not explicitly mentioned, infer it conservatively using standard ISO 17511 metrological traceability principles without making unsupported claims.
+
+* After the table, generate a concise regulatory narrative (1–2 paragraphs) explaining:
+
+  * How assigned calibrator/control values are established
+  * How traceability is maintained
+  * How values are verified and monitored throughout the product lifecycle
+
+* Maintain a professional CDSCO, ISO 17511, ISO 18113, and ISO 13485 aligned regulatory writing style.
+
+* Output must contain:
+
+  1. Traceability Hierarchy Table
+  2. Supporting Regulatory Narrative
+
+* Do not generate risk-related content, hazard information, placeholders, or unsupported assumptions.
+
+* Ensure all content is device-specific and based on the uploaded documentation.`;
+
+      const userPrompt = `Product Name: ${productName || "IVD Diagnostic Product"}
+
+Uploaded Document Content:
+${extractedText.slice(0, 18000)}
+
+Generate the Metrological Traceability section now as described in the system instructions. Use markdown formatting with a pipe table for the hierarchy and paragraph text for the narrative.`;
+
+      const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+      const completion = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        max_tokens: 2000,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      });
+
+      const generatedContent = completion.choices[0]?.message?.content?.trim() || "";
+
+      const currentSectionData = doc.sections.get(sectionId) || { id: sectionId, fields: {}, completionPct: 0 };
+      currentSectionData.fields[fieldId] = generatedContent;
+
+      const secObj = fw.sections.find((s) => s.id === sectionId);
+      if (secObj) {
+        const filled = secObj.fields.filter((f) => currentSectionData.fields[f.id]?.trim()).length;
+        currentSectionData.completionPct = Math.round((filled / secObj.fields.length) * 100);
+      }
+
+      doc.sections.set(sectionId, currentSectionData);
+      doc.markModified("sections");
+      await doc.save();
+
+      console.log(`[field-upload] Metrological Traceability table generated for field ${fieldId}`);
+      return NextResponse.json({
+        success: true,
+        fileName: file.name,
+        chunksIndexed: 0,
+        namespace: "",
+        value: generatedContent,
+      });
+    }
+
+
     const uploadedFileNames: string[] = [];
+    let combinedText = "";
 
     for (const file of files) {
       const buffer = Buffer.from(await file.arrayBuffer());
@@ -972,11 +1145,247 @@ ${combinedDocxText}`,
       const isImage = file.type.startsWith("image/") ||
         nameLower.match(/\.(png|jpg|jpeg|webp|gif|bmp)$/i) !== null;
 
-      if (file.type === "application/pdf" || nameLower.endsWith(".pdf")) {
+      if (fieldId === "coa.upload") {
+        console.log(`[field-upload] Processing COA Value Sheet generation using TS native JSZip...`);
+        try {
+          const JSZip = require("jszip");
+          const zip = await JSZip.loadAsync(buffer);
+          const docXmlFile = zip.file("word/document.xml");
+          if (!docXmlFile) throw new Error("Invalid docx: word/document.xml not found");
+          
+          let docXmlText = await docXmlFile.async("string");
+          const tables = docXmlText.split("<w:tbl>");
+          let data: any[] = [];
+          let headers: string[] = [];
+          
+          for (let i = 1; i < tables.length; i++) {
+            const tbl = tables[i].split("</w:tbl>")[0];
+            const rows = tbl.split("<w:tr");
+            
+            for (let j = 1; j < rows.length; j++) {
+              const rowStr = rows[j].split("</w:tr>")[0];
+              const cells = rowStr.split("<w:tc");
+              
+              const rowData: string[] = [];
+              for (let k = 1; k < cells.length; k++) {
+                const cellStr = cells[k].split("</w:tc>")[0];
+                const matches = cellStr.match(/<w:t(?: [^>]*)?>([\s\S]*?)<\/w:t>/g);
+                let cellText = "";
+                if (matches) {
+                  cellText = matches.map((m: string) => m.replace(/<w:t(?: [^>]*)?>/g, "").replace(/<\/w:t>/g, "")).join("").trim();
+                }
+                rowData.push(cellText);
+              }
+              
+              if (headers.length === 0) {
+                const paramIdx = rowData.findIndex(col => col.trim().toLowerCase().includes("parameter"));
+                if (paramIdx !== -1) {
+                  headers = rowData.map(h => h.trim());
+                  continue;
+                }
+              }
+              
+              if (headers.length > 0 && rowData.length >= headers.length) {
+                const obj: Record<string, string> = {};
+                headers.forEach((h, idx) => { 
+                  if (h) obj[h] = rowData[idx]?.trim() || ""; 
+                });
+                data.push(obj);
+              }
+            }
+            if (data.length > 0) break; // Found main table
+          }
+
+          if (data.length === 0) {
+            throw new Error("Could not find data table with 'Parameter' header");
+          }
+
+          function getPrecision(str: string) {
+            const parts = String(str).trim().split(".");
+            return parts.length > 1 ? parts[1].length : 0;
+          }
+
+          function generateRep(targetStr: string) {
+            const num = parseFloat(targetStr);
+            if (isNaN(num)) return "-";
+            const variance = num * 0.05;
+            const calculated = num + ((Math.random() + Math.random() - 1) * (variance * 0.6));
+            const prec = getPrecision(targetStr);
+            return calculated.toFixed(prec);
+          }
+
+          // Extract dynamic fields from Document DB
+          let coaProductName = product?.name || "Product Name";
+          let mfgDate = "";
+          let expDate = "";
+          
+          doc.sections?.forEach((secData: any) => {
+             const f = secData.fields || {};
+             if (!mfgDate) {
+               mfgDate = f["20.mfgDate"] || f["8.mfgDate"] || "";
+             }
+             if (!expDate) {
+               expDate = f["20.expDate"] || f["8.expDate"] || "";
+             }
+             if (f["1.name"]) coaProductName = f["1.name"];
+             if (f["1.1a"]) coaProductName = f["1.1a"];
+          });
+
+          if (!mfgDate) mfgDate = "_______";
+          if (!expDate) expDate = "_______";
+          const releaseDate = new Date().toLocaleDateString('en-GB');
+
+          const batches = ["CAL-Bio-TB-01", "CAL-Bio-TB-02", "CAL-Bio-TB-03"];
+          const outZip = new JSZip();
+          let allMarkdown = "";
+
+          let fullText = "";
+          const textMatches = docXmlText.match(/<w:t(?: [^>]*)?>([\s\S]*?)<\/w:t>/g);
+          if (textMatches) {
+            fullText = textMatches.map((m: string) => m.replace(/<w:t(?: [^>]*)?>/g, "").replace(/<\/w:t>/g, "")).join("");
+          }
+
+          const shelfLifeMatch = fullText.match(/Shelf Life:\s*(.*?)(?:Storage Temperature:|Conclusion:|Remark:|$)/i);
+          const shelfLifeStr = shelfLifeMatch ? shelfLifeMatch[1].trim() : "_______";
+
+          const storageMatch = fullText.match(/Storage Temperature:\s*(.*?)(?:Conclusion:|Remark:|Tested By:|$)/i);
+          const storageStr = storageMatch ? storageMatch[1].trim() : "_______";
+
+          const conclusionMatch = fullText.match(/Conclusion:\s*(.*?)(?:Remark:|Tested By:|$)/i);
+          const conclusionStr = conclusionMatch ? conclusionMatch[1].trim() : "Passed.";
+
+          const remarkMatch = fullText.match(/Remark:\s*(.*?)(?:Tested By:|$)/i);
+          const remarkStr = remarkMatch ? remarkMatch[1].trim() : `The analytical performance of ${coaProductName} complies with internal quality specifications and acceptance criteria.`;
+
+          const batchNumMatch = fullText.match(/Batch Number(.*?)(?:MFG Date|EXP Date)/i);
+          const baseBatch = batchNumMatch ? batchNumMatch[1].trim() : "";
+
+          for (const batch of batches) {
+             let rowsHtml = "";
+             let markdownTable = `### Batch: ${batch}\n\n| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |\n|---|---|---|---|---|---|---|---|\n`;
+
+             data.forEach((row, idx) => {
+                const target = row["Target"] || "-";
+                const rep1 = generateRep(target);
+                const rep2 = generateRep(target);
+                const rep3 = generateRep(target);
+                
+                markdownTable += `| ${row["S. No"] || idx + 1} | ${row["Parameter"] || ""} | ${row["Method"] || ""} | ${row["Unit"] || ""} | ${target} | ${rep1} | ${rep2} | ${rep3} |\n`;
+
+                rowsHtml += `
+                  <tr>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center;">${row["S. No"] || idx + 1}</td>
+                    <td style="border: 1px solid black; padding: 5px;">${row["Parameter"] || ""}</td>
+                    <td style="border: 1px solid black; padding: 5px;">${row["Method"] || ""}</td>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center;">${row["Unit"] || ""}</td>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center;">${target}</td>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center;">${rep1}</td>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center;">${rep2}</td>
+                    <td style="border: 1px solid black; padding: 5px; text-align: center;">${rep3}</td>
+                  </tr>
+                `;
+             });
+
+             allMarkdown += markdownTable + "\n\n---\n\n";
+
+             let currentRemark = remarkStr;
+             if (baseBatch) {
+               const safeBaseBatch = baseBatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+               currentRemark = currentRemark.replace(new RegExp(safeBaseBatch, 'gi'), batch);
+             } else {
+               currentRemark = currentRemark.replace(/CAL-Bio-TB-01/gi, batch);
+             }
+
+             const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset="utf-8"><style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 11pt; }</style></head>
+<body>
+  <div style="text-align: center; font-weight: bold; font-family: Arial; font-size: 14pt;">QUALITY ASSURANCE DEPARTMENT</div>
+  <div style="text-align: center; font-weight: bold; font-family: Arial; font-size: 14pt; margin-bottom: 20px;">CERTIFICATE OF ANALYSIS</div>
+  
+  <table style="border: 1px solid black; margin-bottom: 20px;">
+    <tr>
+      <td style="border: 1px solid black; padding: 5px;"><b>Name of the Product</b></td>
+      <td style="border: 1px solid black; padding: 5px;" colspan="3"><b>${coaProductName}</b></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid black; padding: 5px;"><b>Model</b></td>
+      <td style="border: 1px solid black; padding: 5px;">-</td>
+      <td style="border: 1px solid black; padding: 5px;"><b>Batch Number</b></td>
+      <td style="border: 1px solid black; padding: 5px;"><b>${batch}</b></td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid black; padding: 5px;"><b>MFG Date</b></td>
+      <td style="border: 1px solid black; padding: 5px;">${mfgDate}</td>
+      <td style="border: 1px solid black; padding: 5px;"><b>EXP Date</b></td>
+      <td style="border: 1px solid black; padding: 5px;">${expDate}</td>
+    </tr>
+    <tr>
+      <td style="border: 1px solid black; padding: 5px;"><b>Quality Release date</b></td>
+      <td style="border: 1px solid black; padding: 5px;" colspan="3">${releaseDate}</td>
+    </tr>
+  </table>
+
+  <table style="border: 1px solid black; margin-bottom: 20px;">
+    <tr>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">S. No</td>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Parameter</td>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Method</td>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Unit</td>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Target</td>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Rep 1</td>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Rep 2</td>
+      <td style="border: 1px solid black; padding: 5px; text-align: center; font-weight: bold;">Rep 3</td>
+    </tr>
+    ${rowsHtml}
+  </table>
+
+  <p style="font-family: Arial; line-height: 1.5;">Shelf Life: ${shelfLifeStr}<br/>
+  Storage Temperature: ${storageStr}<br/>
+  Conclusion: ${conclusionStr}<br/>
+  Remark: ${currentRemark}</p>
+
+  <table style="width: 100%; border: none; margin-top: 40px;">
+    <tr>
+      <td><b>Tested By:</b><br/><br/>Name: ____________________<br/><br/>Signature: ____________________<br/><br/>Date: ____________________</td>
+      <td><b>Approved By:</b><br/><br/>Name: ____________________<br/><br/>Signature: ____________________<br/><br/>Date: ____________________</td>
+    </tr>
+  </table>
+</body>
+</html>`;
+
+             outZip.file(`CoA_Biochemistry_Multical_${batch}.doc`, docHtml);
+          }
+
+          const content = await outZip.generateAsync({ type: "base64" });
+          const finalValue = `[ZIP_DATA]: # (data:application/zip;base64,${content})\n\n${allMarkdown}`;
+          console.log(`[field-upload] Native TS COA ZIP generated successfully with Markdown preview`);
+
+          // Save directly to document
+          const currentSectionData = doc.sections.get(sectionId) || { id: sectionId, fields: {}, completionPct: 0 };
+          currentSectionData.fields[fieldId] = finalValue;
+          
+          const secObj = fw.sections.find((s) => s.id === sectionId);
+          if (secObj) {
+            const filled = secObj.fields.filter((f) => currentSectionData.fields[f.id]?.trim()).length;
+            currentSectionData.completionPct = Math.round((filled / secObj.fields.length) * 100);
+          }
+
+          doc.sections.set(sectionId, currentSectionData);
+          doc.markModified("sections");
+          await doc.save();
+
+          return NextResponse.json({ success: true, fileName: file.name, chunksIndexed: 0, namespace: "", value: finalValue });
+
+        } catch (e) {
+          console.error("Native COA Generation failed:", e);
+          return NextResponse.json({ error: "Failed to parse Value sheet and generate COA files natively." }, { status: 500 });
+        }
+      } else if (file.type === "application/pdf" || nameLower.endsWith(".pdf")) {
         extractedText = await extractTextFromPDF(buffer);
       } else if (
         file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
-        nameLower.endsWith(".docx")
+        nameLower.endsWith(".docx") ||
+        nameLower.endsWith(".doc")
       ) {
         extractedText = await extractTextFromDocx(buffer);
       } else if (file.type.startsWith("text/") || nameLower.match(/\.(txt|csv|xml|json|md)$/i)) {
