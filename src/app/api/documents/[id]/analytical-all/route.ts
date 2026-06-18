@@ -615,7 +615,18 @@ export async function POST(
       messages: [
         {
           role: "system",
-          content: "You are a Regulatory Affairs and QA/RA expert specializing in IVD medical devices and CDSCO Technical File / Device Master File (DMF) requirements. Follow instructions exactly and return only a flat JSON structure.",
+          content: `You are a Regulatory Affairs and QA/RA expert specializing in IVD medical devices and CDSCO Technical File / Device Master File (DMF) requirements. Follow instructions exactly and return ONLY a flat JSON structure.
+You MUST return a JSON object with EXACTLY these keys mapping to Markdown content:
+"7": Analytical Studies Overview
+"7.1": Precision Study Table and Interpretation
+"7.2": Accuracy Study Table and Interpretation
+"7.3": Linearity Study Table and Interpretation
+"8.1": Specimen Type Information
+"9.1": Reproducibility Summary
+"10.0a": Analytical Sensitivity Overview
+"10.1": Analytical Sensitivity Study Table and Interpretation
+
+Do NOT include any other keys. Do NOT nest the JSON.`,
         },
         {
           role: "user",

@@ -5,6 +5,7 @@ export type FrameworkField = {
   textarea?: boolean;
   allowUpload?: boolean;
   fieldType?: "text" | "image";
+  readonly?: boolean;
 };
 
 export type FrameworkSection = {

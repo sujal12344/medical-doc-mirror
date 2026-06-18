@@ -234,6 +234,26 @@ export async function extractDocumentText(
 ): Promise<DocumentExtractResult> {
   const lower = fileName.toLowerCase();
 
+  // Support direct image OCR using Vision
+  if (lower.match(/\.(png|jpg|jpeg|webp)$/)) {
+    console.log("[documentExtract] Image detected, running Vision OCR directly");
+    const openai = new OpenAI();
+    const mime = `image/${lower.split('.').pop()?.replace('jpg', 'jpeg')}`;
+    
+    if (buffer.length > OCR_MAX_BYTES) {
+      throw new Error(`Image too large (${(buffer.length / 1e6).toFixed(1)}MB).`);
+    }
+
+    const text = await ocrPageWithVision(openai, buffer, mime, 1, 1);
+    return {
+      text,
+      method: "ocr-vision",
+      pageCount: 1,
+      charCount: text.length,
+      ocrPages: 1,
+    };
+  }
+
   if (!lower.endsWith(".pdf")) {
     const text = buffer.toString("utf-8");
     return {

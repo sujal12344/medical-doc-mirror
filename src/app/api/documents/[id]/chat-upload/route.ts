@@ -5,22 +5,7 @@ import { RegulatoryDocument } from "@/models/Document";
 import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 
-// Import from the implementation directly — pdf-parse/index.js runs a readFileSync
-// self-test at module evaluation time which crashes Next.js during build page collection.
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse = require("pdf-parse/lib/pdf-parse.js") as (
-  dataBuffer: Buffer,
-  options?: Record<string, unknown>
-) => Promise<{ text: string; numpages: number }>;
-
-async function extractTextFromPDF(buffer: Buffer): Promise<string> {
-  try {
-    const result = await pdfParse(buffer);
-    return result.text || "";
-  } catch {
-    return "";
-  }
-}
+import { extractDocumentText } from "@/lib/documentExtract";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -38,12 +23,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const buffer = Buffer.from(await file.arrayBuffer());
     let extractedText = "";
 
-    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-      extractedText = await extractTextFromPDF(buffer);
-    } else if (file.type.startsWith("text/") || file.name.match(/\.(txt|csv|xml|json|md)$/i)) {
-      extractedText = buffer.toString("utf-8");
-    } else {
-      return NextResponse.json({ error: "Unsupported file type. Upload PDF or text files." }, { status: 400 });
+    try {
+      const result = await extractDocumentText(buffer, file.name);
+      extractedText = result.text;
+    } catch (e) {
+      console.error("[chat-upload] Extraction error:", e);
+      return NextResponse.json({ error: "Unsupported file type or extraction failed. Upload PDF, Image, or text files." }, { status: 400 });
     }
 
     const trimmed = extractedText.slice(0, 200_000);

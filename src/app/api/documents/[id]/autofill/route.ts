@@ -135,11 +135,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        {
+      messages: [        {
           role: "system",
           content: `You are a regulatory documentation expert. Given source documents from a medical device manufacturer, extract data and fill regulatory form fields.
-
+ 
 RULES:
 - Output ONLY valid JSON.
 - Each key MUST be "sectionId.fieldId" — concatenate the EXACT sectionId and the EXACT fieldId from the field list, joined by a single dot.
@@ -147,10 +146,25 @@ RULES:
 - FieldIds often contain dots themselves (e.g. 1.1a, 2.1c, 20.productName). Always use the FULL fieldId exactly as shown in the FIELDS list.
 - For field 1.2 (Regulatory Status in India): if predicate on CDSCO list → "Yes — approved" + predicate name; else "New device".
 - For field 2.1c (Disorder/Condition): state the clinical disorder/condition detected — NOT the full intended-use paragraph (that belongs in 2.0 / 2.2).
-- If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values).
+- If a field has no relevant data in the documents, OMIT it (do not include empty or placeholder values). EXCEPTION: You MUST always generate s4.4.upload (inferring device hazards) even if not stated in the source.
 - NEVER copy field labels or hints as values.
-- Keep values concise but complete. For tables, use pipe-delimited rows.
+- Keep values concise but complete. For tables, you MUST output fully valid Markdown tables including the mandatory separator row (e.g., |---|---|). Do NOT output raw pipe-delimited strings without the separator row.
 - Respond with ONLY the JSON object, no markdown fences, no explanation.
+ 
+FIELD EXTRACTION GUIDELINES:
+- s4.4.summary (Risk Management Summary): You are a Senior ISO 14971:2019 Risk Management Expert. TASK: Generate a comprehensive, narrative Risk Management Summary and explanation. Explain the methodology used to identify device-specific hazards, assess risks, and implement controls. Summarize the overall residual risk profile of the device based on the source documents. Conclude that the medical benefits outweigh the residual risks, in accordance with ISO 14971 requirements. Write 3-4 highly professional paragraphs. DO NOT generate a table for this field.
+- s4.4.upload (Risk Management Report Table): You are a Senior ISO 14971:2019 Risk Management Expert. TASK: Generate a highly detailed, device-specific Risk Management Report table with hazards. OUTPUT REQUIREMENT: You MUST output a strictly valid Markdown table. You MUST start your response with the exact table headers and separators below:
+| Hazard ID | Component / Source | Associated Hazard | Initial S | Initial P | Initial R | Risk Control Measure (Mitigation) | Residual S | Residual P | Residual R |
+|---|---|---|---|---|---|---|---|---|---|
+Then generate the rows for each hazard. COLUMN DEFINITIONS: Hazard ID (Format: HZ-01, HZ-02, HZ-03, etc.); Initial/Residual S (1=Negligible, 2=Minor, 3=Serious); P (1=Remote, 2=Occasional, 3=Frequent). R = S × P. Risk Control Measure: Detail highly specific, practical ISO 14971 compliant controls (e.g. specific QC tests, exact storage validations, explicit labeling warnings), min 2 mitigations per hazard. Residual S MUST generally remain the same as Initial S (mitigation primarily reduces Probability). RISK IDENTIFICATION: Do NOT generate generic risks like "User error", "Environmental factors", or "Equipment failure". You MUST deeply analyze the source documents and extract ACTUAL device-specific components, reagents, biological materials, preservatives, manufacturing processes, storage requirements, performance characteristics, interferences, labeling warnings, and intended use as the "Component / Source". Generate a comprehensive risk profile of 8 to 15+ hazards that are clearly traceable to the uploaded device documentation. OUTPUT FORMAT: Return a fully formatted Markdown table with headers and separators. Do not generate placeholder text or explanations.
+- s5.5.0: Generate a markdown-formatted Essential Requirements Checklist (ERC) table with columns: No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response. Inspect the source text to adapt the responses to the physical state and chemical nature of the device components. Audit and ensure compliance on these key operational vectors:
+  * Row 1.1: Detail analytical performance stability and list all tested interfering or cross-reacting compounds or endogenous proteins declared in the instructions for use (IFU).
+  * Row 1.2: State the specific primary containment strategy (e.g., fluid-sealed bottles or moisture-resistant vials) designed to eliminate leakage risks during transport and handling.
+  * Rows 2.1 & 2.2: Verify whether biological active ingredients, animal-derived vectors, or hazardous chemical preservatives are utilized, outlining risk-mitigation packaging protocols.
+  * Row 2.5 & 2.7: Detail the specific microbiological state or bioburden release testing specifications alongside the standard-compliant stability validation thresholds (e.g., EN ISO 23640 / EN 23640 accelerated thermal protocols).
+  * Rows 3.1, 3.2 & 3.3: Explicitly declare systemic compatibility, instrument or platform interoperability profiles (e.g., validation parameters for specialized automated analyzer equipment or manual configurations), and environmental risk insulation boundaries.
+  * Row 8.7: Output the exact mathematical formula, calculation factor, or calibration algorithm supplied by the manufacturer to compute the patient's quantitative or qualitative analytical result.
+
 
 Guidance for specific fields:
 "s5.5.0": "Generate a markdown-formatted Essential Requirements Checklist (ERC) table with columns: No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response. Inspect the source text to adapt the responses to the physical state and chemical nature of the device components. Audit and ensure compliance on these key operational vectors:\n- Row 1.1: Detail analytical performance stability and list all tested interfering or cross-reacting compounds or endogenous proteins declared in the instructions for use (IFU).\n- Row 1.2: State the specific primary containment strategy (e.g., fluid-sealed bottles or moisture-resistant vials) designed to eliminate leakage risks during transport and handling.\n- Rows 2.1 & 2.2: Verify whether biological active ingredients, animal-derived vectors, or hazardous chemical preservatives are utilized, outlining risk-mitigation packaging protocols.\n- Row 2.5 & 2.7: Detail the specific microbiological state or bioburden release testing specifications alongside the standard-compliant stability validation thresholds (e.g., EN ISO 23640 / EN 23640 accelerated thermal protocols).\n- Rows 3.1, 3.2 & 3.3: Explicitly declare systemic compatibility, instrument or platform interoperability profiles (e.g., validation parameters for specialized automated analyzer equipment or manual configurations), and environmental risk insulation boundaries.\n- Row 8.7: Output the exact mathematical formula, calculation factor, or calibration algorithm supplied by the manufacturer to compute the patient's quantitative or qualitative analytical result.",
@@ -161,7 +175,8 @@ Guidance for specific fields:
 "s1.1.1d": "Extract or calculate the claimed shelf life of the device in months. Output ONLY the duration as 'X months' (e.g., '18 months' or '24 months') with no other words or description.",
 "s16_shelf.16.0a": "Provide a concise 5-6 lines description paragraph summarizing the accelerated stability studies. It MUST include the final conclusion of the stability test (e.g. shelf life claim validation). Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
 "s17_inuse.17.0a": "Provide a concise 5-6 lines description paragraph summarizing the open vial / in-use stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
-"s18_shipping.18.0a": "Provide a concise 5-6 lines description paragraph summarizing the shipping / transport stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph."`
+"s18_shipping.18.0a": "Provide a concise 5-6 lines description paragraph summarizing the shipping / transport stability studies. Do NOT include any tables, lists, markdown list markers, or bullet points — only a single continuous paragraph.",
+"s12_traceability.12.0a": "You are a senior regulatory affairs expert specialised in ISO 17511 metrological traceability. Generate the complete 'Metrological Traceability of Calibrator and Control Material Values' section for the Device Master File. OUTPUT MUST CONTAIN TWO PARTS:\n\nPART 1 — TRACEABILITY HIERARCHY TABLE: Generate a strictly valid Markdown pipe table with the following exact headers and separator row:\n| Level | Description | Responsibility |\n|---|---|---|\nInclude rows for all applicable traceability levels extracted from the source documents (Primary Reference Standard, Secondary Reference Material, Master Calibrator, Product Calibrator, Quality Control Material). For each level, describe the specific reference material or standard used and the responsible party (e.g., manufacturer, NIST, JCTLM, IRMM, accredited reference laboratory). Infer conservatively using ISO 17511 principles where explicit data is not stated — do NOT make unsupported claims.\n\nPART 2 — REGULATORY NARRATIVE: After the table, write 2 concise regulatory paragraphs (no bullet points, no headers) explaining: (1) how calibrator/control values are assigned and traceability is established, (2) how values are verified lot-to-lot and monitored throughout the product lifecycle. Maintain CDSCO, ISO 17511, ISO 18113, and ISO 13485 aligned writing style. Do NOT include risk or hazard content."`
         },
         {
           role: "user",
@@ -289,6 +304,67 @@ Return JSON mapping "sectionId.fieldId" to extracted values.`,
     console.log(`${LOG} sections before save`, sectionSummary);
 
     persistSections(doc, sections, { log: true });
+
+    // ── Dedicated traceability table generation (12.0a) ──────────────────────
+    // Run as a separate focused call so it's never dropped by the main autofill
+    if (fw.sections.some((s) => s.id === "s12_traceability")) {
+      try {
+        const existingTraceability = (sections["s12_traceability"]?.fields?.["12.0a"] || "").trim();
+        if (!existingTraceability) {
+          console.log(`${LOG} Generating metrological traceability table (12.0a)...`);
+          const traceabilityCompletion = await client.chat.completions.create({
+            model: "gpt-4o-mini",
+            max_tokens: 2000,
+            temperature: 0.1,
+            messages: [
+              {
+                role: "system",
+                content: `You are a senior regulatory affairs expert specialised in ISO 17511 metrological traceability. Generate the complete "Metrological Traceability of Calibrator and Control Material Values" section for the Device Master File.
+
+OUTPUT MUST CONTAIN EXACTLY TWO PARTS — no preamble, no headings beyond what is specified:
+
+PART 1 — Output a strictly valid Markdown pipe table with these exact headers:
+| Level | Description | Responsibility |
+|---|---|---|
+Include rows for all applicable traceability levels (Primary Reference Standard, Secondary Reference Material, Master Calibrator, Product Calibrator, Quality Control Material). For each row: Level = short name, Description = what material/method is used, Responsibility = who is responsible (e.g., manufacturer, NIST, JCTLM, IRMM, accredited lab). Infer conservatively using ISO 17511 — do NOT fabricate unsupported claims.
+
+PART 2 — After the table, write exactly 2 regulatory paragraphs of plain prose (no bullet points, no sub-headers) explaining: (1) how calibrator/control values are assigned and traceability is established; (2) how values are verified lot-to-lot and monitored throughout the product lifecycle. Use CDSCO, ISO 17511, ISO 18113, and ISO 13485 aligned language.`,
+              },
+              {
+                role: "user",
+                content: `Product: ${(product as { name?: string }).name || "IVD Diagnostic Product"}
+
+Source Documents:
+${truncated.slice(0, 15000)}
+
+Generate the metrological traceability section now. Start directly with the markdown table — no introductory text.`,
+              },
+            ],
+          });
+
+          const traceabilityContent = traceabilityCompletion.choices[0]?.message?.content?.trim() || "";
+          if (traceabilityContent) {
+            if (!sections["s12_traceability"]) {
+              sections["s12_traceability"] = { fields: {}, completionPct: 0 };
+            }
+            sections["s12_traceability"].fields["12.0a"] = traceabilityContent;
+            const secDef = fw.sections.find((s) => s.id === "s12_traceability");
+            if (secDef) {
+              const filled = secDef.fields.filter((f) => sections["s12_traceability"]?.fields?.[f.id]?.trim()).length;
+              sections["s12_traceability"].completionPct = Math.round((filled / secDef.fields.length) * 100);
+            }
+            filledCount++;
+            console.log(`${LOG} Traceability table generated (${traceabilityContent.length} chars)`);
+          }
+        } else {
+          console.log(`${LOG} Traceability field 12.0a already filled — skipping dedicated call`);
+        }
+      } catch (traceErr) {
+        console.error(`${LOG} Traceability generation failed:`, traceErr);
+      }
+    }
+
+    persistSections(doc, sections, { log: false });
     await doc.save();
 
     console.log(`${LOG} saved`, {

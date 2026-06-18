@@ -85,9 +85,16 @@ export function RegulatoryFieldEditor({
   //   "**table**: | Col | ..." → "**table**\n\n| Col | ..."
   // GFM pipe tables must start at the beginning of a line to be parsed correctly.
   safeValue = safeValue.replace(/(\*\*[^*]+\*\*):[ \t]+(\|[^\n]+)/g, "$1\n\n$2");
-  const hasContent = safeValue.trim().length > 0;
+
   const isImageField = fieldType === "image";
   const isImageValue = safeValue.startsWith("data:image/") || /\.(png|jpg|jpeg|webp|gif)$/i.test(safeValue);
+  const isLabellingPreviewField = fieldId === "20.preview" || fieldId === "8.preview";
+  const isLabellingUploadField = isLabellingPreviewField || fieldId === "20.upload" || fieldId === "8.upload";
+
+  // For the label preview field, we always consider it "filled" if any label fields exist
+  const hasLabelFields = allFields && Object.keys(allFields).some(k => k.startsWith(fieldId.split(".")[0] + ".") && allFields[k]);
+  const hasContent = (safeValue.trim().length > 0) || !!(isLabellingPreviewField && hasLabelFields);
+  let filled = hasContent;
 
   const handleFieldFileUpload = async (files: FileList | File[]) => {
     if (!documentId || !files.length) return;
@@ -121,17 +128,34 @@ export function RegulatoryFieldEditor({
       setUploading(false);
     }
   };
-  const filled = safeValue.trim().length > 0;
+  filled = safeValue.trim().length > 0;
   const showStructured = hasContent && view === "structured";
 
   const isStabilityReportField = fieldId === "sr_inuse" || fieldId === "sr_accelerated" || fieldId === "sr_shipping";
   const rows = textarea
     ? (isStabilityReportField
-        ? Math.min(100, Math.max(25, safeValue.split("\n").length + 1))
-        : Math.min(24, Math.max(5, safeValue.split("\n").length + 1)))
+      ? Math.min(100, Math.max(25, safeValue.split("\n").length + 1))
+      : Math.min(24, Math.max(5, safeValue.split("\n").length + 1)))
     : undefined;
 
   const handleDownload = () => {
+    const zipMatch = safeValue.match(/\[ZIP_DATA\]:\s*#\s*\((data:application\/zip;base64,[A-Za-z0-9+/=]+)\)/) || safeValue.match(/data-zip="(data:application\/zip;base64,[A-Za-z0-9+/=]+)"/);
+    if (zipMatch) {
+      const a = document.createElement("a");
+      a.href = zipMatch[1];
+      a.download = `COA_Batches_${fieldId}.zip`;
+      a.click();
+      return;
+    }
+
+    if (safeValue.startsWith("data:application/zip")) {
+      const a = document.createElement("a");
+      a.href = safeValue;
+      a.download = `COA_Batches_${fieldId}.zip`;
+      a.click();
+      return;
+    }
+
     if (isImageValue) {
       const a = document.createElement("a");
       a.href = safeValue;
@@ -147,7 +171,139 @@ export function RegulatoryFieldEditor({
       allFields,
       documentTitle
     });
+    let finalHtml = "";
+    const isLabellingUpload = fieldId === "20.upload" || fieldId === "8.upload" || fieldId === "20.preview" || fieldId === "8.preview";
+
+    if (isLabellingUpload) {
+      const sectionPrefix = fieldId.split(".")[0];
+      const fields = allFields || {};
+
+      const logoBase64 = fields[`${sectionPrefix}.logo`] || "";
+      const logoText = fields[`${sectionPrefix}.logoText`] || "";
+      const manufacturer = fields[`${sectionPrefix}.manufacturer`] || "";
+
+      let companyName = "";
+      let companyAddress = "";
+      let formerName = "";
+
+      if (manufacturer) {
+        const formerMatch = manufacturer.match(/\((?:Formerly|formerly)\s+known\s+as\s+([^\)]+)\)/i);
+        if (formerMatch) formerName = formerMatch[1].trim();
+        let cleanMfg = manufacturer.replace(/\((?:Formerly|formerly)\s+known\s+as\s+[^\)]+\)/i, "").trim();
+        const commaIndex = cleanMfg.indexOf(",");
+        if (commaIndex !== -1) {
+          companyName = cleanMfg.substring(0, commaIndex).trim();
+          companyAddress = cleanMfg.substring(commaIndex + 1).trim();
+        } else {
+          companyName = cleanMfg;
+          companyAddress = "";
+        }
+      }
+
+      // Show actual image if available, otherwise use extracted company name text
+      const logoDisplayName = companyName || logoText;
+      let logoHtml = logoDisplayName
+        ? `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">${logoDisplayName}</div>`
+        : `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">Logo Placeholder</div>`;
+      if (logoBase64 && logoBase64.startsWith("data:image/")) {
+        logoHtml = `<img src="${logoBase64}" style="max-height: 48px; max-width: 100%; object-fit: contain;" />`;
+      }
+
+      const docTypeTitle = documentTitle || "Device Master File";
+
+      const headerTableHtml = `
+<table style="width: 100%; border-collapse: collapse; border: 1.5pt solid black; font-family: Arial, sans-serif; margin-bottom: 25px;">
+  <tr>
+    <td rowspan="2" style="width: 25%; border: 1pt solid black; padding: 8px; text-align: center; vertical-align: middle;">
+      ${logoHtml}
+    </td>
+    <td style="width: 75%; border: 1pt solid black; padding: 8px; text-align: center;">
+      ${formerName ? `<div style="font-size: 8pt; font-weight: bold; margin-bottom: 2px;">(Formerly Known as ${formerName})</div>` : ""}
+      <div style="font-size: 14pt; font-weight: bold; margin-bottom: 2px; letter-spacing: 0.5px;">${companyName || "Manufacturer Name"}</div>
+      ${companyAddress ? `<div style="font-size: 8.5pt; font-weight: bold;">${companyAddress}</div>` : ""}
+    </td>
+  </tr>
+  <tr>
+    <td style="border: 1pt solid black; padding: 6px; text-align: center; font-size: 10pt; font-weight: bold; background-color: #f7f7f7; text-transform: uppercase;">
+      ${docTypeTitle}
+    </td>
+  </tr>
+</table>
+      `;
+
+      const labelCardHtml = buildLabelCardHtml(value, fields, fieldId, documentTitle || "");
+      const isMD = sectionPrefix === "8";
+      const deviceSymbol = isMD ? "MD" : "IVD";
+
+      const productName = fields[`${sectionPrefix}.product_name`] || "";
+      const packSize = fields[`${sectionPrefix}.pack_size`] || "";
+      const batchNo = fields[`${sectionPrefix}.batch_no`] || "";
+      const deviceType = fields[`${sectionPrefix}.device_type`] || "";
+      const mfgDate = fields[`${sectionPrefix}.mfg_date`] || "";
+      const expDate = fields[`${sectionPrefix}.exp_date`] || "";
+      const storage = fields[`${sectionPrefix}.storage`] || "";
+      const mrp = fields[`${sectionPrefix}.mrp`] || "";
+      const symbolLot = fields[`${sectionPrefix}.symbol_lot`] || "";
+      const symbolDevice = fields[`${sectionPrefix}.symbol_device`] || "";
+      const symbolMfg = fields[`${sectionPrefix}.symbol_mfg`] || "";
+      const symbolExp = fields[`${sectionPrefix}.symbol_exp`] || "";
+      const symbolStorage = fields[`${sectionPrefix}.symbol_storage`] || "";
+
+      let metaDetailsTable = `
+<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Label Metadata Specifications</h3>
+<table style="width: 100%; border-collapse: collapse; border: 1pt solid #ccc; font-family: Arial, sans-serif; margin-bottom: 20px;">
+  <tr style="background:#f9f9f9;">
+    <th style="width: 40%; border: 1pt solid #ccc; padding: 8px; text-align: left; font-size: 9.5pt;">Label Field</th>
+    <th style="width: 60%; border: 1pt solid #ccc; padding: 8px; text-align: left; font-size: 9.5pt;">Extracted Value</th>
+  </tr>
+  ${productName ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">Product Commercial Name</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${productName}</td></tr>` : ""}
+  ${packSize ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">Pack Size / Configuration</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${packSize}</td></tr>` : ""}
+  ${batchNo ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolLot ? `<img src="${symbolLot}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="border: 1px solid black; padding: 1px 4px; font-size: 8pt; font-family: Arial; font-weight: bold; margin-right: 5px; background-color: #eee; display: inline-block; border-radius: 2px; vertical-align: middle;">LOT</span>`} Batch No.</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${batchNo}</td></tr>` : ""}
+  ${deviceType ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolDevice ? `<img src="${symbolDevice}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="border: 1px solid black; padding: 1px 4px; font-size: 8pt; font-family: Arial; font-weight: bold; margin-right: 5px; background-color: #eee; display: inline-block; border-radius: 2px; vertical-align: middle;">${deviceSymbol}</span>`} Device Regulatory Type</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${deviceType}</td></tr>` : ""}
+  ${mfgDate ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolMfg ? `<img src="${symbolMfg}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">🏭</span>`} Manufacturing Date</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${mfgDate}</td></tr>` : ""}
+  ${expDate ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolExp ? `<img src="${symbolExp}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">⌛</span>`} Expiry Date</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${expDate}</td></tr>` : ""}
+  ${storage ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolStorage ? `<img src="${symbolStorage}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">🌡️</span>`} Storage Conditions</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${storage}</td></tr>` : ""}
+  ${mrp ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">MRP (Maximum Retail Price)</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${mrp}</td></tr>` : ""}
+</table>
+      `;
+
+      let artworkHtml = "";
+      const imgMatch = safeValue.match(/!\[.*?\]\((data:image\/[a-zA-Z+-\/]+;base64,[\s\S]*?)\)/);
+      if (imgMatch) {
+        artworkHtml = `
+<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 30px; margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Label Artwork</h3>
+<p style="text-align:center; margin:20px 0;">
+  <img src="${imgMatch[1]}" style="max-width:100%; max-height:480px; border:1px solid #ccc; padding:4px; background:#fff;" />
+</p>
+        `;
+      }
+
+      finalHtml = `
+        ${headerTableHtml}
+        ${metaDetailsTable}
+        ${labelCardHtml}
+        ${artworkHtml}
+      `;
+    } else {
+      finalHtml = markdownToHtml(safeValue);
+    }
+
+    const htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+<head><meta charset="utf-8"><title>${label}</title>
+<style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;margin:2cm;}
+h1,h2,h3,h4{color:#1a1a2e;}table{border-collapse:collapse;width:100%;}
+td,th{border:1px solid #ccc;padding:6px 10px;}th{background:#f0f0f0;font-weight:bold;}</style>
+</head><body>${finalHtml}</body></html>`;
+    const mhtmlContent = htmlToMhtml(htmlContent);
+    const blob = new Blob([mhtmlContent], { type: "application/msword" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${label.replace(/\s+/g, "_")}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
+  const displayValue = safeValue.replace(/\[ZIP_DATA\]:\s*#\s*\((data:application\/zip;base64,[A-Za-z0-9+/=]+)\)/g, '').replace(/<div data-zip=".*?"><\/div>/g, '').trim();
 
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden">
@@ -182,10 +338,10 @@ export function RegulatoryFieldEditor({
               onClick={handleDownload}
               className="rounded-lg border border-border px-3 py-1.5 text-[11px] font-semibold text-muted hover:bg-surface2 hover:text-foreground transition shadow-sm"
             >
-              {isImageValue ? "Download Image" : "Download .doc"}
+              {safeValue.includes('[ZIP_DATA]:') || safeValue.includes('data-zip="data:application/zip') || safeValue.startsWith("data:application/zip") ? "Download .zip" : isImageValue ? "Download Image" : "Download .doc"}
             </button>
           )}
-          {hasContent && !isImageField ? (
+          {hasContent && !isImageField && !isLabellingPreviewField ? (
             <div className="flex rounded-lg border border-border p-0.5 text-[10px] font-medium shrink-0">
               <button
                 type="button"
@@ -207,6 +363,8 @@ export function RegulatoryFieldEditor({
       </div>
 
       <div className="p-4">
+
+
         {/* Image field rendering */}
         {isImageField || isImageValue ? (
           <div className="space-y-3">
@@ -226,119 +384,253 @@ export function RegulatoryFieldEditor({
             )}
           </div>
         ) : showStructured ? (
-          <div className="rounded-lg border border-border bg-surface2/50 p-4 overflow-hidden">
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground" {...props} />,
-                h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-5 mb-2.5 text-foreground" {...props} />,
-                h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
-                h4: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-3 mb-1.5 text-foreground" {...props} />,
-                p: ({ node, ...props }) => <p className="text-xs text-foreground leading-relaxed mb-3 last:mb-0" {...props} />,
-                ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
-                ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
-                table: ({ node, ...props }) => (
-                  <div className="overflow-x-auto my-4 rounded-lg border border-border">
-                    <table className="w-full text-left text-xs border-collapse" {...props} />
-                  </div>
-                ),
-                thead: ({ node, ...props }) => (
-                  <thead className="bg-surface2/80" {...props} />
-                ),
-                th: ({ node, ...props }) => (
-                  <th
-                    className="px-3 py-2.5 font-semibold text-foreground border border-border/70 text-xs whitespace-nowrap"
-                    {...props}
-                  />
-                ),
-                td: ({ node, ...props }) => (
-                  <td
-                    className="px-3 py-2.5 text-foreground border border-border/50 align-top text-xs"
-                    {...props}
-                  />
-                ),
-                tr: ({ node, ...props }) => (
-                  <tr className="even:bg-surface2/20 hover:bg-surface2/40 transition-colors" {...props} />
-                ),
-                strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
-                em: ({ node, ...props }) => <em className="italic text-muted" {...props} />,
-                hr: ({ node, ...props }) => <hr className="my-4 border-border/50" {...props} />,
-                img: ({ node, ...props }) => {
-                  if (!props.src) return null;
-                  // eslint-disable-next-line @next/next/no-img-element
-                  return <img className="max-w-full max-h-96 object-contain rounded-lg border border-border p-1 bg-surface" {...props} />;
-                },
-                code: ({ node, className, children, ...props }) => {
-                  const match = /language-mermaid/.exec(className || "");
-                  if (match) {
-                    return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
+          isLabellingUploadField ? (
+            <div
+              className="rounded-lg overflow-auto bg-white p-4"
+              style={{ fontFamily: 'Arial, sans-serif' }}
+              dangerouslySetInnerHTML={{ __html: buildLabelCardHtml(value, allFields || {}, fieldId, documentTitle || "") }}
+            />
+          ) : (
+            <div className="rounded-lg border border-border bg-surface2/50 p-4 overflow-hidden">
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground" {...props} />,
+                  h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-5 mb-2.5 text-foreground" {...props} />,
+                  h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
+                  h4: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-3 mb-1.5 text-foreground" {...props} />,
+                  p: ({ node, ...props }) => <p className="text-xs text-foreground leading-relaxed mb-3 last:mb-0" {...props} />,
+                  ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                  ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                  table: ({ node, ...props }) => (
+                    <div className="overflow-x-auto my-4 rounded-lg border border-border">
+                      <table className="w-full text-left text-xs border-collapse" {...props} />
+                    </div>
+                  ),
+                  thead: ({ node, ...props }) => (
+                    <thead className="bg-surface2/80" {...props} />
+                  ),
+                  th: ({ node, ...props }) => (
+                    <th
+                      className="px-3 py-2.5 font-semibold text-foreground border border-border/70 text-xs whitespace-nowrap"
+                      {...props}
+                    />
+                  ),
+                  td: ({ node, ...props }) => (
+                    <td
+                      className="px-3 py-2.5 text-foreground border border-border/50 align-top text-xs"
+                      {...props}
+                    />
+                  ),
+                  tr: ({ node, ...props }) => (
+                    <tr className="even:bg-surface2/20 hover:bg-surface2/40 transition-colors" {...props} />
+                  ),
+                  strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
+                  em: ({ node, ...props }) => <em className="italic text-muted" {...props} />,
+                  hr: ({ node, ...props }) => <hr className="my-4 border-border/50" {...props} />,
+                  img: ({ node, ...props }) => {
+                    if (!props.src) return null;
+                    // eslint-disable-next-line @next/next/no-img-element
+                    return <img className="max-w-full max-h-96 object-contain rounded-lg border border-border p-1 bg-surface" {...props} />;
+                  },
+                  code: ({ node, className, children, ...props }) => {
+                    const match = /language-mermaid/.exec(className || "");
+                    if (match) {
+                      return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
+                    }
+                    return <code className={className} {...props}>{children}</code>;
                   }
-                  return <code className={className} {...props}>{children}</code>;
-                }
-              }}
-            >
-              {safeValue}
-            </ReactMarkdown>
-          </div>
+                }}
+              >
+                {displayValue}
+              </ReactMarkdown>
+            </div>
+          )
         ) : textarea ? (
           <textarea
             rows={rows}
-            value={safeValue}
+            value={displayValue}
             onChange={(e) => onChange(e.target.value)}
-            className={`w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y ${isStabilityReportField ? "min-h-[500px]" : "min-h-[120px]"}`}
+            disabled={safeValue.startsWith("[ZIP_DATA]:")}
+            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y min-h-[120px] disabled:opacity-70 disabled:cursor-not-allowed"
             placeholder={`Enter ${label.toLowerCase()}…`}
           />
         ) : (
           <input
             type="text"
-            value={safeValue}
-            onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent"
+            value={displayValue}
+            onChange={(e) => {
+              const content = "base64_data_here";
+              const finalValue = `[ZIP_DATA]: # (data:application/zip;base64,${content})\n\n${e.target.value}`;
+              onChange(finalValue);
+            }}
+            disabled={safeValue.startsWith("[ZIP_DATA]:")}
+            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent disabled:opacity-70 disabled:cursor-not-allowed"
             placeholder={`Enter ${label.toLowerCase()}…`}
           />
         )}
 
-        {allowUpload && documentId && (
-          <div className="mt-3 rounded-lg border border-dashed border-border bg-surface2/30 hover:border-accent/40 p-4 transition-all flex flex-col items-center justify-center text-center gap-2">
-            <div className="flex items-center gap-2 text-xs text-muted">
-              <svg className={`w-4 h-4 text-accent ${uploading ? "animate-spin" : ""}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                {uploading ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
-                )}
-              </svg>
-              {uploading ? (
-                <span className="text-foreground font-semibold">Processing upload…</span>
-              ) : fileName ? (
-                <span>Uploaded: <strong className="text-foreground">{fileName}</strong></span>
-              ) : (
-                <span>Upload files to auto-populate this field (.pdf, .docx, .png, .jpg)</span>
-              )}
-            </div>
-            {!uploading && (
-              <label className="cursor-pointer inline-flex items-center justify-center px-3 py-1.5 border border-border hover:bg-surface2 text-[11px] font-semibold text-foreground rounded-lg transition shadow-sm mt-1">
-                Upload Files
-                <input
-                  type="file"
-                  accept=".pdf,.docx,.png,.jpg,.jpeg,.webp"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (e.target.files?.length) {
-                      handleFieldFileUpload(e.target.files);
-                    }
-                    e.target.value = "";
-                  }}
-                />
-              </label>
-            )}
-            {uploadError && <p className="text-[10px] text-red-500 font-semibold">{uploadError}</p>}
+        {allowUpload && !showStructured && (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <button
+              type="button"
+              onClick={() => document.getElementById(`upload-${fieldId}`)?.click()}
+              disabled={uploading}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-lg hover:bg-accent/10 transition disabled:opacity-50"
+            >
+              {uploading ? "Uploading..." : "Upload File"}
+            </button>
+            <input
+              id={`upload-${fieldId}`}
+              type="file"
+              className="hidden"
+              onChange={(e) => {
+                if (e.target.files?.length) handleFieldFileUpload(e.target.files);
+                e.target.value = "";
+              }}
+            />
+            {uploadError && <span className="text-xs text-red-500">{uploadError}</span>}
+            {fileName && !uploadError && <span className="text-xs text-muted">Uploaded: {fileName}</span>}
           </div>
-        )}
-      </div>
+        )}      </div>
     </div>
   );
+}
+
+// ── Label card HTML builder (shared between preview and Word download) ──────
+function buildLabelCardHtml(
+  value: string,
+  fields: Record<string, string>,
+  fieldId: string,
+  documentTitle: string
+): string {
+  const sectionPrefix = fieldId.split(".")[0];
+
+  const logoBase64 = fields[`${sectionPrefix}.logo`] || "";
+  const logoText = fields[`${sectionPrefix}.logoText`] || "";
+  const productName = fields[`${sectionPrefix}.productName`] || "";
+  const manufacturer = fields[`${sectionPrefix}.manufacturer`] || "";
+  const mfgDate = fields[`${sectionPrefix}.mfgDate`] || "";
+  const expDate = fields[`${sectionPrefix}.expDate`] || "";
+  const packSize = fields[`${sectionPrefix}.packSize`] || "";
+  const batchNo = fields[`${sectionPrefix}.batchNo`] || "";
+  const deviceType = fields[`${sectionPrefix}.deviceType`] || "";
+  const storage = fields[`${sectionPrefix}.storage`] || "";
+  const mrp = fields[`${sectionPrefix}.mrp`] || "";
+
+  const symbolLot = fields[`${sectionPrefix}.symbol_lot`] || "";
+  const symbolDevice = fields[`${sectionPrefix}.symbol_device`] || "";
+  const symbolMfg = fields[`${sectionPrefix}.symbol_mfg`] || "";
+  const symbolExp = fields[`${sectionPrefix}.symbol_exp`] || "";
+  const symbolStorage = fields[`${sectionPrefix}.symbol_storage`] || "";
+
+  let companyName = "";
+  let companyAddress = "";
+  let formerName = "";
+
+  if (manufacturer) {
+    const formerMatch = manufacturer.match(/\((?:Formerly|formerly)\s+known\s+as\s+([^\)]+)\)/i);
+    if (formerMatch) formerName = formerMatch[1].trim();
+    let cleanMfg = manufacturer.replace(/\((?:Formerly|formerly)\s+known\s+as\s+[^\)]+\)/i, "").trim();
+    const commaIndex = cleanMfg.indexOf(",");
+    if (commaIndex !== -1) {
+      companyName = cleanMfg.substring(0, commaIndex).trim();
+      companyAddress = cleanMfg.substring(commaIndex + 1).trim();
+    } else {
+      companyName = cleanMfg;
+    }
+  }
+
+  const logoDisplayName = companyName || logoText;
+  let logoHtml = logoDisplayName
+    ? `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">${logoDisplayName}</div>`
+    : `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">Logo Placeholder</div>`;
+  if (logoBase64 && logoBase64.startsWith("data:image/")) {
+    logoHtml = `<img src="${logoBase64}" style="max-height: 48px; max-width: 100%; object-fit: contain;" />`;
+  }
+
+  const isMD = sectionPrefix === "8";
+  const deviceSymbol = isMD ? "MD" : "IVD";
+
+  const symbolImg = (src: string, fallback: string) =>
+    src
+      ? `<img src="${src}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />`
+      : fallback;
+
+  const imgMatch = value.match(/!\[.*?\]\((data:image\/[a-zA-Z+\-/]+;base64,[\s\S]*?)\)/);
+  const artworkHtml = imgMatch
+    ? `<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid #007bff; padding-bottom: 4px;">Label Artwork</h3>
+<p style="text-align:center; margin:20px 0;">
+  <img src="${imgMatch[1]}" style="max-width:100%; max-height:480px; border:1px solid #ccc; padding:4px; background:#fff;" />
+</p>`
+    : "";
+
+  return `
+<table style="width:100%;max-width:550px;border-collapse:collapse;border:none;font-family:Arial,sans-serif;margin-bottom:12px;box-sizing:border-box;background-color:#ffffff;">
+  <tr>
+    <td style="padding:8px 12px;border:2pt solid #007bff;background-color:#ffffff;">
+      <!-- Header: Logo + Product Name -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:6px;border:none;">
+        <tr>
+          <td style="width:40%;vertical-align:middle;border:none;padding:0;">${logoHtml}</td>
+          <td style="width:60%;text-align:right;vertical-align:middle;padding:0 0 0 10px;border:none;">
+            <div style="font-size:14pt;font-weight:bold;color:#007bff;line-height:1.1;">${productName || "Product Commercial Name"}</div>
+            ${packSize ? `<div style="font-size:10pt;font-weight:bold;color:#555;margin-top:2px;">${packSize}</div>` : ""}
+          </td>
+        </tr>
+      </table>
+      <!-- Fields / Symbols -->
+      <table style="width:100%;border-collapse:collapse;margin-top:4px;margin-bottom:4px;border:none;">
+        ${batchNo ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolLot, `<span style="border:1px solid black;padding:1px 3px;font-size:7.5pt;font-weight:bold;background-color:#eee;display:inline-block;border-radius:2px;vertical-align:middle;margin-right:4px;">LOT</span>`)} Batch No.:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${batchNo}</td>
+        </tr>` : ""}
+        ${deviceType ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolDevice, `<span style="border:1px solid black;padding:1px 3px;font-size:7.5pt;font-weight:bold;background-color:#eee;display:inline-block;border-radius:2px;vertical-align:middle;margin-right:4px;">${deviceSymbol}</span>`)} Device Type:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${deviceType}</td>
+        </tr>` : ""}
+        ${mfgDate ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolMfg, `<span style="font-size:11pt;margin-right:4px;vertical-align:middle;">🏭</span>`)} Mfg. Date:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${mfgDate}</td>
+        </tr>` : ""}
+        ${expDate ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolExp, `<span style="font-size:11pt;margin-right:4px;vertical-align:middle;">⌛</span>`)} Expiry Date:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${expDate}</td>
+        </tr>` : ""}
+        ${storage ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolStorage, `<span style="font-size:11pt;margin-right:4px;vertical-align:middle;">🌡️</span>`)} Storage:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${storage}</td>
+        </tr>` : ""}
+      </table>
+      <!-- Dashed divider -->
+      <table style="width:100%;border-collapse:collapse;margin-top:4px;margin-bottom:8px;border:none;">
+        <tr><td style="border:none;border-top:1pt dashed #007bff;height:1px;padding:0;"></td></tr>
+      </table>
+      <!-- Footer: MRP + Company -->
+      <table style="width:100%;border-collapse:collapse;border:none;">
+        ${mrp ? `<tr><td style="text-align:center;font-size:9.5pt;font-weight:bold;color:#333;padding:0 0 4px 0;border:none;">MRP: ${mrp}</td></tr>` : ""}
+        <tr>
+          <td style="text-align:center;font-size:8.5pt;color:#555;line-height:1.3;padding:0;border:none;">
+            <div style="font-size:10pt;font-weight:bold;color:#007bff;margin-bottom:1px;">${companyName}</div>
+            ${formerName ? `<div style="font-size:7.5pt;font-weight:bold;font-style:italic;margin-bottom:2px;">(Formerly Known as ${formerName})</div>` : ""}
+            ${companyAddress ? `<div style="font-size:8pt;font-weight:bold;">${companyAddress}</div>` : ""}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+${artworkHtml}`;
 }
 
 // ── Simple markdown → HTML converter for Word .doc export ──────────────────
