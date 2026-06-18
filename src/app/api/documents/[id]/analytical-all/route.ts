@@ -288,8 +288,14 @@ If only a single concentration level exists, write descriptive narrative only.
 8.1 SPECIMEN TYPE
 ==================================================
 
-Write a detailed narrative describing:
+Write a detailed narrative describing specimen type.
 
+CRITICAL SOURCE RULE:
+- Do NOT use information from the newly uploaded performance/analytical validation documents.
+- Use ONLY the information provided in the "Vector DB Matches (IFU & Product Context)" section.
+- If the Vector DB matches do not contain specimen type details, state that it is not available in the IFU.
+
+Specifically cover:
 - Specimen matrices
 - Collection requirements
 - Preparation
@@ -298,7 +304,7 @@ Write a detailed narrative describing:
 - Freeze-thaw limitations
 - Anticoagulants
 
-Generate specimen comparison tables only if supported by the uploaded documents.
+Generate specimen comparison tables only if supported by the IFU vector matches.
 
 ==================================================
 9.1 REPRODUCIBILITY
@@ -412,8 +418,10 @@ Generate a Markdown table only if interference data or cross-reactivity informat
 
 Suggested columns:
 
-| Substance | Concentration Tested | Bias (%) | Cross-reactivity (%) | Result |
-|---|---|---|---|---|
+Analytical Specificity Ratio = Target Value / Standard Deviation (SD)
+
+|S. No|Parameter|Unit|Target|Standard Deviation (SD)|Analytical Specificity Ratio (Target/SD)|
+|---|---|---|---|---|---|
 
 Follow with:
 
@@ -459,6 +467,27 @@ ALL tables MUST be valid GitHub Flavored Markdown tables containing:
 - Dynamically generated rows
 
 Never output column-wise text or bullet lists in place of tables.
+
+==================================================
+OUTPUT JSON FORMAT
+==================================================
+
+Return a flat JSON object with exactly these keys:
+
+{
+  "7": "<Analytical Studies Overview paragraph>",
+  "7.1": "<Precision study with markdown table>",
+  "7.2": "<Accuracy study with markdown table>",
+  "7.3": "<Linearity study with markdown table>",
+  "8.1": "<Specimen Type narrative>",
+  "9.1": "<Reproducibility narrative>",
+  "10.0a": "<Analytical Sensitivity Overview narrative>",
+  "10.1": "<Analytical Sensitivity Study with markdown table>",
+  "11.0a": "<Analytical Specificity Overview narrative>",
+  "11.1": "<Analytical Specificity Study with markdown table>"
+}
+
+Return ONLY valid JSON — no markdown fences, no preamble, no explanation.
 `;
 }
 
@@ -600,7 +629,26 @@ export async function POST(
     const rawJson = completion.choices[0]?.message?.content?.trim() || "{}";
     let generatedData: Record<string, string> = {};
     try {
-      generatedData = JSON.parse(rawJson);
+      const parsedData = JSON.parse(rawJson);
+      for (const [k, v] of Object.entries(parsedData)) {
+        let cleanKey = k.trim();
+        if (cleanKey === "11.0" || cleanKey === "11a" || cleanKey === "11.0a") {
+          cleanKey = "11.0a";
+        } else if (cleanKey === "11" || cleanKey === "11.1") {
+          cleanKey = "11.1";
+        } else if (cleanKey === "10.0" || cleanKey === "10.0a") {
+          cleanKey = "10.0a";
+        } else if (cleanKey === "10" || cleanKey === "10.1") {
+          cleanKey = "10.1";
+        } else if (cleanKey === "8" || cleanKey === "8.1") {
+          cleanKey = "8.1";
+        } else if (cleanKey === "9" || cleanKey === "9.1") {
+          cleanKey = "9.1";
+        } else if (cleanKey === "7" || cleanKey === "7.0") {
+          cleanKey = "7";
+        }
+        generatedData[cleanKey] = typeof v === "string" ? v : JSON.stringify(v);
+      }
     } catch (err) {
       console.error("[analytical-all] JSON parse failed", rawJson);
       return NextResponse.json({ error: "OpenAI did not return valid JSON content structure" }, { status: 500 });
@@ -618,6 +666,8 @@ export async function POST(
       "9.1": "s9",
       "10.0a": "s10_sensitivity",
       "10.1": "s10_sensitivity",
+      "11.0a": "s11_specificity",
+      "11.1": "s11_specificity"
     };
 
     const formatObjectToMarkdown = (obj: any, level = 0): string => {

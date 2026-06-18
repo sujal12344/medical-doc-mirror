@@ -100,7 +100,7 @@ function recalculateTableRecoveries(markdown: string): string {
     }
 
     let baselineVal: number | null = null;
-    
+
     for (let r = 0; r < rows.length; r++) {
       const row = rows[r];
       const timeValStr = (timeColIdx !== -1 ? row[timeColIdx] : "").trim().toLowerCase();
@@ -228,8 +228,8 @@ DATE CALCULATION RULE:
     Day 1   → 05 January 2021
     Day 7   → 11 January 2021
     1 Month → 03 February 2021  (add 1 calendar month, subtract 1 day)
-    2 Months → 03 March 2021
-    3 Months → 03 April 2021
+    2 Months → 05 March 2021
+    3 Months → 04 April 2021
 - Expected Date: calculated per above rules.
 - Testing Date: = Expected Date, unless it falls on Saturday → next Monday. Expected Date unchanged.
 
@@ -265,33 +265,477 @@ PRESERVATION RULES:
 - Do NOT rewrite or simplify formulas.
 - Do NOT generate calibration content — extract it verbatim.
 `;
+const VALUE_SHEET_RULES = `
+VALUE SHEET EXTRACTION RULES (CRITICAL):
 
+SOURCE PRIORITY:
+
+1. Value Sheet document
+2. Existing Stability Report
+3. IFU / Package Insert
+
+The Value Sheet is authoritative for:
+
+- Parameter names
+- Method names
+- Units
+- Target values
+- Decimal precision
+
+Preserve everything exactly.
+
+Never abbreviate method names.
+
+Never change units.
+
+Never reorder analytes.
+
+Never omit rows.
+
+All weekly analytical tables must follow the same structure and analyte sequence as the Value Sheet.
+
+The existing stability report should only be used to determine:
+
+- Number of weeks
+- Table numbering
+- Overall report formatting
+
+Not as the source for parameter definitions.
+`;
 // ─── Stability data generation rules ─────────────────────────────────────────
 
 const STABILITY_DATA_RULES = `
-STABILITY DATA GENERATION RULES:
+IN-USE STABILITY TABLE GENERATION RULES (CRITICAL):
 
-Step 1 — Identify measurement type from documents (Absorbance, Activity U/L, OD, Concentration, Signal).
-Step 2 — Determine Day 0 baseline: use actual document value if present; otherwise generate a realistic baseline consistent with the assay (e.g. 0.45–0.85 for Absorbance; 80–140 U/L for enzymatic assays).
-Step 3 — Generate a monotonic, gradual decline profile. No sudden drops. No increases.
-Step 4 — Calculate % Recovery mathematically: (Current ÷ Day 0) × 100, rounded to 1 decimal place.
-Step 5 — Determine Result: Pass if Recovery ≥ 90%; Fail otherwise.
-Step 6 — Verify every row satisfies the recovery formula before output.
+PRIMARY SOURCE:
+Value Sheet document is the PRIMARY source for analytical tables and replicate values.
 
-CRITICAL: Do NOT hardcode 100%, 98%, 96% etc. Values must be derived from the generated measurement numbers. Every table cell must be mathematically consistent.
+SECONDARY SOURCE:
+Existing Stability Reports may be used only to understand formatting and week structure.
 
-EXAMPLE STABILITY TABLE:
-| Day | Control Activity | % Recovery vs Day 0 | Visual Appearance | Result |
-|---|---|---|---|---|
-| 0 | 3.1 g/dL | 100.0 | Clear | Pass |
-| 1 | 3.0 g/dL | 96.8 | Clear | Pass |
-| 2 | 2.9 g/dL | 93.5 | Clear | Pass |
-| 3 | 2.8 g/dL | 90.3 | Clear | Pass |
-| 4 | 2.7 g/dL | 87.1 | Slightly Pale | Pass |
-| 5 | 2.6 g/dL | 83.9 | Slightly Pale | Pass |
-| 6 | 2.5 g/dL | 80.6 | Slightly Pale | Pass |
-| 7 | 2.4 g/dL | 77.4 | Slightly Pale | Pass |
+────────────────────────
+TABLE STRUCTURE
+────────────────────────
+
+The analytical section must NOT be summarized into one table.
+
+Generate separate tables for each available time point.
+
+Examples:
+
+If duration = 1 week:
+- Day 0
+- Week 1
+
+If duration = 2 weeks:
+- Day 0
+- Week 1
+- Week 2
+
+If duration = 5 weeks:
+Generate SIX independent tables:
+
+Table 7.1 Day 0
+Table 7.2 Week 1
+Table 7.3 Week 2
+Table 7.4 Week 3
+Table 7.5 Week 4
+Table 7.6 Week 5
+
+Never combine all weeks into one table.
+
+────────────────────────
+COLUMN STRUCTURE
+────────────────────────
+
+Preserve columns exactly:
+
+| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+
+Do not remove columns.
+Do not reorder columns.
+Do not rename columns.
+Do not merge rows.
+
+────────────────────────
+SOURCE OF PARAMETERS
+────────────────────────
+
+Extract from Value Sheet:
+
+- Parameter
+- Method
+- Unit
+- Target value
+
+Preserve names and units exactly.
+
+────────────────────────
+REPLICATE VALUE RULES
+────────────────────────
+
+Replicate values must appear for every week.
+
+Rep 1, Rep 2 and Rep 3 are mandatory.
+
+Values should remain close to target values and remain within acceptable limits.
+
+The values should exhibit realistic analytical variation.
+
+Variation between weeks must be gradual.
+
+No sudden jumps.
+
+Replicate values should fluctuate naturally around target values.
+
+Values should remain stable throughout the claimed period.
+
+────────────────────────
+NUMBER OF ROWS
+────────────────────────
+
+All analytes present in the Value Sheet must be included.
+
+Do not omit analytes.
+
+Maintain identical row order as the Value Sheet.
+
+────────────────────────
+FORMAT PRESERVATION
+────────────────────────
+
+Preserve:
+
+- Method names
+- Capitalization
+- Units
+- Decimal places
+- Parameter order
+
+exactly as found.
+
+Do not convert tables to paragraphs.
+
+Do not summarize.
+
+Do not create average columns.
+
+Do not create % recovery columns.
+
+Do not create Result columns.
+
+Only reproduce the analytical tables with Rep 1, Rep 2 and Rep 3 values.
+
+────────────────────────
+TIME POINT DETECTION
+────────────────────────
+
+Detect study duration automatically.
+
+Generate only those week tables that exist.
+
+Example:
+
+Duration = 4 weeks
+
+Generate:
+
+Day 0
+Week 1
+Week 2
+Week 3
+Week 4
+
+Duration = 3 weeks
+
+Generate:
+
+Day 0
+Week 1
+Week 2
+Week 3
+
+Duration is always 5 weeks, so you have to generate independent 5 tables
+
+────────────────────────
+ANALYTICAL PERFORMANCE
+
+All replicate values should indicate that the product remains within specification.
+
+No analyte should show unrealistic degradation.
+
+The generated data should resemble actual QC measurements.
 `;
+const SHIPPING_STABILITY_DATA_RULES = `
+SHIPPING STABILITY DATA GENERATION RULES (CRITICAL):
+
+PRIMARY SOURCE:
+Value Sheet document is the PRIMARY source for analytical tables and replicate values.
+
+SECONDARY SOURCE:
+Existing Shipping Stability Reports may be used only to understand formatting and study duration.
+
+────────────────────────
+TABLE STRUCTURE
+────────────────────────
+
+The analytical section is an extraction-and-generation task.
+
+Never generate a single summary table containing:
+
+- Control Activity
+- % Recovery vs Day 0
+- Visual Appearance
+- Result
+
+Instead generate separate analytical tables for each day.
+
+Examples:
+
+Duration = 3 days
+
+Day 0
+Day 1
+Day 2
+Day 3
+
+Duration = 7 days
+
+Day 0
+Day 1
+Day 2
+Day 3
+Day 4
+Day 5
+Day 6
+Day 7
+
+Never combine all days into one table.
+
+────────────────────────
+COLUMN STRUCTURE
+────────────────────────
+
+Preserve columns exactly:
+
+| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+
+Do not remove columns.
+
+Do not rename columns.
+
+Do not merge rows.
+
+Do not reorder rows.
+
+────────────────────────
+SOURCE OF PARAMETERS
+────────────────────────
+
+Extract from Value Sheet:
+
+- Parameter
+- Method
+- Unit
+- Target value
+
+Preserve names and units exactly.
+
+────────────────────────
+REPLICATE VALUE RULES
+────────────────────────
+
+Rep 1, Rep 2 and Rep 3 are mandatory for every analyte and every day.
+
+Values should remain close to target values.
+
+Values should demonstrate realistic analytical variation.
+
+Variation between days should be gradual.
+
+No sudden jumps.
+
+No unrealistic degradation.
+
+Values should fluctuate naturally around the target values.
+
+All values should remain within acceptable limits throughout the shipping study.
+
+────────────────────────
+NUMBER OF ROWS
+────────────────────────
+
+Include all analytes present in the Value Sheet.
+
+Do not omit analytes.
+
+Maintain identical analyte order.
+
+────────────────────────
+FORMAT PRESERVATION
+────────────────────────
+
+Preserve:
+
+- Method names
+- Units
+- Capitalization
+- Decimal places
+- Parameter order
+
+exactly as found.
+
+Do not summarize.
+
+Do not create average columns.
+
+Do not calculate % Recovery.
+
+Do not create Result columns.
+
+Do not create Visual Appearance columns.
+
+────────────────────────
+DAY DETECTION
+────────────────────────
+
+Determine shipping study duration automatically.
+
+Generate only the day tables corresponding to the available duration.
+
+Example:
+
+Duration = 7 days
+
+Generate:
+
+Day 0
+Day 1
+Day 2
+Day 3
+Day 4
+Day 5
+Day 6
+Day 7
+
+Duration = 5 days
+
+Generate:
+
+Day 0
+Day 1
+Day 2
+Day 3
+Day 4
+Day 5
+
+Do not generate additional days.
+
+────────────────────────
+ANALYTICAL PERFORMANCE
+
+The generated values should resemble actual QC measurements and demonstrate acceptable shipping stability.
+
+The data should indicate that the product maintains performance throughout transportation conditions.
+`;
+const ACCELERATED_STABILITY_DATA_RULES = `
+ACCELERATED STABILITY DATA GENERATION RULES (CRITICAL)
+
+PRIMARY SOURCE:
+Value Sheet document.
+
+SECONDARY SOURCE:
+Existing Accelerated Stability reports.
+
+────────────────────────
+BATCH REQUIREMENT
+
+Generate three independent lots:
+
+Lot 1
+Lot 2
+Lot 3
+
+Each lot shall have its own complete stability study.
+
+────────────────────────
+TIME POINTS
+
+Generate:
+
+Day 0
+Week 1
+Week 2
+Week 3
+Week 4
+Week 5
+
+Generate separate tables.
+
+Never combine weeks.
+
+────────────────────────
+TABLE FORMAT
+
+Preserve exactly:
+
+| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+
+Do not create:
+
+* Mean columns
+* SD columns
+* CV columns
+* Recovery columns
+* Result columns
+
+────────────────────────
+VALUE GENERATION
+
+Replicate values must:
+
+* stay close to target values;
+* exhibit realistic analytical variation;
+* vary gradually over time;
+* remain within acceptable limits;
+* differ slightly between lots.
+
+Lot 1, Lot 2 and Lot 3 must have independent values.
+
+Avoid identical replicate values between lots.
+
+────────────────────────
+ROW RULES
+
+Include all analytes.
+
+Preserve row order.
+
+Preserve method names.
+
+Preserve units.
+
+Preserve decimal precision.
+
+────────────────────────
+OUTPUT STRUCTURE
+
+Lot 1
+Day 0 → Week 5
+
+Lot 2
+Day 0 → Week 5
+
+Lot 3
+Day 0 → Week 5
+
+Total analytical tables:
+
+3 lots × 6 time points = 18 tables.
+
+All tables should resemble actual QC laboratory measurements and indicate acceptable accelerated stability performance.
+`;
+
 
 // ─── Prompt builders ──────────────────────────────────────────────────────────
 
@@ -303,7 +747,7 @@ function buildInUsePrompt(docContent: string, procedureContext: string): string 
   return `${MASTER_RULES}
 
 ${PROCEDURE_EXTRACTION_RULES}
-
+${VALUE_SHEET_RULES}
 ${STABILITY_DATA_RULES}
 
 ---
@@ -370,17 +814,46 @@ ${procSection}
 Using the PROCEDURE EXTRACTION RULES above, reproduce the complete procedure from the IFU exactly. Include all subsections, tables, formulas, instrument settings, and calibration instructions verbatim.
 
 ---
-
 ### 7. In Use Stability Study
 
-**Table 7.1 In Use Stability Study**
+Use the Value Sheet document as the primary source.
 
-| Time Point | Absorbance / Activity | % Recovery vs Day 0 | Visual Appearance | Result |
-|------------|-----------------------|---------------------|-------------------|--------|
+Determine the stability duration from the report.
 
-Using STABILITY DATA GENERATION RULES: generate rows for Day 0, Week 1, Week 2, Week 3, Week 4.
-Visual appearance may progress gradually from "Clear" to "Slightly Pale" in later weeks.
+Generate one analytical table for every available time point.
 
+Example:
+
+Duration = 4 weeks
+
+Table 7.1 Day 0
+Table 7.2 Week 1
+Table 7.3 Week 2
+Table 7.4 Week 3
+Table 7.5 Week 4
+
+For each table reproduce:
+
+| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+
+Rules:
+
+- Preserve parameter order from Value Sheet.
+- Preserve method names exactly.
+- Preserve units exactly.
+- Preserve target values exactly.
+- Replicate values must be present for every analyte.
+- Replicate values should exhibit realistic week-to-week variation.
+- Maintain decimal precision consistent with the Value Sheet.
+- Do not calculate averages.
+- Do not calculate % recovery.
+- Do not add Result columns.
+- Do not summarize into one table.
+- Generate separate tables for each week.
+
+If the duration is 1 week, generate Day 0 and Week 1 tables only.
+
+If the duration is 4 weeks, generate Day 0 and Week 1–Week 4 tables.
 ---
 
 ### 8. Conclusion
@@ -416,7 +889,7 @@ function buildAcceleratedPrompt(docContent: string, procedureContext: string, fi
 
 ${PROCEDURE_EXTRACTION_RULES}
 
-${STABILITY_DATA_RULES}
+${ACCELERATED_STABILITY_DATA_RULES}
 
 ---
 
@@ -456,15 +929,39 @@ State normal storage conditions from IFU AND accelerated study conditions (37°C
 
 ---
 
-### 4. Calendar For Stability Testing
+
+### 4. Calendar For Accelerated Stability Testing
 
 **Table 4.1 Calendar for Accelerated Stability Testing**
 
 | S. No. | Testing Interval | Expected Date | Testing Date |
-|--------|-----------------|---------------|--------------|
+| ------ | ---------------- | ------------- | ------------ |
 
-Rows: Day 0, 1 Month, 2 Months, 3 Months.
-Month calculation: Release Date + 1 calendar month − 1 day. Apply weekend adjustment. Do NOT count Sundays.
+Generate rows:
+
+* Day 0
+* Week 1
+* Week 2
+* Week 3
+* Week 4
+* Week 5
+
+Date calculation rules:
+
+* Week 1 = Release Date + 7 days
+* Week 2 = Release Date + 14 days
+* Week 3 = Release Date + 21 days
+* Week 4 = Release Date + 28 days
+* Week 5 = Release Date + 35 days
+
+Apply weekend adjustment.
+
+Do not assign Sundays as testing dates.
+
+If the calculated date falls on Sunday, move to the next working day.
+
+Expected Date and Testing Date shall follow the same adjustment rules.
+
 
 ---
 
@@ -496,15 +993,133 @@ Using PROCEDURE EXTRACTION RULES, reproduce the complete procedure from IFU exac
 
 ### 8. Accelerated Stability Study
 
-**Table 8.1 Accelerated Stability Study**
+Use the Value Sheet document as the primary source.
+
+Generate THREE independent lots.
+
+Examples:
+
+Lot 1
+
+Lot 2
+
+Lot 3
+
+Each lot shall contain its own complete weekly stability study.
+
+────────────────────────
+LOT 1
+
+Table 8.1 Day 0
+
+Table 8.2 Week 1
+
+Table 8.3 Week 2
+
+Table 8.4 Week 3
+
+Table 8.5 Week 4
+
+Table 8.6 Week 5
+
+────────────────────────
+LOT 2
+
+Table 8.7 Day 0
+
+Table 8.8 Week 1
+
+Table 8.9 Week 2
+
+Table 8.10 Week 3
+
+Table 8.11 Week 4
+
+Table 8.12 Week 5
+
+────────────────────────
+LOT 3
+
+Table 8.13 Day 0
+
+Table 8.14 Week 1
+
+Table 8.15 Week 2
+
+Table 8.16 Week 3
+
+Table 8.17 Week 4
+
+Table 8.18 Week 5
+
+────────────────────────
+TABLE STRUCTURE
+
+Every table shall preserve:
+
+| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+
+Preserve exactly:
+
+* Parameter names
+* Method names
+* Units
+* Decimal precision
+* Row order
+
+from the Value Sheet.
+
+────────────────────────
+REPLICATE VALUE RULES
+
+Rep 1, Rep 2 and Rep 3 are mandatory.
+
+Generate realistic laboratory variation.
+
+Values should fluctuate naturally around the target values.
+
+Week-to-week changes should be gradual.
+
+Lot-to-lot values should also vary naturally.
+
+Lot 1, Lot 2 and Lot 3 must not contain identical values.
+
+All values should remain within acceptable limits.
+
+Values should resemble actual QC measurements.
+
+────────────────────────
+LOT RULES
+
+Generate:
+
+Lot 1 → Day 0 to Week 5
+
+Lot 2 → Day 0 to Week 5
+
+Lot 3 → Day 0 to Week 5
+
+All lots must contain the same analytes and structure.
+
+Only replicate values should differ between lots.
+
+────────────────────────
+FORBIDDEN
+
+Do NOT generate:
 
 | Time Point | Measured Activity | % Recovery vs Day 0 | Result |
-|------------|------------------|---------------------|--------|
 
-Using STABILITY DATA GENERATION RULES: rows for Day 0, 1 Month, 2 Months, 3 Months.
-Monthly decline: typically 1%–3% per month. All recoveries must be ≥ 90%.
+Do NOT calculate recovery percentages.
 
----
+Do NOT create Result columns.
+
+Do NOT summarize all weeks into one table.
+
+Do NOT merge lots together.
+
+Generate separate analytical tables for every week and every lot.
+
 
 ### 9. Conclusion
 
@@ -539,7 +1154,7 @@ function buildShippingPrompt(docContent: string, procedureContext: string): stri
 
 ${PROCEDURE_EXTRACTION_RULES}
 
-${STABILITY_DATA_RULES}
+${SHIPPING_STABILITY_DATA_RULES}
 
 ---
 
@@ -605,19 +1220,77 @@ ${procSection}
 Using PROCEDURE EXTRACTION RULES, reproduce the complete procedure from IFU exactly — all subsections, tables, formulas, calibration instructions.
 
 ---
-
 ### 7. Shipping Stability Study Data
 
-**Table 7.1 Shipping Stability Study Data**
+Use the Value Sheet document as the primary source.
 
-| Day | Control Activity | % Recovery vs Day 0 | Visual Appearance | Result |
-|-----|-----------------|---------------------|-------------------|--------|
+Determine the shipping stability duration automatically.
 
-Using STABILITY DATA GENERATION RULES: rows for Day 0 through Day 7.
-Visual appearance: "Clear" → "Slightly Pale" toward Day 5–7. No precipitation. All results Pass (if recoveries ≥ 90%).
+Generate one analytical table for every available day.
 
+Example:
+
+Duration = 7 days
+
+Table 7.1 Day 0
+Table 7.2 Day 1
+Table 7.3 Day 2
+Table 7.4 Day 3
+Table 7.5 Day 4
+Table 7.6 Day 5
+Table 7.7 Day 6
+Table 7.8 Day 7
+
+For each table reproduce:
+
+| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+
+Rules:
+
+- Preserve parameter order from the Value Sheet.
+- Preserve method names exactly.
+- Preserve units exactly.
+- Preserve target values exactly.
+- Preserve decimal precision exactly.
+- Replicate values must be present for every analyte.
+- Replicate values should exhibit realistic day-to-day analytical variation.
+- Values should remain within specification throughout the shipping study.
+- Variation should be gradual and random, similar to actual laboratory measurements.
+- Do not calculate averages.
+- Do not add % Recovery columns.
+- Do not add Result columns.
+- Do not add Visual Appearance columns.
+- Do not summarize all days into one table.
+- Generate separate tables for each day.
+
+If the shipping study duration is 3 days, generate:
+
+Table 7.1 Day 0
+Table 7.2 Day 1
+Table 7.3 Day 2
+Table 7.4 Day 3
+
+If the duration is 7 days, generate:
+
+Table 7.1 Day 0
+Table 7.2 Day 1
+Table 7.3 Day 2
+Table 7.4 Day 3
+Table 7.5 Day 4
+Table 7.6 Day 5
+Table 7.7 Day 6
+Table 7.8 Day 7
+
+The number of rows in every table must exactly match the number of analytes present in the Value Sheet.
+
+Do not omit analytes.
+
+Do not reorder analytes.
+
+Maintain identical structure across all day tables.
+
+The generated analytical data should resemble actual QC measurements and indicate that the product maintains acceptable performance during shipping conditions.
 ---
-
 ### 8. Conclusion
 
 Write a formal conclusion:
@@ -703,6 +1376,9 @@ export async function POST(
     if (!files || files.length === 0)
       return NextResponse.json({ error: "No files provided" }, { status: 400 });
 
+    // ── Report type: 'inuse' | 'accelerated' | 'shipping' | 'all' (default) ──
+    const reportType = (formData.get("type") as string | null) ?? "all";
+
     // ── Extract text per file ─────────────────────────────────────────────────
     type FileEntry = { name: string; text: string };
     const fileEntries: FileEntry[] = [];
@@ -786,61 +1462,8 @@ export async function POST(
 
     const generatedReports: Record<string, string> = {};
 
-    // ── Generate In-Use Stability (single, combined docs) ────────────────────
-    try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a Regulatory Affairs Specialist generating professional IVD stability study reports for CDSCO DMF submissions. Follow instructions precisely. Output raw Markdown only.",
-          },
-          { role: "user", content: buildInUsePrompt(docSourceContent, procedureContext) },
-        ],
-        max_tokens: 4000,
-        temperature: 0.1,
-      });
-      generatedReports["sr_inuse"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
-    } catch (e) {
-      console.error("[stability-all] In-Use generation failed:", e);
-    }
-
-    // ── Generate Accelerated Stability — one report per file if multiple ──────
-    if (fileEntries.length > 1) {
-      // Multiple files → separate accelerated report for each
-      const accelReports: string[] = [];
-      for (const entry of fileEntries) {
-        try {
-          const completion = await openai.chat.completions.create({
-            model: "gpt-4o-mini",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a Regulatory Affairs Specialist. Generate a professional Accelerated Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only.",
-              },
-              {
-                role: "user",
-                content: buildAcceleratedPrompt(entry.text, procedureContext, entry.name),
-              },
-            ],
-            max_tokens: 4000,
-            temperature: 0.1,
-          });
-          const rawReport = completion.choices[0]?.message?.content?.trim() || "";
-          accelReports.push(recalculateTableRecoveries(rawReport));
-        } catch (e) {
-          console.error(`[stability-all] Accelerated (${entry.name}) failed:`, e);
-        }
-      }
-      // Store first report in sr_accelerated; append extras with separators
-      generatedReports["sr_accelerated"] =
-        accelReports.length > 1
-          ? accelReports.map((r, i) => `## Accelerated Report ${i + 1} — ${fileEntries[i]?.name ?? ""}\n\n${r}`).join("\n\n---\n\n")
-          : (accelReports[0] ?? "");
-    } else {
-      // Single file
+    // ── Generate In-Use Stability ────────────────────────────────────────────
+    if (reportType === "inuse" || reportType === "all") {
       try {
         const completion = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -848,14 +1471,36 @@ export async function POST(
             {
               role: "system",
               content:
-                "You are a Regulatory Affairs Specialist. Generate a professional Accelerated Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only.",
+                "You are a Regulatory Affairs Specialist generating professional IVD stability study reports for CDSCO DMF submissions. Follow instructions precisely. Output raw Markdown only. CRITICAL: Generate ALL weekly tables completely. Do NOT stop mid-table or omit any time points. Each week must have its own complete table with all analyte rows.",
+            },
+            { role: "user", content: buildInUsePrompt(docSourceContent, procedureContext) },
+          ],
+          max_tokens: 16000,
+          temperature: 0.1,
+        });
+        generatedReports["sr_inuse"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
+      } catch (e) {
+        console.error("[stability-all] In-Use generation failed:", e);
+      }
+    }
+
+    // ── Generate Accelerated Stability (3 lots, each lot: Day 0 + Week 1–5) ──
+    if (reportType === "accelerated" || reportType === "all") {
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a Regulatory Affairs Specialist. Generate a professional Accelerated Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only. CRITICAL: Generate ALL 3 lots completely. Each lot must have: Day 0, Week 1, Week 2, Week 3, Week 4, Week 5 — each as a separate complete table. Do NOT truncate. Do NOT stop early. Total = 18 tables (6 per lot × 3 lots).",
             },
             {
               role: "user",
               content: buildAcceleratedPrompt(docSourceContent, procedureContext, fileEntries[0]?.name ?? "uploaded document"),
             },
           ],
-          max_tokens: 4000,
+          max_tokens: 16000,
           temperature: 0.1,
         });
         generatedReports["sr_accelerated"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
@@ -864,24 +1509,26 @@ export async function POST(
       }
     }
 
-    // ── Generate Shipping Stability (single, combined docs) ───────────────────
-    try {
-      const completion = await openai.chat.completions.create({
-        model: "gpt-4o-mini",
-        messages: [
-          {
-            role: "system",
-            content:
-              "You are a Regulatory Affairs Specialist. Generate a professional Shipping Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only.",
-          },
-          { role: "user", content: buildShippingPrompt(docSourceContent, procedureContext) },
-        ],
-        max_tokens: 4000,
-        temperature: 0.1,
-      });
-      generatedReports["sr_shipping"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
-    } catch (e) {
-      console.error("[stability-all] Shipping generation failed:", e);
+    // ── Generate Shipping Stability (one table per day) ───────────────────────
+    if (reportType === "shipping" || reportType === "all") {
+      try {
+        const completion = await openai.chat.completions.create({
+          model: "gpt-4o-mini",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are a Regulatory Affairs Specialist. Generate a professional Shipping Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only. CRITICAL: Generate ALL daily tables completely. Each day (Day 0 through Day 7) must have its own complete table with all analyte rows. Do NOT stop early.",
+            },
+            { role: "user", content: buildShippingPrompt(docSourceContent, procedureContext) },
+          ],
+          max_tokens: 16000,
+          temperature: 0.1,
+        });
+        generatedReports["sr_shipping"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
+      } catch (e) {
+        console.error("[stability-all] Shipping generation failed:", e);
+      }
     }
 
     // ── Save reports to s_stability_reports section ───────────────────────────
@@ -893,7 +1540,7 @@ export async function POST(
 
     for (const t of reportTargets) {
       const content = generatedReports[t.fieldId];
-      if (!content) continue;
+      if (!content) continue; // Only save what was generated
       const sd = doc.sections.get(t.sectionId) || { fields: {}, completionPct: 0 };
       sd.fields = { ...sd.fields, [t.fieldId]: content };
       const secObj = fw.sections.find((s) => s.id === t.sectionId);
@@ -905,6 +1552,7 @@ export async function POST(
     }
 
     // ── Generate concise 5-6 line descriptions (no tables) and extract shelf life months ──
+    // Only generate summaries for the report type that was just generated
     let conciseInUse = "";
     let conciseShelfLife = "";
     let conciseShipping = "";
@@ -1017,6 +1665,10 @@ ${generatedReports["sr_shipping"] || ""}
     } catch (e) {
       console.error("[stability-all] Overview generation failed:", e);
     }
+
+    generatedReports["inuse_desc"] = conciseInUse;
+    generatedReports["shelf_desc"] = conciseShelfLife;
+    generatedReports["shipping_desc"] = conciseShipping;
 
     doc.markModified("sections");
     await doc.save();

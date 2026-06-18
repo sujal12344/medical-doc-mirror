@@ -7,6 +7,7 @@ import { RegulatoryFieldEditor } from "@/components/documents/RegulatoryFieldEdi
 import { FRAMEWORKS } from "@/lib/frameworks";
 import type { FrameworkSection } from "@/lib/frameworks";
 import { countDocumentFieldCompletion, normalizeDocumentSections } from "@/lib/normalizeDocument";
+import { downloadAsDoc } from "@/lib/downloadHelper";
 
 type DocData = {
   _id: string;
@@ -97,8 +98,23 @@ export default function DocumentEditorPage() {
   const [section5Uploading, setSection5Uploading] = useState(false);
   const [section5UploadStatus, setSection5UploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [section5UploadMsg, setSection5UploadMsg] = useState("");
-  const chatFileRef = useRef<HTMLInputElement>(null);
+  const [section6Generating, setSection6Generating] = useState(false);
+  const [section6Status, setSection6Status] = useState<"idle" | "success" | "error">("idle");
+  const [section6Msg, setSection6Msg] = useState("");
+  const [chatFileRef] = [useRef<HTMLInputElement>(null)];
+  const stabilityFileRef = useRef<HTMLInputElement>(null);
   const initialAutofillStarted = useRef(false);
+  const [stabilityFiles, setStabilityFiles] = useState<File[]>([]);
+  // Per-report loading / status
+  const [inuseGenerating, setInuseGenerating] = useState(false);
+  const [inuseStatus, setInuseStatus] = useState<"idle" | "success" | "error">("idle");
+  const [inuseMsg, setInuseMsg] = useState("");
+  const [accelGenerating, setAccelGenerating] = useState(false);
+  const [accelStatus, setAccelStatus] = useState<"idle" | "success" | "error">("idle");
+  const [accelMsg, setAccelMsg] = useState("");
+  const [shippingGenerating, setShippingGenerating] = useState(false);
+  const [shippingStatus, setShippingStatus] = useState<"idle" | "success" | "error">("idle");
+  const [shippingMsg, setShippingMsg] = useState("");
 
   useEffect(() => {
     fetch(`/api/documents/${id}`).then((r) => r.json()).then((data) => {
@@ -304,59 +320,62 @@ export default function DocumentEditorPage() {
     setChatLoading(false);
   }
 
-  async function handleStabilityAllUpload(files: FileList) {
-    if (!files.length || !doc) return;
-    setStabilityUploading(true);
-    setStabilityUploadStatus("idle");
-    setStabilityUploadMsg(`Processing ${files.length} file(s)... Generating all 3 stability reports…`);
+  async function handleStabilityGenerate(type: "inuse" | "accelerated" | "shipping") {
+    if (!doc) return;
+    if (stabilityFiles.length === 0) {
+      const setter = type === "inuse" ? setInuseMsg : type === "accelerated" ? setAccelMsg : setShippingMsg;
+      const statusSetter = type === "inuse" ? setInuseStatus : type === "accelerated" ? setAccelStatus : setShippingStatus;
+      setter("Please select at least one file first.");
+      statusSetter("error");
+      return;
+    }
+
+    const setGenerating = type === "inuse" ? setInuseGenerating : type === "accelerated" ? setAccelGenerating : setShippingGenerating;
+    const setStatus = type === "inuse" ? setInuseStatus : type === "accelerated" ? setAccelStatus : setShippingStatus;
+    const setMsg = type === "inuse" ? setInuseMsg : type === "accelerated" ? setAccelMsg : setShippingMsg;
+    const label = type === "inuse" ? "In-Use" : type === "accelerated" ? "Accelerated (Shelf Life)" : "Shipping";
+    const docLabel = type === "inuse" ? "In-Use_Stability_Study_Report" : type === "accelerated" ? "Accelerated_Stability_Study_Report" : "Shipping_Stability_Study_Report";
+    const fieldKey = type === "inuse" ? "sr_inuse" : type === "accelerated" ? "sr_accelerated" : "sr_shipping";
+
+    setGenerating(true);
+    setStatus("idle");
+    setMsg(`Generating ${label} Stability Report… This may take a minute.`);
 
     const fd = new FormData();
-    for (const file of Array.from(files)) {
-      fd.append("file", file);
-    }
+    for (const file of stabilityFiles) fd.append("file", file);
+    fd.append("type", type);
 
     try {
       const r = await fetch(`/api/documents/${id}/stability-all`, { method: "POST", body: fd });
       const data = await r.json();
       if (r.ok && data.success) {
-        // Update stability reports section fields
-        const reportFieldMap: Record<string, { sectionId: string; fieldId: string }> = {
-          sr_inuse: { sectionId: "s_stability_reports", fieldId: "sr_inuse" },
-          sr_accelerated: { sectionId: "s_stability_reports", fieldId: "sr_accelerated" },
-          sr_shipping: { sectionId: "s_stability_reports", fieldId: "sr_shipping" },
-          // DMF auto-fill sections also updated by backend
-        };
-        for (const [fieldId, mapping] of Object.entries(reportFieldMap)) {
-          const content = (data.results as Record<string, string>)[fieldId];
-          if (content) setFieldValue(mapping.sectionId, mapping.fieldId, content);
-        }
-        // Also update DMF textbox sections in local state
-        const dmfMap: Record<string, { sectionId: string; fieldId: string; sourceKey: string }> = {
-          "17.0a": { sectionId: "s17_inuse", fieldId: "17.0a", sourceKey: "sr_inuse" },
-          "16.0a": { sectionId: "s16_shelf", fieldId: "16.0a", sourceKey: "sr_accelerated" },
-          "18.0a": { sectionId: "s18_shipping", fieldId: "18.0a", sourceKey: "sr_shipping" },
-        };
-        for (const mapping of Object.values(dmfMap)) {
-          const content = (data.results as Record<string, string>)[mapping.sourceKey];
-          if (content) setFieldValue(mapping.sectionId, mapping.fieldId, content);
-        }
-        // Auto-fill overview section
-        const overview = (data.results as Record<string, string>)["overview"];
-        if (overview) setFieldValue("s14_stability", "15.0a", overview);
+        const results = data.results as Record<string, string>;
 
-        setStabilityUploadStatus("success");
-        setStabilityUploadMsg(
-          `✅ Generated ${data.reportsGenerated} stability report(s) from "${data.filesUploaded}" and auto-filled §14, §16, §17, §18 DMF sections.`
-        );
+        // Update the stability report field in local state
+        if (results[fieldKey]) setFieldValue("s_stability_reports", fieldKey, results[fieldKey]);
+
+        // Update concise DMF summary sections
+        if (type === "inuse" && results["inuse_desc"]) setFieldValue("s17_inuse", "17.0a", results["inuse_desc"]);
+        if (type === "accelerated" && results["shelf_desc"]) setFieldValue("s16_shelf", "16.0a", results["shelf_desc"]);
+        if (type === "shipping" && results["shipping_desc"]) setFieldValue("s18_shipping", "18.0a", results["shipping_desc"]);
+        if (results["overview"]) setFieldValue("s14_stability", "15.0a", results["overview"]);
+
+        // Auto-download the full report
+        if (results[fieldKey]) {
+          downloadAsDoc({ label: docLabel, fieldId: fieldKey, safeValue: results[fieldKey] });
+        }
+
+        setStatus("success");
+        setMsg(`✅ ${label} Stability Report generated and downloaded!`);
       } else {
-        setStabilityUploadStatus("error");
-        setStabilityUploadMsg(data.error || "Failed to generate stability reports.");
+        setStatus("error");
+        setMsg(data.error || `Failed to generate ${label} report.`);
       }
     } catch {
-      setStabilityUploadStatus("error");
-      setStabilityUploadMsg("Network error: failed to connect to upload service.");
+      setStatus("error");
+      setMsg("Network error: failed to connect to generation service.");
     } finally {
-      setStabilityUploading(false);
+      setGenerating(false);
     }
   }
 
@@ -389,6 +408,8 @@ export default function DocumentEditorPage() {
           "9.1": { sectionId: "s9", fieldId: "9.1" },
           "10.0a": { sectionId: "s10_sensitivity", fieldId: "10.0a" },
           "10.1": { sectionId: "s10_sensitivity", fieldId: "10.1" },
+          "11.0a": { sectionId: "s11_specificity", fieldId: "11.0a" },
+          "11.1": { sectionId: "s11_specificity", fieldId: "11.1" },
         };
         for (const [fieldId, mapping] of Object.entries(fieldMap)) {
           const content = (data.results as Record<string, string>)[fieldId];
@@ -408,6 +429,40 @@ export default function DocumentEditorPage() {
       setAnalyticalUploadMsg("Network error: failed to connect to analytical upload service.");
     } finally {
       setAnalyticalUploading(false);
+    }
+  }
+
+  async function handleSection6Generate() {
+    if (!doc) return;
+    setSection6Generating(true);
+    setSection6Status("idle");
+    setSection6Msg("Generating Section 6 — Product Validation & Verification from Pinecone knowledge and existing sections…");
+    try {
+      const r = await fetch(`/api/documents/${id}/section6`, { method: "POST" });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        const fieldMap: Record<string, { sectionId: string; fieldId: string }> = {
+          "6.1": { sectionId: "s6", fieldId: "6.1" },
+          "6.2": { sectionId: "s6", fieldId: "6.2" },
+          "6.3": { sectionId: "s6", fieldId: "6.3" },
+          "6.4": { sectionId: "s6", fieldId: "6.4" },
+          "6.5": { sectionId: "s6", fieldId: "6.5" },
+        };
+        for (const [fieldId, mapping] of Object.entries(fieldMap)) {
+          const content = (data.results as Record<string, string>)[fieldId];
+          if (content !== undefined) setFieldValue(mapping.sectionId, mapping.fieldId, content);
+        }
+        setSection6Status("success");
+        setSection6Msg("✅ Section 6 generated successfully — all 5 fields auto-filled from product knowledge and study data.");
+      } else {
+        setSection6Status("error");
+        setSection6Msg(data.error || "Failed to generate Section 6.");
+      }
+    } catch {
+      setSection6Status("error");
+      setSection6Msg("Network error: failed to connect to Section 6 generation service.");
+    } finally {
+      setSection6Generating(false);
     }
   }
 
@@ -632,6 +687,57 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                 </div>
               )}
 
+              {/* Section 6 — Product Validation & Verification AI Generation Panel */}
+              {currentSection.id === "s6" && (
+                <div className="rounded-xl border border-dashed border-teal-400/50 bg-teal-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-400/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate Section 6 — Product Validation &amp; Verification</p>
+                      <p className="text-xs text-muted">Uses Pinecone product knowledge, uploaded documents, and already-generated §7–§11 study data to auto-fill all five §6 fields: COA Summary, Detailed Information, Validation Protocol, Results, and Conclusion.</p>
+                    </div>
+                  </div>
+                  {section6Msg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${section6Status === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : section6Status === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-teal-500/10 text-teal-600 dark:text-teal-300 border border-teal-500/20"
+                      }`}>
+                      {section6Msg}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={section6Generating}
+                    onClick={handleSection6Generate}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${section6Generating
+                      ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                      : "border-teal-400/40 text-teal-600 dark:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 hover:border-teal-400/60"
+                      }`}
+                  >
+                    {section6Generating ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating Section 6…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        </svg>
+                        Generate §6 Product Validation &amp; Verification
+                      </>
+                    )}
+                  </button>
+                  <p className="mt-2 text-[10px] text-muted">Tip: Run this after generating §7 Analytical Studies for the most complete output. Results are drawn from Pinecone RAG and already-saved section data.</p>
+                </div>
+              )}
+
               {/* Combined Analytical Studies Upload Panel — shown ONLY on Section 7 */}
               {currentSection.id === "s7" && (
                 <div className="rounded-xl border border-dashed border-indigo-400/50 bg-indigo-500/5 p-5 space-y-4">
@@ -700,58 +806,139 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
 
               {/* Combined Stability Upload Panel — shown ONLY on the Stability Reports section */}
               {currentSection.id === "s_stability_reports" && (
-                <div className="rounded-xl border border-dashed border-blue-400/50 bg-blue-500/5 p-5">
-                  <div className="flex items-center gap-3 mb-3">
+                <div className="rounded-xl border border-dashed border-blue-400/50 bg-blue-500/5 p-5 space-y-5">
+                  {/* Header */}
+                  <div className="flex items-center gap-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-400/30 flex items-center justify-center">
                       <svg className="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Generate All 3 Stability Reports at Once</p>
-                      <p className="text-xs text-muted">Upload your IFU and COA documents to auto-generate In-Use, Accelerated (Shelf Life), and Shipping stability reports simultaneously. The §14, §16, §17 and §18 DMF sections are also auto-filled.</p>
+                      <p className="bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20">
+                        {stabilityUploadMsg}
+                      </p>
+                      <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${stabilityUploading
+                        ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                        : "border-blue-400/40 text-blue-600 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/60"
+                        }`}>
+                        {stabilityUploading && (
+                          <>
+                            <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            <p className="text-sm font-semibold text-foreground">
+                              Generate Stability Reports
+                            </p>
+                            <p className="text-xs text-muted">
+                              Upload your IFU and COA documents once, then generate each report independently.
+                            </p>
+                          </>
+                        )}
+                      </label>
                     </div>
                   </div>
-                  {stabilityUploadMsg && (
-                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${stabilityUploadStatus === "success"
-                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                      : stabilityUploadStatus === "error"
-                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
-                        : "bg-blue-500/10 text-blue-600 dark:text-blue-300 border border-blue-500/20"
-                      }`}>
-                      {stabilityUploadMsg}
-                    </p>
-                  )}
-                  <label className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${stabilityUploading
-                    ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
-                    : "border-blue-400/40 text-blue-600 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/60"
-                    }`}>
-                    {stabilityUploading ? (
-                      <>
-                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                        Generating all stability reports…
-                      </>
-                    ) : (
-                      <>
+
+                  {/* Step 1: File picker */}
+                  <div className="rounded-lg border border-blue-400/20 bg-blue-500/5 p-3">
+                    <p className="text-[11px] font-semibold text-blue-400 uppercase tracking-wide mb-2">Step 1 — Select Document Files</p>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 border border-blue-400/40 rounded-xl text-xs font-semibold text-blue-600 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/60 transition shadow-sm">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 16.5V9.75m0 0l3 3m-3-3l-3 3M6.75 19.5a4.5 4.5 0 01-1.41-8.775 5.25 5.25 0 0110.233-2.33 3 3 0 013.758 3.848A3.752 3.752 0 0118 19.5H6.75z" />
                         </svg>
-                        Upload Stability Study Files (.pdf, .docx)
-                      </>
-                    )}
-                    <input
-                      type="file"
-                      accept=".pdf,.docx"
-                      multiple
-                      className="hidden"
-                      disabled={stabilityUploading}
-                      onChange={(e) => {
-                        if (e.target.files?.length) handleStabilityAllUpload(e.target.files);
-                        e.target.value = "";
-                      }}
-                    />
-                  </label>
-                  <p className="mt-2 text-[10px] text-muted">The §14 (Overview), §16 (Shelf Life), §17 (In-Use) and §18 (Shipping) DMF sections are also auto-filled from the generated reports. You can still upload files individually per field below.</p>
+                        {stabilityFiles.length > 0 ? `${stabilityFiles.length} file(s) selected` : "Choose Files (.pdf, .docx)"}
+                        <input
+                          ref={stabilityFileRef}
+                          type="file"
+                          accept=".pdf,.docx"
+                          multiple
+                          className="hidden"
+                          onChange={(e) => { if (e.target.files?.length) setStabilityFiles(Array.from(e.target.files)); }}
+                        />
+                      </label>
+                      {stabilityFiles.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {stabilityFiles.map((f, i) => (
+                            <span key={i} className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-400/20 text-[10px] text-blue-400">
+                              📄 {f.name}
+                              <button type="button" onClick={() => setStabilityFiles((prev) => prev.filter((_, j) => j !== i))} className="ml-1 hover:text-red-400 transition">×</button>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Step 2: Three generate buttons */}
+                  <div>
+                    <p className="text-[11px] font-semibold text-blue-400 uppercase tracking-wide mb-3">Step 2 — Generate Individual Reports</p>
+                    <div className="grid grid-cols-1 gap-3">
+
+                      {/* In-Use */}
+                      <div className="rounded-lg border border-blue-400/20 bg-blue-500/5 p-3">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="text-[12px] font-semibold text-foreground">🔬 In-Use Stability Report</p>
+                            <p className="text-[11px] text-muted mt-0.5">One table per week (Day 0, Week 1–4). Fills §17 DMF section.</p>
+                          </div>
+                          <button type="button" disabled={inuseGenerating} onClick={() => handleStabilityGenerate("inuse")}
+                            className={`inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-semibold transition shadow-sm flex-shrink-0 ${inuseGenerating ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60" : "border-blue-400/40 text-blue-600 dark:text-blue-300 bg-blue-500/10 hover:bg-blue-500/20 hover:border-blue-400/60"}`}>
+                            {inuseGenerating ? <><span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" /> Generating…</> : "Generate"}
+                          </button>
+                        </div>
+                        {inuseMsg && <p className={`text-[11px] mt-2 font-medium rounded-lg px-2.5 py-1.5 ${inuseStatus === "success" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : inuseStatus === "error" ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-blue-500/10 text-blue-500 border border-blue-500/20"}`}>{inuseMsg}</p>}
+                        {getFieldValue("s_stability_reports", "sr_inuse") && (
+                          <button type="button" onClick={() => downloadAsDoc({ label: "In-Use_Stability_Study_Report", fieldId: "sr_inuse", safeValue: getFieldValue("s_stability_reports", "sr_inuse") })}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-blue-400/30 bg-blue-500/10 text-[11px] font-semibold text-blue-600 dark:text-blue-300 hover:bg-blue-500/20 transition">
+                            ⬇ Download In-Use Report (.doc)
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Accelerated */}
+                      <div className="rounded-lg border border-indigo-400/20 bg-indigo-500/5 p-3">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="text-[12px] font-semibold text-foreground">⚗️ Accelerated (Shelf Life) Report</p>
+                            <p className="text-[11px] text-muted mt-0.5">3 lots × 6 time points = 18 tables (Day 0, Week 1–5 per lot). Fills §16 DMF section.</p>
+                          </div>
+                          <button type="button" disabled={accelGenerating} onClick={() => handleStabilityGenerate("accelerated")}
+                            className={`inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-semibold transition shadow-sm flex-shrink-0 ${accelGenerating ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60" : "border-indigo-400/40 text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 hover:bg-indigo-500/20 hover:border-indigo-400/60"}`}>
+                            {accelGenerating ? <><span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" /> Generating…</> : "Generate"}
+                          </button>
+                        </div>
+                        {accelMsg && <p className={`text-[11px] mt-2 font-medium rounded-lg px-2.5 py-1.5 ${accelStatus === "success" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : accelStatus === "error" ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-indigo-500/10 text-indigo-500 border border-indigo-500/20"}`}>{accelMsg}</p>}
+                        {getFieldValue("s_stability_reports", "sr_accelerated") && (
+                          <button type="button" onClick={() => downloadAsDoc({ label: "Accelerated_Stability_Study_Report", fieldId: "sr_accelerated", safeValue: getFieldValue("s_stability_reports", "sr_accelerated") })}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-indigo-400/30 bg-indigo-500/10 text-[11px] font-semibold text-indigo-600 dark:text-indigo-300 hover:bg-indigo-500/20 transition">
+                            ⬇ Download Accelerated Report (.doc)
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Shipping */}
+                      <div className="rounded-lg border border-cyan-400/20 bg-cyan-500/5 p-3">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div>
+                            <p className="text-[12px] font-semibold text-foreground">🚚 Shipping Stability Report</p>
+                            <p className="text-[11px] text-muted mt-0.5">One table per day (Day 0–7). Fills §18 DMF section.</p>
+                          </div>
+                          <button type="button" disabled={shippingGenerating} onClick={() => handleStabilityGenerate("shipping")}
+                            className={`inline-flex items-center gap-2 px-4 py-2 border rounded-xl text-xs font-semibold transition shadow-sm flex-shrink-0 ${shippingGenerating ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60" : "border-cyan-400/40 text-cyan-600 dark:text-cyan-300 bg-cyan-500/10 hover:bg-cyan-500/20 hover:border-cyan-400/60"}`}>
+                            {shippingGenerating ? <><span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" /> Generating…</> : "Generate"}
+                          </button>
+                        </div>
+                        {shippingMsg && <p className={`text-[11px] mt-2 font-medium rounded-lg px-2.5 py-1.5 ${shippingStatus === "success" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : shippingStatus === "error" ? "bg-red-500/10 text-red-500 border border-red-500/20" : "bg-cyan-500/10 text-cyan-500 border border-cyan-500/20"}`}>{shippingMsg}</p>}
+                        {getFieldValue("s_stability_reports", "sr_shipping") && (
+                          <button type="button" onClick={() => downloadAsDoc({ label: "Shipping_Stability_Study_Report", fieldId: "sr_shipping", safeValue: getFieldValue("s_stability_reports", "sr_shipping") })}
+                            className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-lg border border-cyan-400/30 bg-cyan-500/10 text-[11px] font-semibold text-cyan-600 dark:text-cyan-300 hover:bg-cyan-500/20 transition">
+                            ⬇ Download Shipping Report (.doc)
+                          </button>
+                        )}
+                      </div>
+
+                    </div>
+                    <p className="mt-3 text-[10px] text-muted">Each report auto-downloads as a complete .doc file. §14, §16, §17, §18 DMF sections are also auto-filled.</p>
+                  </div>
                 </div>
               )}
 

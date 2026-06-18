@@ -4,6 +4,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MermaidChart } from "./MermaidChart";
+import { downloadAsDoc } from "@/lib/downloadHelper";
 
 type Props = {
   fieldId: string;
@@ -123,11 +124,15 @@ export function RegulatoryFieldEditor({
   const filled = safeValue.trim().length > 0;
   const showStructured = hasContent && view === "structured";
 
-  const rows = textarea ? Math.min(24, Math.max(5, safeValue.split("\n").length + 1)) : undefined;
+  const isStabilityReportField = fieldId === "sr_inuse" || fieldId === "sr_accelerated" || fieldId === "sr_shipping";
+  const rows = textarea
+    ? (isStabilityReportField
+        ? Math.min(100, Math.max(25, safeValue.split("\n").length + 1))
+        : Math.min(24, Math.max(5, safeValue.split("\n").length + 1)))
+    : undefined;
 
   const handleDownload = () => {
     if (isImageValue) {
-      // Download image directly
       const a = document.createElement("a");
       a.href = safeValue;
       a.download = `${label.replace(/\s+/g, "_")}.png`;
@@ -135,135 +140,13 @@ export function RegulatoryFieldEditor({
       return;
     }
 
-    let finalHtml = "";
-    const isLabellingUpload = fieldId === "20.upload" || fieldId === "8.upload";
-
-    if (isLabellingUpload) {
-      const sectionPrefix = fieldId.split(".")[0];
-      const fields = allFields || {};
-
-      const logoBase64 = fields[`${sectionPrefix}.logo`] || "";
-      const productName = fields[`${sectionPrefix}.productName`] || "";
-      const manufacturer = fields[`${sectionPrefix}.manufacturer`] || "";
-      const mfgDate = fields[`${sectionPrefix}.mfgDate`] || "";
-      const expDate = fields[`${sectionPrefix}.expDate`] || "";
-      const packSize = fields[`${sectionPrefix}.packSize`] || "";
-      const batchNo = fields[`${sectionPrefix}.batchNo`] || "";
-      const deviceType = fields[`${sectionPrefix}.deviceType`] || "";
-      const storage = fields[`${sectionPrefix}.storage`] || "";
-      const mrp = fields[`${sectionPrefix}.mrp`] || "";
-
-      const symbolLot = fields[`${sectionPrefix}.symbol_lot`] || "";
-      const symbolDevice = fields[`${sectionPrefix}.symbol_device`] || "";
-      const symbolMfg = fields[`${sectionPrefix}.symbol_mfg`] || "";
-      const symbolExp = fields[`${sectionPrefix}.symbol_exp`] || "";
-      const symbolStorage = fields[`${sectionPrefix}.symbol_storage`] || "";
-
-      let companyName = "";
-      let companyAddress = "";
-      let formerName = "";
-
-      if (manufacturer) {
-        const formerMatch = manufacturer.match(/\((?:Formerly|formerly)\s+known\s+as\s+([^\)]+)\)/i);
-        if (formerMatch) {
-          formerName = formerMatch[1].trim();
-        }
-        let cleanMfg = manufacturer.replace(/\((?:Formerly|formerly)\s+known\s+as\s+[^\)]+\)/i, "").trim();
-        const commaIndex = cleanMfg.indexOf(",");
-        if (commaIndex !== -1) {
-          companyName = cleanMfg.substring(0, commaIndex).trim();
-          companyAddress = cleanMfg.substring(commaIndex + 1).trim();
-        } else {
-          companyName = cleanMfg;
-          companyAddress = "";
-        }
-      }
-
-      let logoHtml = companyName
-        ? `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">${companyName}</div>`
-        : `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">Logo Placeholder</div>`;
-      if (logoBase64 && logoBase64.startsWith("data:image/")) {
-        logoHtml = `<img src="${logoBase64}" style="max-height: 48px; max-width: 100%; object-fit: contain;" />`;
-      }
-
-      const docTypeTitle = documentTitle || "Device Master File";
-
-      const headerTableHtml = `
-<table style="width: 100%; border-collapse: collapse; border: 1.5pt solid black; font-family: Arial, sans-serif; margin-bottom: 25px;">
-  <tr>
-    <td rowspan="2" style="width: 25%; border: 1pt solid black; padding: 8px; text-align: center; vertical-align: middle;">
-      ${logoHtml}
-    </td>
-    <td style="width: 75%; border: 1pt solid black; padding: 8px; text-align: center;">
-      ${formerName ? `<div style="font-size: 8pt; font-weight: bold; margin-bottom: 2px;">(Formerly Known as ${formerName})</div>` : ""}
-      <div style="font-size: 14pt; font-weight: bold; margin-bottom: 2px; letter-spacing: 0.5px;">${companyName || "Manufacturer Name"}</div>
-      ${companyAddress ? `<div style="font-size: 8.5pt; font-weight: bold;">${companyAddress}</div>` : ""}
-    </td>
-  </tr>
-  <tr>
-    <td style="border: 1pt solid black; padding: 6px; text-align: center; font-size: 10pt; font-weight: bold; background-color: #f7f7f7; text-transform: uppercase;">
-      ${docTypeTitle}
-    </td>
-  </tr>
-</table>
-      `;
-
-      const isMD = sectionPrefix === "8";
-      const deviceSymbol = isMD ? "MD" : "IVD";
-
-      let metaDetailsTable = `
-<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Label Metadata Specifications</h3>
-<table style="width: 100%; border-collapse: collapse; border: 1pt solid #ccc; font-family: Arial, sans-serif; margin-bottom: 20px;">
-  <tr style="background:#f9f9f9;">
-    <th style="width: 40%; border: 1pt solid #ccc; padding: 8px; text-align: left; font-size: 9.5pt;">Label Field</th>
-    <th style="width: 60%; border: 1pt solid #ccc; padding: 8px; text-align: left; font-size: 9.5pt;">Extracted Value</th>
-  </tr>
-  ${productName ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">Product Commercial Name</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${productName}</td></tr>` : ""}
-  ${packSize ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">Pack Size / Configuration</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${packSize}</td></tr>` : ""}
-  ${batchNo ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolLot ? `<img src="${symbolLot}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="border: 1px solid black; padding: 1px 4px; font-size: 8pt; font-family: Arial; font-weight: bold; margin-right: 5px; background-color: #eee; display: inline-block; border-radius: 2px; vertical-align: middle;">LOT</span>`} Batch No.</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${batchNo}</td></tr>` : ""}
-  ${deviceType ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolDevice ? `<img src="${symbolDevice}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="border: 1px solid black; padding: 1px 4px; font-size: 8pt; font-family: Arial; font-weight: bold; margin-right: 5px; background-color: #eee; display: inline-block; border-radius: 2px; vertical-align: middle;">${deviceSymbol}</span>`} Device Regulatory Type</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${deviceType}</td></tr>` : ""}
-  ${mfgDate ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolMfg ? `<img src="${symbolMfg}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">🏭</span>`} Manufacturing Date</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${mfgDate}</td></tr>` : ""}
-  ${expDate ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolExp ? `<img src="${symbolExp}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">⌛</span>`} Expiry Date</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${expDate}</td></tr>` : ""}
-  ${storage ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolStorage ? `<img src="${symbolStorage}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">🌡️</span>`} Storage Conditions</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${storage}</td></tr>` : ""}
-  ${mrp ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">MRP (Maximum Retail Price)</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${mrp}</td></tr>` : ""}
-</table>
-      `;
-
-      let artworkHtml = "";
-      const imgMatch = safeValue.match(/!\[.*?\]\((data:image\/[a-zA-Z+-\/]+;base64,[\s\S]*?)\)/);
-      if (imgMatch) {
-        artworkHtml = `
-<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 30px; margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Label Artwork</h3>
-<p style="text-align:center; margin:20px 0;">
-  <img src="${imgMatch[1]}" style="max-width:100%; max-height:480px; border:1px solid #ccc; padding:4px; background:#fff;" />
-</p>
-        `;
-      }
-
-      finalHtml = `
-        ${headerTableHtml}
-        <h2 style="font-size: 16pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 15px; margin-bottom: 10px;">Labelling and Pack Size Specifications</h2>
-        ${metaDetailsTable}
-        ${artworkHtml}
-      `;
-    } else {
-      finalHtml = markdownToHtml(safeValue);
-    }
-
-    const htmlContent = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-<head><meta charset="utf-8"><title>${label}</title>
-<style>body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;margin:2cm;}
-h1,h2,h3,h4{color:#1a1a2e;}table{border-collapse:collapse;width:100%;}
-td,th{border:1px solid #ccc;padding:6px 10px;}th{background:#f0f0f0;font-weight:bold;}</style>
-</head><body>${finalHtml}</body></html>`;
-    const mhtmlContent = htmlToMhtml(htmlContent);
-    const blob = new Blob([mhtmlContent], { type: "application/msword" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${label.replace(/\s+/g, "_")}.doc`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadAsDoc({
+      label,
+      fieldId,
+      safeValue,
+      allFields,
+      documentTitle
+    });
   };
 
   return (
@@ -402,7 +285,7 @@ td,th{border:1px solid #ccc;padding:6px 10px;}th{background:#f0f0f0;font-weight:
             rows={rows}
             value={safeValue}
             onChange={(e) => onChange(e.target.value)}
-            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y min-h-[120px]"
+            className={`w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y ${isStabilityReportField ? "min-h-[500px]" : "min-h-[120px]"}`}
             placeholder={`Enter ${label.toLowerCase()}…`}
           />
         ) : (
