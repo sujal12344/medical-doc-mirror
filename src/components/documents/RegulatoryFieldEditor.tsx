@@ -162,6 +162,7 @@ export function RegulatoryFieldEditor({
       const fields = allFields || {};
 
       const logoBase64 = fields[`${sectionPrefix}.logo`] || "";
+      const logoText = fields[`${sectionPrefix}.logoText`] || "";
       const manufacturer = fields[`${sectionPrefix}.manufacturer`] || "";
 
       let companyName = "";
@@ -182,8 +183,10 @@ export function RegulatoryFieldEditor({
         }
       }
 
-      let logoHtml = companyName
-        ? `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">${companyName}</div>`
+      // Show actual image if available, otherwise use extracted company name text
+      const logoDisplayName = companyName || logoText;
+      let logoHtml = logoDisplayName
+        ? `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">${logoDisplayName}</div>`
         : `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">Logo Placeholder</div>`;
       if (logoBase64 && logoBase64.startsWith("data:image/")) {
         logoHtml = `<img src="${logoBase64}" style="max-height: 48px; max-width: 100%; object-fit: contain;" />`;
@@ -492,6 +495,7 @@ function buildLabelCardHtml(
   const sectionPrefix = fieldId.split(".")[0];
 
   const logoBase64 = fields[`${sectionPrefix}.logo`] || "";
+  const logoText = fields[`${sectionPrefix}.logoText`] || "";
   const productName = fields[`${sectionPrefix}.productName`] || "";
   const manufacturer = fields[`${sectionPrefix}.manufacturer`] || "";
   const mfgDate = fields[`${sectionPrefix}.mfgDate`] || "";
@@ -525,8 +529,9 @@ function buildLabelCardHtml(
     }
   }
 
-  let logoHtml = companyName
-    ? `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">${companyName}</div>`
+  const logoDisplayName = companyName || logoText;
+  let logoHtml = logoDisplayName
+    ? `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">${logoDisplayName}</div>`
     : `<div style="font-size: 13pt; font-weight: bold; color: #1a1a2e; margin-bottom: 2px;">Logo Placeholder</div>`;
   if (logoBase64 && logoBase64.startsWith("data:image/")) {
     logoHtml = `<img src="${logoBase64}" style="max-height: 48px; max-width: 100%; object-fit: contain;" />`;

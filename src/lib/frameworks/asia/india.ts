@@ -193,7 +193,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
             id: "20.logo",
             label: "Company Logo",
             hint: "Company/brand logo image — will display as a preview",
-            fieldType: "image"
+            fieldType: "image",
+            allowUpload: true
           },
 
           {
@@ -241,13 +242,6 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
             label: "Manufacturer Name & Address",
             hint: "Full legal manufacturer name and registered address as printed on label",
             textarea: true
-          },
-          {
-            id: "20.ifu",
-            label: "Instructions for Use (IFU)",
-            hint: "Upload IFU document (.pdf or .docx) to extract full text, or edit manually.",
-            textarea: true,
-            allowUpload: true
           }
         ]
       },
@@ -378,7 +372,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
             id: "8.logo",
             label: "Company Logo",
             hint: "Company/brand logo image — will display as a preview",
-            fieldType: "image"
+            fieldType: "image",
+            allowUpload: true
           },
           {
             id: "8.symbols_upload",

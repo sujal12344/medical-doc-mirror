@@ -536,11 +536,39 @@ export async function POST(
             console.warn(`[field-upload] word-extractor failed. Using raw string fallback.`);
             const rawString = buffer.toString("utf8");
             
-            // Basic detection of HTML disguised as .doc
-            if (rawString.includes("<html") || rawString.includes("<body") || rawString.includes("<w:WordDocument")) {
-               console.log("[field-upload] Fallback: Detected HTML disguised as .doc");
-               const stripped = rawString.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
-               combinedDocxText = `Body Section (Raw HTML Extraction):\n${stripped.slice(0, 100000)}`;
+            // Strip null bytes and non-printable chars first so regexes and includes() actually match UTF-16LE docs
+            const asciiString = rawString.replace(/[^\x20-\x7E\n\r\t]/g, "");
+
+            // Microsoft Word "Save as Web Page" HTML disguised as .doc
+            if (asciiString.includes("<html") || asciiString.includes("<w:WordDocument") || asciiString.includes("xmlns:o=\"urn:schemas-microsoft-com")) {
+               console.log("[field-upload] Fallback: Detected MSWord HTML .doc — extracting body section only");
+
+               // Find <body> tag to skip the massive <head> with MSO CSS/XML
+               const bodyStartIdx = asciiString.search(/<body[^>]*>/i);
+               const bodyEndIdx = asciiString.search(/<\/body>/i);
+               const bodyHtml = bodyStartIdx > -1
+                 ? asciiString.slice(bodyStartIdx, bodyEndIdx > bodyStartIdx ? bodyEndIdx + 7 : undefined)
+                 : asciiString; // fallback to full file if body tag not found
+
+               const cleaned = bodyHtml
+                 // Remove inline style content (but keep tag text)
+                 .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+                 // Remove script blocks
+                 .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+                 // Remove MSO XML conditional blobs
+                 .replace(/<!--\[if[\s\S]*?\[endif\]-->/gi, " ")
+                 // Remove XML blocks
+                 .replace(/<xml>[\s\S]*?<\/xml>/gi, " ")
+                 // Strip all HTML tags
+                 .replace(/<[^>]+>/g, " ")
+                 // Decode common HTML entities
+                 .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/&#\d+;/g, " ")
+                 // Collapse whitespace
+                 .replace(/\s+/g, " ")
+                 .trim();
+
+               console.log(`[field-upload] Extracted ${cleaned.length} chars from body section`);
+               combinedDocxText = `Body Section:\n${cleaned.slice(0, 120000)}`;
             } else if (rawString.startsWith("{\\rtf")) {
                console.log("[field-upload] Fallback: Detected RTF disguised as .doc");
                const stripped = rawString.replace(/\\[a-z]+[0-9]* ?/g, " ").replace(/[{}]/g, " ").replace(/\s+/g, " ").trim();
@@ -564,24 +592,24 @@ export async function POST(
           messages: [
             {
               role: "system",
-              content: "You are an expert medical device regulatory assistant. Extract label fields from the provided document text. Return JSON format only.",
+              content: "You are an expert medical device regulatory assistant. Your task is to carefully extract label and packaging fields from a medical device document. The document may be a product label, Certificate of Analysis (CoA), or IFU. Search the ENTIRE document carefully — important fields like Pack size and Manufacturer address often appear near the bottom. Return only valid JSON.",
             },
             {
               role: "user",
-              content: `Extract structured label details from the document text. Look at both Header and Body sections. Return exactly these JSON keys:
+              content: `Extract ALL the following fields from the document text. Return exactly these JSON keys:
 {
-  "logo": "<full company/brand name - e.g. Q-LineBiotech>",
-  "productName": "<product name - e.g. Q-Line® Albumin>",
-  "packSize": "<pack size - e.g. 2 x 50 mL>",
-  "batchNo": "<LOT/Batch number if present>",
-  "deviceType": "<device type - e.g. IVD or In Vitro Diagnostic Medical Device>",
-  "mfgDate": "<manufacturing date if present>",
-  "expDate": "<expiry date if present>",
-  "storage": "<storage conditions if present>",
-  "mrp": "<maximum retail price if present>",
-  "manufacturer": "<full manufacturer name and address>"
+  "logo": "<company/brand name from logo or 'Manufactured & Marketed by' section>",
+  "productName": "<product name — look for 'Name of the Product' or branded name>",
+  "packSize": "<pack size — look for 'Pack size', 'Pack Size', 'Kit size', e.g. '2 x 50 mL'>",
+  "batchNo": "<LOT/Batch number — look for 'Batch Number', 'Lot No', 'Batch No'>",
+  "deviceType": "<device type — look for 'IVD', 'In Vitro Diagnostic', 'Medical Device'>",
+  "mfgDate": "<manufacturing date — look for 'MFG Date', 'Date of Manufacture'>",
+  "expDate": "<expiry date — look for 'EXP Date', 'Use By', 'Expiry Date'>",
+  "storage": "<storage conditions — look for 'Storage Temperature', 'Store at', e.g. '2-8 deg C'>",
+  "mrp": "<maximum retail price — look for 'MRP', 'Price'>",
+  "manufacturer": "<full manufacturer name AND complete postal address — look for 'Manufactured by', 'Manufactured & Marketed by', 'Manufacturer'>"
 }
-If a field is not present, use "". Do not fabricate values.
+IMPORTANT: Search the ENTIRE document especially near the bottom. If a field is absent, use "". Do not fabricate.
 
 Document Text:
 ${combinedDocxText}`,
@@ -601,10 +629,16 @@ ${combinedDocxText}`,
         for (const siblingKey of LABEL_SIBLING_FIELDS) {
           const siblingFieldId = `${sectionPrefix}.${siblingKey}`;
           if (siblingKey === "logo") {
-            const val = logoBase64 || parsed.logo || "";
-            if (val.trim()) {
-              updatedFields[siblingFieldId] = val.trim();
+            // Only save to the logo IMAGE field if we have a real base64 image URI.
+            // If we only have text (from raw .doc fallback), the image field stays
+            // empty so the user knows to upload a logo image separately.
+            if (logoBase64 && logoBase64.startsWith("data:image/")) {
+              updatedFields[siblingFieldId] = logoBase64;
               upserted.push(siblingFieldId);
+            } else if (parsed.logo) {
+              // Store the company name text as a fallback hint in a non-image field key
+              // so the mock-up preview can still display the brand name
+              updatedFields[`${sectionPrefix}.logoText`] = parsed.logo.trim();
             }
           } else {
             const val = parsed[siblingKey];
