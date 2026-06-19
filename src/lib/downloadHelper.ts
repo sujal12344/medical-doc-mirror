@@ -153,29 +153,16 @@ export function downloadAsDoc({
     const isMD = sectionPrefix === "8";
     const deviceSymbol = isMD ? "MD" : "IVD";
 
-    let metaDetailsTable = `
-<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 25px; margin-bottom: 10px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Label Metadata Specifications</h3>
-<table style="width: 100%; border-collapse: collapse; border: 1pt solid #ccc; font-family: Arial, sans-serif; margin-bottom: 20px;">
-  <tr style="background:#f9f9f9;">
-    <th style="width: 40%; border: 1pt solid #ccc; padding: 8px; text-align: left; font-size: 9.5pt;">Label Field</th>
-    <th style="width: 60%; border: 1pt solid #ccc; padding: 8px; text-align: left; font-size: 9.5pt;">Extracted Value</th>
-  </tr>
-  ${productName ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">Product Commercial Name</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${productName}</td></tr>` : ""}
-  ${packSize ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">Pack Size / Configuration</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${packSize}</td></tr>` : ""}
-  ${batchNo ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolLot ? `<img src="${symbolLot}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="border: 1px solid black; padding: 1px 4px; font-size: 8pt; font-family: Arial; font-weight: bold; margin-right: 5px; background-color: #eee; display: inline-block; border-radius: 2px; vertical-align: middle;">LOT</span>`} Batch No.</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${batchNo}</td></tr>` : ""}
-  ${deviceType ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolDevice ? `<img src="${symbolDevice}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="border: 1px solid black; padding: 1px 4px; font-size: 8pt; font-family: Arial; font-weight: bold; margin-right: 5px; background-color: #eee; display: inline-block; border-radius: 2px; vertical-align: middle;">${deviceSymbol}</span>`} Device Regulatory Type</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${deviceType}</td></tr>` : ""}
-  ${mfgDate ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolMfg ? `<img src="${symbolMfg}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">🏭</span>`} Manufacturing Date</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${mfgDate}</td></tr>` : ""}
-  ${expDate ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolExp ? `<img src="${symbolExp}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">⌛</span>`} Expiry Date</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${expDate}</td></tr>` : ""}
-  ${storage ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold; vertical-align: middle;">${symbolStorage ? `<img src="${symbolStorage}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />` : `<span style="font-size: 12pt; margin-right: 5px; vertical-align: middle;">🌡️</span>`} Storage Conditions</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; vertical-align: middle;">${storage}</td></tr>` : ""}
-  ${mrp ? `<tr><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt; font-weight:bold;">MRP (Maximum Retail Price)</td><td style="border: 1pt solid #ccc; padding: 8px; font-size: 9pt;">${mrp}</td></tr>` : ""}
-</table>
-    `;
+    const symbolImg = (src: string, fallback: string) =>
+      src
+        ? `<img src="${src}" style="max-height: 18px; max-width: 50px; vertical-align: middle; margin-right: 5px; object-fit: contain;" />`
+        : fallback;
 
     let artworkHtml = "";
-    const imgMatch = safeValue.match(/!\[.*?\]\((data:image\/[a-zA-Z+-\/]+;base64,[\s\S]*?)\)/);
+    const imgMatch = safeValue.match(/!\[.*?\]\((data:image\/[a-zA-Z+\-/]+;base64,[\s\S]*?)\)/);
     if (imgMatch) {
       artworkHtml = `
-<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 30px; margin-bottom: 12px; border-bottom: 1px solid #ddd; padding-bottom: 4px;">Label Artwork</h3>
+<h3 style="font-size: 13pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 25px; margin-bottom: 15px; border-bottom: 1px solid #007bff; padding-bottom: 4px;">Label Artwork</h3>
 <p style="text-align:center; margin:20px 0;">
   <img src="${imgMatch[1]}" style="max-width:100%; max-height:480px; border:1px solid #ccc; padding:4px; background:#fff;" />
 </p>
@@ -183,10 +170,72 @@ export function downloadAsDoc({
     }
 
     finalHtml = `
-      ${headerTableHtml}
-      <h2 style="font-size: 16pt; font-family: Arial, sans-serif; font-weight: bold; color: #1a1a2e; margin-top: 15px; margin-bottom: 10px;">Labelling and Pack Size Specifications</h2>
-      ${metaDetailsTable}
-      ${artworkHtml}
+${headerTableHtml}
+<table style="width:100%;max-width:550px;border-collapse:collapse;border:none;font-family:Arial,sans-serif;margin-bottom:12px;box-sizing:border-box;background-color:#ffffff;">
+  <tr>
+    <td style="padding:8px 12px;border:2pt solid #007bff;background-color:#ffffff;">
+      <!-- Header: Logo + Product Name -->
+      <table style="width:100%;border-collapse:collapse;margin-bottom:6px;border:none;">
+        <tr>
+          <td style="width:40%;vertical-align:middle;border:none;padding:0;">${logoHtml}</td>
+          <td style="width:60%;text-align:right;vertical-align:middle;padding:0 0 0 10px;border:none;">
+            <div style="font-size:14pt;font-weight:bold;color:#007bff;line-height:1.1;">${productName || "Product Commercial Name"}</div>
+            ${packSize ? `<div style="font-size:10pt;font-weight:bold;color:#555;margin-top:2px;">${packSize}</div>` : ""}
+          </td>
+        </tr>
+      </table>
+      <!-- Fields / Symbols -->
+      <table style="width:100%;border-collapse:collapse;margin-top:4px;margin-bottom:4px;border:none;">
+        ${batchNo ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolLot, `<span style="border:1px solid black;padding:1px 3px;font-size:7.5pt;font-weight:bold;background-color:#eee;display:inline-block;border-radius:2px;vertical-align:middle;margin-right:4px;">LOT</span>`)} Batch No.:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${batchNo}</td>
+        </tr>` : ""}
+        ${deviceType ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolDevice, `<span style="border:1px solid black;padding:1px 3px;font-size:7.5pt;font-weight:bold;background-color:#eee;display:inline-block;border-radius:2px;vertical-align:middle;margin-right:4px;">${deviceSymbol}</span>`)} Device Type:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${deviceType}</td>
+        </tr>` : ""}
+        ${mfgDate ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolMfg, `<span style="font-size:11pt;margin-right:4px;vertical-align:middle;">🏭</span>`)} Mfg. Date:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${mfgDate}</td>
+        </tr>` : ""}
+        ${expDate ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolExp, `<span style="font-size:11pt;margin-right:4px;vertical-align:middle;">⌛</span>`)} Expiry Date:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${expDate}</td>
+        </tr>` : ""}
+        ${storage ? `<tr>
+          <td style="padding:2px 8px 2px 0;font-size:9pt;vertical-align:middle;font-weight:bold;white-space:nowrap;border:none;">
+            ${symbolImg(symbolStorage, `<span style="font-size:11pt;margin-right:4px;vertical-align:middle;">🌡️</span>`)} Storage:
+          </td>
+          <td style="padding:2px 0;font-size:9pt;vertical-align:middle;width:100%;border:none;">${storage}</td>
+        </tr>` : ""}
+      </table>
+      <!-- Dashed divider -->
+      <table style="width:100%;border-collapse:collapse;margin-top:4px;margin-bottom:8px;border:none;">
+        <tr><td style="border:none;border-top:1pt dashed #007bff;height:1px;padding:0;"></td></tr>
+      </table>
+      <!-- Footer: MRP + Company -->
+      <table style="width:100%;border-collapse:collapse;border:none;">
+        ${mrp ? `<tr><td style="text-align:center;font-size:9.5pt;font-weight:bold;color:#333;padding:0 0 4px 0;border:none;">MRP: ${mrp}</td></tr>` : ""}
+        <tr>
+          <td style="text-align:center;font-size:8.5pt;color:#555;line-height:1.3;padding:0;border:none;">
+            <div style="font-size:10pt;font-weight:bold;color:#007bff;margin-bottom:1px;">${companyName}</div>
+            ${formerName ? `<div style="font-size:7.5pt;font-weight:bold;font-style:italic;margin-bottom:2px;">(Formerly Known as ${formerName})</div>` : ""}
+            ${companyAddress ? `<div style="font-size:8pt;font-weight:bold;">${companyAddress}</div>` : ""}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+${artworkHtml}
     `;
   } else {
     finalHtml = markdownToHtml(safeValue);

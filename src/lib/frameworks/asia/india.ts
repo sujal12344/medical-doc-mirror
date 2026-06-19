@@ -181,7 +181,13 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s20", title: "20.0 Labelling", description: "Structured product label fields — upload label image to auto-populate via OCR", fields: [
-
+          {
+            id: "20.upload",
+            label: "Upload Label Artwork (OCR Auto-Fill)",
+            hint: "Upload the label artwork image or PDF. OCR will extract text fields and crop the company logo.",
+            textarea: false,
+            allowUpload: true
+          },
           {
             id: "20.preview",
             label: "Label Mock-up Preview",
