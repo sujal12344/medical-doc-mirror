@@ -1061,6 +1061,9 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                   documentVersion={doc?.version}
                   documentUpdatedAt={doc?.updatedAt}
                   documentTitle={doc?.title}
+                  redirectSectionId={field.redirectSectionId}
+                  redirectLabel={field.redirectLabel}
+                  onRedirect={(s) => setActiveSection(s)}
                 />
               ))}
 

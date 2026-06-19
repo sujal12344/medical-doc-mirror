@@ -21,6 +21,9 @@ type Props = {
   documentVersion?: number;
   documentUpdatedAt?: string | Date;
   documentTitle?: string;
+  redirectSectionId?: string;
+  redirectLabel?: string;
+  onRedirect?: (sectionId: string) => void;
 };
 
 export function RegulatoryFieldEditor({
@@ -37,6 +40,9 @@ export function RegulatoryFieldEditor({
   documentVersion,
   documentUpdatedAt,
   documentTitle,
+  redirectSectionId,
+  redirectLabel,
+  onRedirect,
   onUploadComplete
 }: Props) {
   const [view, setView] = useState<"structured" | "edit">("structured");
@@ -210,7 +216,15 @@ export function RegulatoryFieldEditor({
               {safeValue.includes('[ZIP_DATA]:') || safeValue.includes('data-zip="data:application/zip') || safeValue.startsWith("data:application/zip") ? "Download .zip" : isImageValue ? "Download Image" : "Download .doc"}
             </button>
           )}
-          {hasContent && !isImageField && !isLabellingPreviewField ? (
+          {redirectSectionId ? (
+            <button
+              type="button"
+              onClick={() => onRedirect?.(redirectSectionId)}
+              className="rounded-lg border border-accent/40 bg-accent/10 px-3 py-1.5 text-xs font-semibold text-accent hover:bg-accent/20 transition shadow-sm"
+            >
+              {redirectLabel || "Go to section"}
+            </button>
+          ) : hasContent && !isImageField && !isLabellingPreviewField ? (
             <div className="flex rounded-lg border border-border p-0.5 text-[10px] font-medium shrink-0">
               <button
                 type="button"
@@ -231,11 +245,11 @@ export function RegulatoryFieldEditor({
         </div>
       </div>
 
-      <div className="p-4">
+      {!redirectSectionId && (
+        <div className="p-4">
 
-
-        {/* Image field rendering */}
-        {isImageField || isImageValue ? (
+          {/* Image field rendering */}
+          {isImageField || isImageValue ? (
           <div className="space-y-3">
             {isImageValue ? (
               <div className="rounded-lg border border-border bg-surface2/50 p-3 flex items-center justify-center min-h-[100px]">
@@ -361,7 +375,9 @@ export function RegulatoryFieldEditor({
             {uploadError && <span className="text-xs text-red-500">{uploadError}</span>}
             {fileName && !uploadError && <span className="text-xs text-muted">Uploaded: {fileName}</span>}
           </div>
-        )}      </div>
+        )}
+        </div>
+      )}
     </div>
   );
 }

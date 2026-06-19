@@ -6,6 +6,8 @@ export type FrameworkField = {
   allowUpload?: boolean;
   fieldType?: "text" | "image";
   readonly?: boolean;
+  redirectSectionId?: string;
+  redirectLabel?: string;
 };
 
 export type FrameworkSection = {

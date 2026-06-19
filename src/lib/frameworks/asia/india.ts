@@ -7,10 +7,12 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       {
         id: "s1", title: "1.0 Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
           { id: "1.1a", label: "Product Name", hint: "Full commercial name of the IVD medical device" },
-          { id: "1.1b", label: "Device Description", hint: "Brief description: purpose, technology, mechanism of action", textarea: true },
+          { id: "1.1a1", label: "Brand", hint: "Brand name of the device" },
+          { id: "1.1a2", label: "Model", hint: "Model name or number" },
+          { id: "1.1b", label: "Intended Use", hint: "Brief description of the intended use", textarea: true },
           { id: "1.1c", label: "Novel Features", hint: "Features vs CDSCO predicate — from predDevice.predicateBasis + subject/predicate comparison (Phase 1)", textarea: true },
-          { id: "1.1d", label: "Claimed Shelf Life", hint: "e.g. 18 months from date of manufacture" },
           { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D" },
+          { id: "1.1d", label: "Claimed Shelf Life", hint: "e.g. 18 months from date of manufacture" },
           { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted", textarea: true },
           { id: "1.2", label: "Regulatory Status in India", hint: "Yes — approved (name CDSCO predicate device) OR New device — from Phase 1 predicate pathway" },
           { id: "1.3", label: "Domestic Price", hint: "Price per unit in country of origin currency" },
@@ -24,7 +26,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s2", title: "2.0 Description and specification, including variants and accessories of the in vitro diagnostic medical device.", description: "Technical details, components, specimen requirements", fields: [
+        id: "s2", title: "2.0 Description and specification", description: "Technical details, components, specimen requirements", fields: [
           { id: "2.0", label: "Intended Use / Indications for Use", hint: "Full intended use and claims statement (CDSCO DMF §2; from Phase 1 registration)", textarea: true },
           { id: "2.1a", label: "What is Detected", hint: "Specific analyte, pathogen, antibody detected" },
           { id: "2.1b", label: "Device Function", hint: "Screening / Diagnostics / Monitoring" },
@@ -35,19 +37,19 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "2.1g", label: "Testing Population", hint: "Human / Animal / Both" },
           { id: "2.1h", label: "Intended User", hint: "Professional / Lay person" },
           { id: "2.1i", label: "Assay Principle", hint: "Technology and step-by-step mechanism", textarea: true },
+          { id: "2.1_risk", label: "Risk-based Class", hint: "Class A / B / C / D" },
           { id: "2.1j", label: "Components Description", hint: "Each component: name, ingredient, function", textarea: true },
           { id: "2.1k", label: "Specimen Collection Specs", hint: "Collection materials, volume, stability", textarea: true },
-          { id: "2.1l", label: "Instrumentation", hint: "Instrument name, model, specifications", textarea: true },
-          { id: "2.1m", label: "Software", hint: "Software name, version, function", textarea: true },
-          { id: "2.1n", label: "Configurations/Variants", hint: "Pack sizes and variants available", textarea: true },
-          { id: "2.1o", label: "Accessories", hint: "All accessories and companion devices", textarea: true },
-          { id: "2.1p", label: "Dedicated Assay Procedure", hint: "Step-by-step assay workflow, controls and calculations", textarea: true },
-          { id: "2.1q", label: "Instrument Compatibility Requirements", hint: "Compatible analyzers, readers, wavelength requirements", textarea: true },
+          { id: "2.1p", label: "Assay Characteristics / Dedicated Assays", hint: "For instruments of automated assays", textarea: true },
+          { id: "2.1l", label: "Instrumentation Characteristics", hint: "For automated assays: dedicated instrumentation", textarea: true },
+          { id: "2.1m", label: "Software", hint: "Description of any software to be used", textarea: true },
+          { id: "2.1n", label: "Configurations / Variants", hint: "Various configurations / variants available", textarea: true },
+          { id: "2.1o", label: "Accessories", hint: "Accessories intended to be used in combination", textarea: true },
           { id: "2.1s", label: "Previous Device Generations / Similar Devices", hint: "Reference to prior generations or similar marketed devices (manufacturer history)", textarea: true },
-          { id: "2.2", label: "Clinical Performance (New Device)", hint: "Summary of clinical performance evaluation", textarea: true },
-          { id: "2.3", label: "Adverse Events on Market (§2.3 I)", hint: "Summary of adverse events vs units placed on market (existing device)", textarea: true },
-          { id: "2.4", label: "Predicate Device Comparison (§2.3 III)", hint: "Subject device (this product) vs CDSCO predicate — similarities, differences, equivalence conclusion; auto-filled from Product + predDevice", textarea: true },
-          { id: "2.5", label: "External Conformity Certificates (§2.3 II)", hint: "ISO 13485, CE, WHO PQ, MDSAP, etc.", textarea: true },
+          { id: "2.2", label: "2.2 Clinical Performance (New Device)", hint: "Summary of clinical performance evaluation", textarea: true },
+          { id: "2.3", label: "2.3(i) Adverse Events on Market", hint: "Summary of adverse events vs units placed on market (existing device)", textarea: true },
+          { id: "2.5", label: "2.3(ii) External Conformity Certificates", hint: "ISO 13485, CE, WHO PQ, MDSAP, etc.", textarea: true },
+          { id: "2.4", label: "2.3(iii) Predicate Device Comparison", hint: "Subject device (this product) vs CDSCO predicate — similarities, differences, equivalence conclusion", textarea: true },
         ]
       },
       {
@@ -84,10 +86,10 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       {
         id: "s7", title: "7.0 Analytical Studies", description: "Conformity demonstration studies", fields: [
           { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true },
-          { id: "7.1", label: "Table 4. Precision Table", hint: "Precision study results — auto-generated from the batch upload above", textarea: true },
-          { id: "7.1a", label: "Table 4a. Between-Run Precision Table", hint: "Between-Run Precision study results — auto-generated from the batch upload above", textarea: true },
-          { id: "7.2", label: "Table 5. Accuracy Table", hint: "Accuracy/method comparison study results — auto-generated from the batch upload above", textarea: true },
-          { id: "7.3", label: "Table 6. Linearity Table", hint: "Linearity study results — auto-generated from the batch upload above", textarea: true }
+          { id: "7.1", label: "7.A Precision Table", hint: "Precision study results — auto-generated from the batch upload above", textarea: true },
+          { id: "7.1a", label: "7.A Between-Run Precision Table", hint: "Between-Run Precision study results — auto-generated from the batch upload above", textarea: true },
+          { id: "7.2", label: "7.B Accuracy Table", hint: "Accuracy/method comparison study results — auto-generated from the batch upload above", textarea: true },
+          { id: "7.3", label: "7.C Linearity Table", hint: "Linearity study results — auto-generated from the batch upload above", textarea: true }
         ]
       },
       {
@@ -97,7 +99,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s9", title: "9.0 Analytical Performance Characteristics", description: "Accuracy, trueness, precision, repeatability, and reproducibility", fields: [
-          { id: "9.1", label: "Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
+          { id: "9.1", label: "9.1 Accuracy of measurement", hint: "Accuracy is measured and documented in Section 7.0 Analytical Studies.", textarea: false, redirectSectionId: "s7", redirectLabel: "Go to 7.B Accuracy Table" },
+          { id: "9.2", label: "9.2 Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
         ]
       },
       {
@@ -123,12 +126,17 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s13_cutoff", title: "13.0 Definition of Assay Cut-off:", description: "Assay cut-off determination studies", fields: [
+        id: "s13_measuring_range", title: "13.0 Measuring range of the assay:", description: "Measuring range determination", fields: [
+          { id: "13.0a", label: "Measuring Range Details", hint: "Provide details for the measuring range of the assay", textarea: true }
+        ]
+      },
+      {
+        id: "s13_cutoff", title: "14.0 Definition of Assay Cut-off:", description: "Assay cut-off determination studies", fields: [
           { id: "14.0a", label: "Assay Cut-off Details", hint: "Clinical cut-off definition and justification", textarea: true }
         ]
       },
       {
-        id: "s14_stability", title: "14.0 Stability (excluding specimen stability)", description: "Overview of reagent and kit stability studies", fields: [
+        id: "s14_stability", title: "15.0 Stability (excluding specimen stability)", description: "Overview of reagent and kit stability studies", fields: [
           { id: "15.0a", label: "Stability Studies Overview", hint: "Summary of all stability studies conducted — auto-filled from Stability Reports section", textarea: true }
         ]
       },
@@ -147,34 +155,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "18.0a", label: "Shipping / Transport Stability Data", hint: "Auto-filled from Shipping Stability report in the Stability Reports section", textarea: true }
         ]
       },
-      {
-        id: "s_stability_reports",
-        title: "Stability Reports",
-        description: "Full regulatory-grade stability study reports. Upload IFU and COA documents to auto-generate all three reports simultaneously.",
-        fields: [
-          {
-            id: "sr_inuse",
-            label: "In-Use Stability Study Report",
-            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 with sections: Objective, Storage Conditions, Testing Calendar, Product Description, Kit Content, Procedure, Study Results, Conclusion, Approval.",
-            textarea: true,
-            allowUpload: true
-          },
-          {
-            id: "sr_accelerated",
-            label: "Accelerated Stability Study Report",
-            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 with Arrhenius projection, 37°C storage, monthly intervals, and shelf life claim.",
-            textarea: true,
-            allowUpload: true
-          },
-          {
-            id: "sr_shipping",
-            label: "Shipping Stability Study Report",
-            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 and CLSI EP25-A with daily intervals over 7 days, transport simulation rationale.",
-            textarea: true,
-            allowUpload: true
-          }
-        ]
-      },
+   
       {
         id: "s19", title: "19.0 Clinical Evidence", description: "Clinical evaluation report", fields: [
           { id: "19", label: "Clinical Evidence", hint: "Conformity to essential principles", textarea: true }
@@ -278,6 +259,34 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       {
         id: "s_coa", title: "COA Generation", description: "Upload Value Sheet for automatic COA generation", fields: [
           { id: "coa.upload", label: "Value Sheet", hint: "Upload Value Sheet to generate Certificate of Analysis", textarea: true, allowUpload: true }
+        ]
+      },
+         {
+        id: "s_stability_reports",
+        title: "Stability Reports",
+        description: "Full regulatory-grade stability study reports. Upload IFU and COA documents to auto-generate all three reports simultaneously.",
+        fields: [
+          {
+            id: "sr_inuse",
+            label: "In-Use Stability Study Report",
+            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 with sections: Objective, Storage Conditions, Testing Calendar, Product Description, Kit Content, Procedure, Study Results, Conclusion, Approval.",
+            textarea: true,
+            allowUpload: true
+          },
+          {
+            id: "sr_accelerated",
+            label: "Accelerated Stability Study Report",
+            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 with Arrhenius projection, 37°C storage, monthly intervals, and shelf life claim.",
+            textarea: true,
+            allowUpload: true
+          },
+          {
+            id: "sr_shipping",
+            label: "Shipping Stability Study Report",
+            hint: "Upload IFU + COA files to auto-generate. Follows EN ISO 23640 and CLSI EP25-A with daily intervals over 7 days, transport simulation rationale.",
+            textarea: true,
+            allowUpload: true
+          }
         ]
       },
     ],
