@@ -406,6 +406,7 @@ export default function DocumentEditorPage() {
         const fieldMap: Record<string, { sectionId: string; fieldId: string }> = {
           "7": { sectionId: "s7", fieldId: "7" },
           "7.1": { sectionId: "s7", fieldId: "7.1" },
+          "7.1a": { sectionId: "s7", fieldId: "7.1a" },
           "7.2": { sectionId: "s7", fieldId: "7.2" },
           "7.3": { sectionId: "s7", fieldId: "7.3" },
           "8.1": { sectionId: "s8", fieldId: "8.1" },

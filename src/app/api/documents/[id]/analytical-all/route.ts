@@ -80,7 +80,7 @@ Introduce every table with explanatory narrative text.
 
 Immediately after every table generate a section titled:
 
-Interpretation of Results
+Conclusion
 
 Discuss analytical significance, variability, clinical relevance, and regulatory compliance.
 
@@ -190,7 +190,7 @@ Rules:
 
 After the table generate:
 
-Interpretation of Results
+Conclusion
 
 Discuss:
 
@@ -198,6 +198,62 @@ Discuss:
 - Analytical precision
 - Relative variability
 - Compliance with CLSI recommendations
+==================================================
+7.1a BETWEEN-RUN PRECISION TEST
+==================================================
+
+Write a detailed Between-Run Precision study following:
+
+Introduction
+Study Design
+Statistical Approach
+Results
+Interpretation
+Regulatory Conclusion
+
+Include the following explanation:
+
+"Between-run precision assesses the variability or reproducibility of an assay across different analytical sessions. It evaluates the consistency of measurements obtained over multiple runs and provides an estimate of intermediate precision. Between-run precision is commonly expressed using the Grand Mean, Between-Run Standard Deviation (SDbetween), and Between-Run Coefficient of Variation (%CVbetween). Lower %CV values indicate superior reproducibility and demonstrate the stability of the analytical system across independent runs."
+
+If measurements from multiple runs are available, calculate:
+
+• Grand Mean
+
+• Between-Run Standard Deviation (SDbetween)
+
+• Between-Run Coefficient of Variation (%CVbetween)
+
+Generate a GitHub Flavored Markdown table with columns:
+
+| S. No | Parameter | Unit | Target | Grand Mean | Between-Run Standard Deviation | Between-Run Coefficient of Variation|
+| ----- | --------- | ---- | ------ | ---------- | ------------------------------ | ------------------------------------|
+
+Rules:
+
+* Create one row for each analyte.
+* Parameter names must come from uploaded documents.
+* Calculate all values dynamically from measurements obtained across different runs.
+* Use target values when available.
+* Never hard-code analytes or numerical values.
+* Never fabricate measurements.
+* Use all available runs when calculating Grand Mean, SDbetween and %CVbetween.
+
+Immediately after the table generate:
+
+Conclusion
+
+Discuss:
+
+* Intermediate precision.
+* Reproducibility between analytical runs.
+* Day-to-day variability.
+* Stability of assay performance.
+* Relative variability among analytes.
+* Compliance with CLSI recommendations.
+* Analytical reliability and consistency.
+
+Conclude with a regulatory interpretation describing whether the observed between-run variability demonstrates acceptable assay reproducibility and supports the intended analytical performance of the device.
+
 
 ==================================================
 7.2 ACCURACY TEST
@@ -231,7 +287,7 @@ Rules:
 
 After the table generate:
 
-Interpretation of Results
+Conclusion
 
 Discuss:
 
@@ -273,7 +329,7 @@ Generate additional regression tables when supported by the data.
 
 After every table generate:
 
-Interpretation of Results
+Conclusion
 
 Discuss:
 
@@ -383,7 +439,7 @@ Rules:
 
 After the table generate:
 
-Interpretation of Results
+Conclusion
 
 Discuss:
 
@@ -425,7 +481,7 @@ Analytical Specificity Ratio = Target Value / Standard Deviation (SD)
 
 Follow with:
 
-Interpretation of Results
+Conclusion
 
 ==================================================
 12.0 CONCLUSIONS
@@ -477,6 +533,7 @@ Return a flat JSON object with exactly these keys:
 {
   "7": "<Analytical Studies Overview paragraph>",
   "7.1": "<Precision study with markdown table>",
+  "7.1a": "<Between-Run Precision study with markdown table>",
   "7.2": "<Accuracy study with markdown table>",
   "7.3": "<Linearity study with markdown table>",
   "8.1": "<Specimen Type narrative>",
@@ -619,12 +676,15 @@ export async function POST(
 You MUST return a JSON object with EXACTLY these keys mapping to Markdown content:
 "7": Analytical Studies Overview
 "7.1": Precision Study Table and Interpretation
+"7.1.a": Between-Run Precision Study Table
 "7.2": Accuracy Study Table and Interpretation
 "7.3": Linearity Study Table and Interpretation
 "8.1": Specimen Type Information
 "9.1": Reproducibility Summary
 "10.0a": Analytical Sensitivity Overview
 "10.1": Analytical Sensitivity Study Table and Interpretation
+"11.0a":Analytical Specificity Overview
+"11.1":Table 6: Analytical Specificity Study
 
 Do NOT include any other keys. Do NOT nest the JSON.`,
         },
@@ -671,6 +731,7 @@ Do NOT include any other keys. Do NOT nest the JSON.`,
     const fieldToSectionMapping: Record<string, string> = {
       "7": "s7",
       "7.1": "s7",
+      "7.1.a": "s7",
       "7.2": "s7",
       "7.3": "s7",
       "8.1": "s8",

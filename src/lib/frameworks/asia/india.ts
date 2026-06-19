@@ -85,6 +85,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         id: "s7", title: "7.0 Analytical Studies", description: "Conformity demonstration studies", fields: [
           { id: "7", label: "Analytical Studies Overview", hint: "Studies demonstrating conformity", textarea: true },
           { id: "7.1", label: "Table 4. Precision Table", hint: "Precision study results — auto-generated from the batch upload above", textarea: true },
+          { id: "7.1a", label: "Table 4a. Between-Run Precision Table", hint: "Between-Run Precision study results — auto-generated from the batch upload above", textarea: true },
           { id: "7.2", label: "Table 5. Accuracy Table", hint: "Accuracy/method comparison study results — auto-generated from the batch upload above", textarea: true },
           { id: "7.3", label: "Table 6. Linearity Table", hint: "Linearity study results — auto-generated from the batch upload above", textarea: true }
         ]
