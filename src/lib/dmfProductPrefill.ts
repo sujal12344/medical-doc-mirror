@@ -89,7 +89,7 @@ export function getProductDmfPrefill(
     set("s1", "1.1e", deviceClass ? `Class ${deviceClass}` : "");
     set("s1", "1.2", regulatoryStatusIndia);
     set("s2", "2.2", intendedUse);
-    set("s2", "2.13", predicateComparison);
+    set("s2", "2.4", predicateComparison);
     // Labelling section — pre-fill from registered product (only stable fields)
     const mdDeviceType = (product.deviceType || "").trim() || "Medical Device";
     set("s8", "8.productName", name);
@@ -217,7 +217,7 @@ function comparisonRow(
   predicate: string,
   assessment: string,
 ): string {
-  return `${aspect} | Subject (registered): ${subject || "—"} | Predicate (CDSCO): ${predicate || "—"} | ${assessment}`;
+  return `| ${aspect} | ${subject || "—"} | ${predicate || "—"} | ${assessment} |`;
 }
 
 /** §2.4 / §2.13 — subject vs predicate substantial-equivalence comparison from Product + predDevice. */
@@ -254,6 +254,8 @@ function formatPredicateComparison(
   const predBasis = (pred.predicateBasis || "").trim();
 
   const rows: string[] = [
+    "| Feature / Aspect | Subject (registered) | Predicate (CDSCO) | Assessment |",
+    "|---|---|---|---|",
     comparisonRow(
       "Trade / product name",
       subjectName,
@@ -301,38 +303,41 @@ function formatPredicateComparison(
   ];
 
   if (predReg) {
-    rows.push(`Predicate CDSCO licence / registration: ${predReg}`);
+    rows.push(`\n**Predicate CDSCO licence / registration:** ${predReg}`);
   }
 
   const differences = listDifferences(product, pred);
   const similarities = listSimilarities(product, pred);
 
   return [
-    "SUBJECT DEVICE (this product — registered in Products collection)",
-    `Name: ${subjectName || "—"}`,
-    `Manufacturer: ${subjectMfg || "—"}`,
-    `Risk class: ${subjectClass ? `Class ${subjectClass}` : "—"}`,
-    `Intended use: ${subjectUse || "—"}`,
-    `Description: ${subjectDesc || "—"}`,
+    "**SUBJECT DEVICE (this product — registered in Products collection)**",
+    `- **Name:** ${subjectName || "—"}`,
+    `- **Manufacturer:** ${subjectMfg || "—"}`,
+    `- **Risk class:** ${subjectClass ? `Class ${subjectClass}` : "—"}`,
+    `- **Intended use:** ${subjectUse || "—"}`,
+    `- **Description:** ${subjectDesc || "—"}`,
     "",
-    "PREDICATE DEVICE (CDSCO approved reference — predDevice)",
-    `Name: ${predName || "—"}`,
-    `Manufacturer: ${predMfg || "—"}`,
-    `Risk class: ${predClass ? `Class ${predClass}` : "—"}`,
-    predReg ? `Registration: ${predReg}` : "",
+    "**PREDICATE DEVICE (CDSCO approved reference — predDevice)**",
+    `- **Name:** ${predName || "—"}`,
+    `- **Manufacturer:** ${predMfg || "—"}`,
+    `- **Risk class:** ${predClass ? `Class ${predClass}` : "—"}`,
+    predReg ? `- **Registration:** ${predReg}` : "",
     "",
-    "SIDE-BY-SIDE COMPARISON",
+    "**SIDE-BY-SIDE COMPARISON**",
+    "",
     ...rows,
     "",
-    "SIMILARITIES",
-    ...similarities.map((s) => `• ${s}`),
+    "**SIMILARITIES**",
     "",
-    "DIFFERENCES",
-    ...differences.map((d) => `• ${d}`),
+    ...similarities.map((s) => `- ${s}`),
     "",
-    predBasis ? `SUBSTANTIAL EQUIVALENCE STATEMENT (Phase 1 — predicateBasis):\n${predBasis}` : "",
+    "**DIFFERENCES**",
     "",
-    "CONCLUSION",
+    ...differences.map((d) => `- ${d}`),
+    "",
+    predBasis ? `**SUBSTANTIAL EQUIVALENCE STATEMENT (Phase 1 — predicateBasis):**\n${predBasis}` : "",
+    "",
+    "**CONCLUSION**",
     buildEquivalenceConclusion(product, pred, differences.length === 0),
   ]
     .filter(Boolean)

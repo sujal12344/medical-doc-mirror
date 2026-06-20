@@ -105,6 +105,12 @@ export default function DocumentEditorPage() {
   const [section6Generating, setSection6Generating] = useState(false);
   const [section6Status, setSection6Status] = useState<"idle" | "success" | "error">("idle");
   const [section6Msg, setSection6Msg] = useState("");
+  const [section22Generating, setSection22Generating] = useState(false);
+  const [section22Status, setSection22Status] = useState<"idle" | "success" | "error">("idle");
+  const [section22Msg, setSection22Msg] = useState("");
+  const [section3Generating, setSection3Generating] = useState(false);
+  const [section3Status, setSection3Status] = useState<"idle" | "success" | "error">("idle");
+  const [section3Msg, setSection3Msg] = useState("");
   const [chatFileRef] = [useRef<HTMLInputElement>(null)];
   const stabilityFileRef = useRef<HTMLInputElement>(null);
   const initialAutofillStarted = useRef(false);
@@ -119,6 +125,7 @@ export default function DocumentEditorPage() {
   const [shippingGenerating, setShippingGenerating] = useState(false);
   const [shippingStatus, setShippingStatus] = useState<"idle" | "success" | "error">("idle");
   const [shippingMsg, setShippingMsg] = useState("");
+  const [dmfGenerating, setDmfGenerating] = useState(false);
 
   useEffect(() => {
     fetch(`/api/documents/${id}`).then((r) => r.json()).then((data) => {
@@ -470,6 +477,65 @@ export default function DocumentEditorPage() {
       setSection6Generating(false);
     }
   }
+  async function handleSection22Generate() {
+    if (!doc) return;
+    setSection22Generating(true);
+    setSection22Status("idle");
+    setSection22Msg("Generating Section 22 — from uploaded file and existing sections…");
+    try {
+      const r = await fetch(`/api/documents/${id}/section22`, { method: "POST" });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        const fieldMap: Record<string, { sectionId: string; fieldId: string }> = {
+          "22": { sectionId: "s22", fieldId: "22" },
+        };
+        for (const [fieldId, mapping] of Object.entries(fieldMap)) {
+          const content = (data.results as Record<string, string>)[fieldId];
+          if (content !== undefined) setFieldValue(mapping.sectionId, mapping.fieldId, content);
+        }
+        setSection22Status("success");
+        setSection22Msg("✅ Section 22 generated successfully");
+      } else {
+        setSection22Status("error");
+        setSection22Msg(data.error || "Failed to generate Section 22.");
+      }
+    } catch {
+      setSection22Status("error");
+      setSection22Msg("Network error: failed to connect to Section 22 generation service.");
+    } finally {
+      setSection22Generating(false);
+    }
+  }
+
+  async function handleSection3Generate() {
+    if (!doc) return;
+    setSection3Generating(true);
+    setSection3Status("idle");
+    setSection3Msg("Generating Section 3 Essential Principles Checklist from uploaded documents…");
+    try {
+      const r = await fetch(`/api/documents/${id}/section3`, { method: "POST" });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        const fieldMap: Record<string, { sectionId: string; fieldId: string }> = {
+          "3": { sectionId: "s3", fieldId: "3" },
+        };
+        for (const [fieldId, mapping] of Object.entries(fieldMap)) {
+          const content = (data.results as Record<string, string>)[fieldId];
+          if (content !== undefined) setFieldValue(mapping.sectionId, mapping.fieldId, content);
+        }
+        setSection3Status("success");
+        setSection3Msg("✅ Section 3 generated successfully");
+      } else {
+        setSection3Status("error");
+        setSection3Msg(data.error || "Failed to generate Section 3.");
+      }
+    } catch {
+      setSection3Status("error");
+      setSection3Msg("Network error: failed to connect to Section 3 generation service.");
+    } finally {
+      setSection3Generating(false);
+    }
+  }
 
   async function handleSection5Upload(files: FileList) {
     if (!files.length || !doc) return;
@@ -595,6 +661,33 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
             className="w-full text-xs px-3 py-2 bg-accent hover:bg-accent-hover text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm"
           >
             {saving ? "Saving…" : "Save Document"}
+          </button>
+          <button
+            onClick={async () => {
+              if (!doc || dmfGenerating) return;
+              setDmfGenerating(true);
+              try {
+                const r = await fetch(`/api/documents/${id}/generate-dmf`, { method: "POST" });
+                if (!r.ok) { const d = await r.json(); alert(d.error || "Failed to generate DMF"); return; }
+                const blob = await r.blob();
+                const contentDisposition = r.headers.get("Content-Disposition") || "";
+                const match = contentDisposition.match(/filename="?([^"]+)"?/);
+                const filename = match ? match[1] : `DMF_${id}.docx`;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = filename; a.click();
+                URL.revokeObjectURL(url);
+              } catch { alert("Network error generating DMF."); }
+              finally { setDmfGenerating(false); }
+            }}
+            disabled={dmfGenerating || !doc}
+            className="w-full text-xs px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
+          >
+            {dmfGenerating ? (
+              <><span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating…</>
+            ) : (
+              <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg> Generate DMF (.docx)</>
+            )}
           </button>
         </div>
       </div>
@@ -733,6 +826,56 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
             </div>
 
             <div className="space-y-5">
+              {currentSection.id === "s3" && (
+                <div className="rounded-xl border border-dashed border-amber-400/50 bg-amber-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-400/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate Section 3 — Essential Principles</p>
+                      <p className="text-xs text-muted">Auto-generate the complete EP Checklist table from your uploaded IFU and technical documents.</p>
+                    </div>
+                  </div>
+                  {section3Msg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${section3Status === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : section3Status === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-amber-500/10 text-amber-600 dark:text-amber-300 border border-amber-500/20"
+                      }`}>
+                      {section3Msg}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={section3Generating}
+                    onClick={handleSection3Generate}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${section3Generating
+                      ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                      : "border-amber-400/40 text-amber-600 dark:text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 hover:border-amber-400/60"
+                      }`}
+                  >
+                    {section3Generating ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating Section 3…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        </svg>
+                        Generate Essential Principles Checklist
+                      </>
+                    )}
+                  </button>
+                  <p className="mt-2 text-[10px] text-muted">Tip: Results are drawn from Pinecone RAG and your uploaded documents.</p>
+                </div>
+              )}
+
               {/* Section 5 combined upload panel */}
               {currentSection.id === "s5" && (
                 <div className="rounded-xl border border-dashed border-violet-400/50 bg-violet-500/5 p-5">
@@ -837,6 +980,55 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                     )}
                   </button>
                   <p className="mt-2 text-[10px] text-muted">Tip: Run this after generating §7 Analytical Studies for the most complete output. Results are drawn from Pinecone RAG and already-saved section data.</p>
+                </div>
+              )}
+              {currentSection.id === "s22" && (
+                <div className="rounded-xl border border-dashed border-teal-400/50 bg-teal-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-400/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate Section 22</p>
+                      <p className="text-xs text-muted">Auto-generate the IVD-specific additional requirements from the product details and uploaded documents.</p>
+                    </div>
+                  </div>
+                  {section22Msg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${section22Status === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : section22Status === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-teal-500/10 text-teal-600 dark:text-teal-300 border border-teal-500/20"
+                      }`}>
+                      {section22Msg}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={section22Generating}
+                    onClick={handleSection22Generate}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${section22Generating
+                      ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                      : "border-teal-400/40 text-teal-600 dark:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 hover:border-teal-400/60"
+                      }`}
+                  >
+                    {section22Generating ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating Section 22…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        </svg>
+                        Generate Section 22 IVD-Specific Information
+                      </>
+                    )}
+                  </button>
+                  <p className="mt-2 text-[10px] text-muted">Tip: Results are drawn from the uploaded IFU, product details, and already-saved sections.</p>
                 </div>
               )}
 
@@ -1076,7 +1268,6 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
           <p className="text-muted">Select a section from the left</p>
         )}
       </div>
-
       {/* Chat */}
       <div className="w-80 bg-surface border-l border-border flex flex-col shrink-0">
         <div className="p-3 border-b border-border">

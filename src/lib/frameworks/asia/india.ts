@@ -13,7 +13,6 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "1.1c", label: "Novel Features", hint: "Features vs CDSCO predicate — from predDevice.predicateBasis + subject/predicate comparison (Phase 1)", textarea: true },
           { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D" },
           { id: "1.1d", label: "Claimed Shelf Life", hint: "e.g. 18 months from date of manufacture" },
-          { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted", textarea: true },
           { id: "1.2", label: "Regulatory Status in India", hint: "Yes — approved (name CDSCO predicate device) OR New device — from Phase 1 predicate pathway" },
           { id: "1.3", label: "Domestic Price", hint: "Price per unit in country of origin currency" },
           { id: "1.4", label: "Marketing History", hint: "Marketing history from first introduction", textarea: true },
@@ -54,9 +53,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s3", title: "3.0 Essential Principles Checklist", description: "Safety and performance compliance", fields: [
-          { id: "3a", label: "EP Checklist", hint: "EP number | Relevant | Standard | Complies | Reference", textarea: true },
-          { id: "3b", label: "Conformity Methods", hint: "Standards, reference methods, in-house methods", textarea: true },
-          { id: "3c", label: "Evidence Reference Location", hint: "Reference to report, annexure, technical document", textarea: true },
+          { id: "3", label: "Essential Principles Checklist", hint: "Complete the Essential Principles (EP) checklist indicating relevance, conformity methods, and evidence reference locations.", textarea: true }
         ]
       },
       {
@@ -233,21 +230,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s22", title: "22.0 Information Required to be submitted", description: "IVD-specific additional requirements", fields: [
-          { id: "22.1", label: "Antigen/Antibody Details", hint: "Source, characterization, coating process", textarea: true },
-          { id: "22.2", label: "Test Protocol", hint: "Specifications and method of testing", textarea: true },
-          { id: "22.3", label: "NCA Evaluation Report", hint: "Evaluation by national control authority", textarea: true },
-          { id: "22.4", label: "Batch Test Report", hint: "3+ consecutive batches", textarea: true },
-          { id: "22.5", label: "Component Test Report", hint: "All components used in finished device", textarea: true },
-          { id: "22.6", label: "Pack Size & Labelling", hint: "All pack sizes and labelling spec" },
-          { id: "22.7", label: "Product Inserts (IFU)", hint: "Full IFU document", textarea: true },
-          { id: "22.8", label: "Indian Lab Evaluation", hint: "Sensitivity/specificity by Indian lab", textarea: true },
-          { id: "22.9", label: "Safety Data Sheet", hint: "Safe handling, material control, storage", textarea: true },
-          { id: "22.10", label: "Quality Control Acceptance Criteria", hint: "Negative control, positive control and validity criteria", textarea: true },
-          { id: "22.11", label: "Biological Source Materials", hint: "Animal, human, microbial or recombinant origin materials", textarea: true },
-          { id: "22.13", label: "Calibrator Details", hint: "Reference materials and calibration hierarchy", textarea: true },
-          { id: "22.14", label: "Control Material Details", hint: "Positive, negative and internal controls", textarea: true },
-          { id: "22.12a", label: "Table 22.1. List Of Standards", hint: "Upload standards certificate or list to populate standards table", textarea: true, allowUpload: true }
+        id: "s22", title: "22.0 Information Required to be submitted for the in-vitro diagnostic medical device.", description: "IVD-specific additional requirements", fields: [
+          { id: "22", label: "IVD-Specific Information", hint: "Complete this section with all required IVD-specific information. This is a critical section for CDSCO submission. Ensure all items below are completed.", textarea: true }
         ]
       },
       {
@@ -295,7 +279,6 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "1.1c", label: "Novel Features", hint: "Features distinguishing this device from existing marketed devices", textarea: true },
           { id: "1.1d", label: "Claimed Shelf Life", hint: "Expected useful life e.g. 5 years from date of manufacture" },
           { id: "1.1e", label: "Risk Class", hint: "Class A / B / C / D per MDR 2017 classification rules" },
-          { id: "1.1f", label: "Synopsis of Dossier", hint: "Brief overview of all sections submitted in the DMF", textarea: true },
           { id: "1.2", label: "Regulatory Status in India", hint: "Yes — approved (CDSCO predicate device name) OR New device — from Phase 1 predDevice" },
           { id: "1.3", label: "Domestic Price", hint: "Ex-factory price per unit in country of origin currency" },
           { id: "1.4", label: "Marketing History", hint: "Global marketing history from first commercial introduction", textarea: true },
