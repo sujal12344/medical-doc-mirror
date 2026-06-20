@@ -105,6 +105,9 @@ export default function DocumentEditorPage() {
   const [section6Generating, setSection6Generating] = useState(false);
   const [section6Status, setSection6Status] = useState<"idle" | "success" | "error">("idle");
   const [section6Msg, setSection6Msg] = useState("");
+  const [section22Generating, setSection22Generating] = useState(false);
+  const [section22Status, setSection22Status] = useState<"idle" | "success" | "error">("idle");
+  const [section22Msg, setSection22Msg] = useState("");
   const [chatFileRef] = [useRef<HTMLInputElement>(null)];
   const stabilityFileRef = useRef<HTMLInputElement>(null);
   const initialAutofillStarted = useRef(false);
@@ -468,6 +471,35 @@ export default function DocumentEditorPage() {
       setSection6Msg("Network error: failed to connect to Section 6 generation service.");
     } finally {
       setSection6Generating(false);
+    }
+  }
+  async function handleSection22Generate() {
+    if (!doc) return;
+    setSection22Generating(true);
+    setSection22Status("idle");
+    setSection22Msg("Generating Section 22 — from uploaded file and existing sections…");
+    try {
+      const r = await fetch(`/api/documents/${id}/section22`, { method: "POST" });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        const fieldMap: Record<string, { sectionId: string; fieldId: string }> = {
+          "22": { sectionId: "s22", fieldId: "22" },
+        };
+        for (const [fieldId, mapping] of Object.entries(fieldMap)) {
+          const content = (data.results as Record<string, string>)[fieldId];
+          if (content !== undefined) setFieldValue(mapping.sectionId, mapping.fieldId, content);
+        }
+        setSection22Status("success");
+        setSection22Msg("✅ Section 22 generated successfully");
+      } else {
+        setSection22Status("error");
+        setSection22Msg(data.error || "Failed to generate Section 22.");
+      }
+    } catch {
+      setSection22Status("error");
+      setSection22Msg("Network error: failed to connect to Section 22 generation service.");
+    } finally {
+      setSection22Generating(false);
     }
   }
 
@@ -839,6 +871,55 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                   <p className="mt-2 text-[10px] text-muted">Tip: Run this after generating §7 Analytical Studies for the most complete output. Results are drawn from Pinecone RAG and already-saved section data.</p>
                 </div>
               )}
+              {currentSection.id === "s22" && (
+                <div className="rounded-xl border border-dashed border-teal-400/50 bg-teal-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-400/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-teal-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate Section 22</p>
+                      <p className="text-xs text-muted">Auto-generate the IVD-specific additional requirements from the product details and uploaded documents.</p>
+                    </div>
+                  </div>
+                  {section22Msg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${section22Status === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : section22Status === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-teal-500/10 text-teal-600 dark:text-teal-300 border border-teal-500/20"
+                      }`}>
+                      {section22Msg}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={section22Generating}
+                    onClick={handleSection22Generate}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${section22Generating
+                      ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                      : "border-teal-400/40 text-teal-600 dark:text-teal-300 bg-teal-500/10 hover:bg-teal-500/20 hover:border-teal-400/60"
+                      }`}
+                  >
+                    {section22Generating ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating Section 22…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        </svg>
+                        Generate Section 22 IVD-Specific Information
+                      </>
+                    )}
+                  </button>
+                  <p className="mt-2 text-[10px] text-muted">Tip: Results are drawn from the uploaded IFU, product details, and already-saved sections.</p>
+                </div>
+              )}
 
               {/* Combined Analytical Studies Upload Panel — shown ONLY on Section 7 */}
               {currentSection.id === "s7" && (
@@ -1073,7 +1154,6 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
           <p className="text-muted">Select a section from the left</p>
         )}
       </div>
-
       {/* Chat */}
       <div className="w-80 bg-surface border-l border-border flex flex-col shrink-0">
         <div className="p-3 border-b border-border">

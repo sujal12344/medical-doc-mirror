@@ -155,7 +155,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "18.0a", label: "Shipping / Transport Stability Data", hint: "Auto-filled from Shipping Stability report in the Stability Reports section", textarea: true }
         ]
       },
-   
+
       {
         id: "s19", title: "19.0 Clinical Evidence", description: "Clinical evaluation report", fields: [
           { id: "19", label: "Clinical Evidence", hint: "Conformity to essential principles", textarea: true }
@@ -240,20 +240,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s22", title: "22.0 Information Required to be submitted for the in-vitro diagnostic medical device.", description: "IVD-specific additional requirements", fields: [
-          { id: "22.1", label: "Antigen/Antibody Details", hint: "Source, characterization, coating process", textarea: true },
-          { id: "22.2", label: "Test Protocol", hint: "Specifications and method of testing", textarea: true },
-          { id: "22.3", label: "NCA Evaluation Report", hint: "Evaluation by national control authority", textarea: true },
-          { id: "22.4", label: "Batch Test Report", hint: "3+ consecutive batches", textarea: true },
-          { id: "22.5", label: "Component Test Report", hint: "All components used in finished device", textarea: true },
-          { id: "22.6", label: "Pack Size & Labelling", hint: "All pack sizes and labelling spec" },
-          { id: "22.7", label: "Product Inserts (IFU)", hint: "Full IFU document", textarea: true },
-          { id: "22.8", label: "Indian Lab Evaluation", hint: "Sensitivity/specificity by Indian lab", textarea: true },
-          { id: "22.9", label: "Safety Data Sheet", hint: "Safe handling, material control, storage", textarea: true },
-          { id: "22.10", label: "Quality Control Acceptance Criteria", hint: "Negative control, positive control and validity criteria", textarea: true },
-          { id: "22.11", label: "Biological Source Materials", hint: "Animal, human, microbial or recombinant origin materials", textarea: true },
-          { id: "22.13", label: "Calibrator Details", hint: "Reference materials and calibration hierarchy", textarea: true },
-          { id: "22.14", label: "Control Material Details", hint: "Positive, negative and internal controls", textarea: true },
-          { id: "22.12a", label: "Table 22.1. List Of Standards", hint: "Upload standards certificate or list to populate standards table", textarea: true, allowUpload: true }
+          { id: "22", label: "IVD-Specific Information", hint: "Complete this section with all required IVD-specific information. This is a critical section for CDSCO submission. Ensure all items below are completed.", textarea: true }
         ]
       },
       {
@@ -261,7 +248,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "coa.upload", label: "Value Sheet", hint: "Upload Value Sheet to generate Certificate of Analysis", textarea: true, allowUpload: true }
         ]
       },
-         {
+      {
         id: "s_stability_reports",
         title: "Stability Reports",
         description: "Full regulatory-grade stability study reports. Upload IFU and COA documents to auto-generate all three reports simultaneously.",
