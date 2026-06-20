@@ -1394,7 +1394,20 @@ Generate the Metrological Traceability section now as described in the system in
           const finalValue = `[ZIP_DATA]: # (data:application/zip;base64,${content})\n\n${allMarkdown}`;
           console.log(`[field-upload] Native TS COA ZIP generated successfully with Markdown preview`);
 
-          // Save directly to document
+          // Generate Section 13 (Measuring Range) and Section 14 (Assay Cut-off) tables
+          let measuringRangeTable = `### Measuring range of the assay\n\nThe measuring range for ${coaProductName} is as follows:\n\n| S. No | Parameter | Unit | Measuring Value |\n|---|---|---|---|\n`;
+          let cutoffTable = `### Definition of Assay Cut-off\n\nThe assay cut-off for ${coaProductName} is as follows:\n\n| S. No | Parameter | Unit | Assay Cut-off Value |\n|---|---|---|---|\n`;
+
+          data.forEach((row, idx) => {
+            const sno = row["S. No"] || idx + 1;
+            const param = row["Parameter"] || "";
+            const unit = row["Unit"] || "";
+            const target = row["Target"] || "-";
+            measuringRangeTable += `| ${sno} | ${param} | ${unit} | ${target} |\n`;
+            cutoffTable += `| ${sno} | ${param} | ${unit} | ${target} |\n`;
+          });
+
+          // Save directly to document for COA
           const currentSectionData = doc.sections.get(sectionId) || { id: sectionId, fields: {}, completionPct: 0 };
           currentSectionData.fields[fieldId] = finalValue;
           
@@ -1403,10 +1416,31 @@ Generate the Metrological Traceability section now as described in the system in
             const filled = secObj.fields.filter((f) => currentSectionData.fields[f.id]?.trim()).length;
             currentSectionData.completionPct = Math.round((filled / secObj.fields.length) * 100);
           }
-
           doc.sections.set(sectionId, currentSectionData);
+
+          // Save to Section 13
+          const s13 = doc.sections.get("s13_measuring_range") || { id: "s13_measuring_range", fields: {}, completionPct: 0 };
+          s13.fields["13.0a"] = measuringRangeTable;
+          const s13Obj = fw.sections.find((s) => s.id === "s13_measuring_range");
+          if (s13Obj) {
+            const filled = s13Obj.fields.filter((f) => s13.fields[f.id]?.trim()).length;
+            s13.completionPct = Math.round((filled / s13Obj.fields.length) * 100);
+          }
+          doc.sections.set("s13_measuring_range", s13);
+
+          // Save to Section 14
+          const s14 = doc.sections.get("s13_cutoff") || { id: "s13_cutoff", fields: {}, completionPct: 0 };
+          s14.fields["14.0a"] = cutoffTable;
+          const s14Obj = fw.sections.find((s) => s.id === "s13_cutoff");
+          if (s14Obj) {
+            const filled = s14Obj.fields.filter((f) => s14.fields[f.id]?.trim()).length;
+            s14.completionPct = Math.round((filled / s14Obj.fields.length) * 100);
+          }
+          doc.sections.set("s13_cutoff", s14);
+
           doc.markModified("sections");
           await doc.save();
+
 
           return NextResponse.json({ success: true, fileName: file.name, chunksIndexed: 0, namespace: "", value: finalValue });
 
@@ -1546,7 +1580,7 @@ Generate the Metrological Traceability section now as described in the system in
     const analyticsFields = ["7", "7.1", "7.2", "7.3", "8.1", "9.1", "10.0a", "10.1", "11.0a", "11.1"];
     const isAnalyticsField = analyticsFields.includes(fieldId) || analyticsSections.includes(sectionId);
 
-    const fieldsToGenerate = fieldId === "5.0" ? ["5.0", "5.1", "5.2", "5.3", "5.4"] : [fieldId];
+    const fieldsToGenerate = fieldId === "5.0" ? ["5.1", "5.2", "5.3", "5.4"] : [fieldId];
     const generatedValues: Record<string, string> = {};
 
     // Example Configuration Objects to pass along with your execution flow 

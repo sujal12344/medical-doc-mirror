@@ -676,7 +676,7 @@ export async function POST(
 You MUST return a JSON object with EXACTLY these keys mapping to Markdown content:
 "7": Analytical Studies Overview
 "7.1": Precision Study Table and Interpretation
-"7.1.a": Between-Run Precision Study Table
+"7.1a": Between-Run Precision Study Table
 "7.2": Accuracy Study Table and Interpretation
 "7.3": Linearity Study Table and Interpretation
 "8.1": Specimen Type Information
@@ -731,7 +731,7 @@ Do NOT include any other keys. Do NOT nest the JSON.`,
     const fieldToSectionMapping: Record<string, string> = {
       "7": "s7",
       "7.1": "s7",
-      "7.1.a": "s7",
+      "7.1a": "s7",
       "7.2": "s7",
       "7.3": "s7",
       "8.1": "s8",

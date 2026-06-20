@@ -1044,7 +1044,9 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                 </div>
               )}
 
-              {currentSection.fields.map((field) => (
+              {currentSection.fields.map((field) => {
+                if (field.id === "5.0") return null;
+                return (
                 <RegulatoryFieldEditor
                   key={field.id}
                   fieldId={field.id}
@@ -1065,7 +1067,8 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                   redirectLabel={field.redirectLabel}
                   onRedirect={(s) => setActiveSection(s)}
                 />
-              ))}
+                );
+              })}
 
             </div>
           </div>

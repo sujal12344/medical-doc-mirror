@@ -67,11 +67,11 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s5", title: "5.0 Design and Manufacturing Information", description: "Design, process, and manufacturing site information", fields: [
-          { id: "5.0", label: "5.0 Design and Manufacturing Information (Essential Requirements Checklist Table)", hint: "Table fields: No, Essential Requirement, Applies (Yes/No/NA), Applicable Std /Procedure, Response", textarea: true },
+          { id: "5.0", label: "Upload Manufacturing Details", hint: "Upload documentation to auto-generate manufacturing sections below", textarea: false, allowUpload: false },
           { id: "5.1", label: "5.1 Device Design", hint: "Description with Kit contents table", textarea: true },
           { id: "5.2", label: "5.2 Manufacturing Process", hint: "Description with a flow sheet diagram", textarea: true },
-          { id: "5.3", label: "5.3 QC Flow Chart", hint: "QC flow chart", textarea: true },
-          { id: "5.4", label: "5.4 Manufacturing Site", hint: "Manufacturing Site", textarea: true }
+          { id: "5.3", label: "QC Flow Chart", hint: "QC flow chart", textarea: true },
+          { id: "5.4", label: "5.3 Manufacturing Site", hint: "Manufacturing Site", textarea: true }
         ]
       },
       {
@@ -99,8 +99,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s9", title: "9.0 Analytical Performance Characteristics", description: "Accuracy, trueness, precision, repeatability, and reproducibility", fields: [
-          { id: "9.1", label: "9.1 Accuracy of measurement", hint: "Accuracy is measured and documented in Section 7.0 Analytical Studies.", textarea: false, redirectSectionId: "s7", redirectLabel: "Go to 7.B Accuracy Table" },
-          { id: "9.2", label: "9.2 Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
+          { id: "9.2", label: "9.1 Accuracy of measurement", hint: "Accuracy is measured and documented in Section 7.0 Analytical Studies.", textarea: false, redirectSectionId: "s7", redirectLabel: "Go to 7.B Accuracy Table" },
+          { id: "9.1", label: "9.2 Reproducibility", hint: "Variability between days, runs, sites", textarea: true },
         ]
       },
       {
@@ -127,12 +127,12 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s13_measuring_range", title: "13.0 Measuring range of the assay:", description: "Measuring range determination", fields: [
-          { id: "13.0a", label: "Measuring Range Details", hint: "Provide details for the measuring range of the assay", textarea: true }
+          { id: "13.0a", label: "Table: Measuring Range", hint: "Auto-generated from the Value Sheet upload in COA Generation", textarea: true }
         ]
       },
       {
         id: "s13_cutoff", title: "14.0 Definition of Assay Cut-off:", description: "Assay cut-off determination studies", fields: [
-          { id: "14.0a", label: "Assay Cut-off Details", hint: "Clinical cut-off definition and justification", textarea: true }
+          { id: "14.0a", label: "Table: Assay Cut-off", hint: "Auto-generated from the Value Sheet upload in COA Generation", textarea: true }
         ]
       },
       {
@@ -155,7 +155,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "18.0a", label: "Shipping / Transport Stability Data", hint: "Auto-filled from Shipping Stability report in the Stability Reports section", textarea: true }
         ]
       },
-   
+
       {
         id: "s19", title: "19.0 Clinical Evidence", description: "Clinical evaluation report", fields: [
           { id: "19", label: "Clinical Evidence", hint: "Conformity to essential principles", textarea: true }
@@ -169,12 +169,6 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
             hint: "Upload the label artwork image or PDF. OCR will extract text fields and crop the company logo.",
             textarea: false,
             allowUpload: true
-          },
-          {
-            id: "20.preview",
-            label: "Label Mock-up Preview",
-            hint: "Generated label artwork preview based on the fields below. Click Download .doc to export.",
-            readonly: true
           },
 
           {
@@ -239,7 +233,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s22", title: "22.0 Information Required to be submitted for the in-vitro diagnostic medical device.", description: "IVD-specific additional requirements", fields: [
+        id: "s22", title: "22.0 Information Required to be submitted", description: "IVD-specific additional requirements", fields: [
           { id: "22.1", label: "Antigen/Antibody Details", hint: "Source, characterization, coating process", textarea: true },
           { id: "22.2", label: "Test Protocol", hint: "Specifications and method of testing", textarea: true },
           { id: "22.3", label: "NCA Evaluation Report", hint: "Evaluation by national control authority", textarea: true },
@@ -261,7 +255,7 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
           { id: "coa.upload", label: "Value Sheet", hint: "Upload Value Sheet to generate Certificate of Analysis", textarea: true, allowUpload: true }
         ]
       },
-         {
+      {
         id: "s_stability_reports",
         title: "Stability Reports",
         description: "Full regulatory-grade stability study reports. Upload IFU and COA documents to auto-generate all three reports simultaneously.",
