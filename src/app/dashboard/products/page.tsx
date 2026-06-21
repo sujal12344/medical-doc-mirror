@@ -15,18 +15,12 @@ export default async function ProductsPage() {
           <h1 className="text-2xl font-bold text-foreground">Products</h1>
           <p className="text-sm text-muted mt-1">Manage your medical devices and IVD products</p>
         </div>
-        <Link href="/dashboard/products/new?fresh=1" className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition">
-          + New Product
-        </Link>
-      </div>
-      <div className="p-8 max-w-6xl">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground">Products</h1>
-            <p className="text-sm text-muted mt-1">Manage your medical devices and IVD products</p>
-          </div>
-          <Link href="/dashboard/products/disintegrate?fresh=1" className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/products/disintegrate?fresh=1" className="px-5 py-2.5 border border-border bg-surface hover:bg-surface2 text-foreground font-semibold rounded-xl text-sm transition">
             + Disintegrate Product
+          </Link>
+          <Link href="/dashboard/products/new?fresh=1" className="px-5 py-2.5 bg-accent hover:bg-accent-hover text-white font-semibold rounded-xl text-sm transition">
+            + New Product
           </Link>
         </div>
       </div>

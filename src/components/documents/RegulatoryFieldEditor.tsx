@@ -6,6 +6,95 @@ import remarkGfm from "remark-gfm";
 import { MermaidChart } from "./MermaidChart";
 import { downloadAsDoc } from "@/lib/downloadHelper";
 
+// ── Legacy pipe-table → GFM table converter ────────────────────────────────
+// Older data may have rows like:
+//   "Trade / product name | Subject (registered): ACME Kit | Predicate (CDSCO): Ref Kit | Similar"
+// ReactMarkdown only recognises rows that START with `|`. This function converts
+// such rows to proper GFM tables so they render correctly.
+const COMPARISON_BLOCK_HEADERS: Record<string, string> = {
+  "SUBJECT DEVICE": "### Subject Device",
+  "PREDICATE DEVICE": "### Predicate Device",
+  "SIDE-BY-SIDE COMPARISON": "### Side-by-Side Comparison",
+  "SIMILARITIES": "### Similarities",
+  "DIFFERENCES": "### Differences",
+  "SUBSTANTIAL EQUIVALENCE": "### Substantial Equivalence Statement",
+  "CONCLUSION": "### Conclusion",
+};
+
+function convertLegacyPipeRowsToGfm(value: string): string {
+  // Already has proper GFM table separator rows (|---|) — no conversion needed
+  if (/^\|[\s-|]+\|$/m.test(value)) return value;
+  // No old-style indicators — pass through unchanged
+  const hasBlockHeaders = Object.keys(COMPARISON_BLOCK_HEADERS).some((h) => value.includes(h));
+  if (!hasBlockHeaders && !value.includes(" | ")) return value;
+
+  const out: string[] = [];
+  const tableBuf: string[] = [];
+
+  const flushTable = () => {
+    if (!tableBuf.length) return;
+    out.push("| Aspect | Subject | Predicate | Assessment |");
+    out.push("|---|---|---|---|");
+    for (const row of tableBuf) {
+      const cells = row.split(" | ").map((c, i) =>
+        i === 0
+          ? c.trim()
+          : c
+              .replace(/^Subject\s*(\([^)]*\))?\s*:\s*/i, "")
+              .replace(/^Predicate\s*(\([^)]*\))?\s*:\s*/i, "")
+              .trim() || "—"
+      );
+      while (cells.length < 4) cells.push("—");
+      out.push(`| ${cells.slice(0, 4).join(" | ")} |`);
+    }
+    tableBuf.length = 0;
+    out.push("");
+  };
+
+  for (const raw of value.split("\n")) {
+    const line = raw.trim();
+
+    if (!line) {
+      flushTable();
+      out.push("");
+      continue;
+    }
+
+    // Plain block header (not already bold/markdown) → convert to ### heading
+    const hdrKey = Object.keys(COMPARISON_BLOCK_HEADERS).find(
+      (h) => line.startsWith(h) && !line.startsWith("**") && !line.startsWith("#"),
+    );
+    if (hdrKey) {
+      flushTable();
+      out.push("", COMPARISON_BLOCK_HEADERS[hdrKey], "");
+      const rest = line.slice(hdrKey.length).trim();
+      if (rest) out.push(rest);
+      continue;
+    }
+
+    // Old-style pipe row: "Aspect | Subject (...): val | Predicate (...): val | note"
+    // These do NOT start with | * - • #
+    if (
+      line.includes(" | ") &&
+      !line.startsWith("|") &&
+      !line.startsWith("**") &&
+      !line.startsWith("-") &&
+      !line.startsWith("•") &&
+      !line.startsWith("#") &&
+      line.split(" | ").length >= 3
+    ) {
+      tableBuf.push(line);
+      continue;
+    }
+
+    flushTable();
+    out.push(raw);
+  }
+
+  flushTable();
+  return out.join("\n");
+}
+
 type Props = {
   fieldId: string;
   label: string;
@@ -180,6 +269,9 @@ export function RegulatoryFieldEditor({
   };
   const displayValue = safeValue.replace(/\[ZIP_DATA\]:\s*#\s*\((data:application\/zip;base64,[A-Za-z0-9+/=]+)\)/g, '').replace(/<div data-zip=".*?"><\/div>/g, '').trim();
 
+  // Normalise legacy pipe-row format → proper GFM tables for ReactMarkdown
+  const gfmDisplayValue = convertLegacyPipeRowsToGfm(displayValue);
+
   return (
     <div className="rounded-xl border border-border bg-surface overflow-hidden">
       <div className="flex flex-wrap items-start justify-between gap-2 border-b border-border bg-surface2/80 px-4 py-3">
@@ -325,7 +417,7 @@ export function RegulatoryFieldEditor({
                   }
                 }}
               >
-                {displayValue}
+                {gfmDisplayValue}
               </ReactMarkdown>
             </div>
           )
