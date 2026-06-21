@@ -15,6 +15,7 @@ import { TR_FRAMEWORKS } from "./europe/turkey";
 import { RU_FRAMEWORKS } from "./europe/russia";
 
 import { IN_FRAMEWORKS } from "./asia/india";
+import { IN_PMF_FRAMEWORK } from "./asia/india-pmf";
 import { CN_FRAMEWORKS } from "./asia/china";
 import { JP_FRAMEWORKS } from "./asia/japan";
 import { KR_FRAMEWORKS } from "./asia/south-korea";
@@ -48,6 +49,7 @@ import type { FrameworkDeviceType, RegulatoryFramework, RegionGroup } from "./ty
 export type { FrameworkDeviceType };
 
 export const FRAMEWORKS: RegulatoryFramework[] = [
+  IN_PMF_FRAMEWORK,
   ...IN_FRAMEWORKS,
   ...US_FRAMEWORKS,
   ...EU_FRAMEWORKS,
@@ -89,7 +91,7 @@ export const REGION_GROUPS: RegionGroup[] = [
   {
     region: "Asia",
     countries: [
-      { code: "IN", name: "India", flag: "🇮🇳", frameworkCount: IN_FRAMEWORKS.length },
+      { code: "IN", name: "India", flag: "🇮🇳", frameworkCount: IN_FRAMEWORKS.length + 1 },
       { code: "CN", name: "China", flag: "🇨🇳", frameworkCount: CN_FRAMEWORKS.length },
       { code: "JP", name: "Japan", flag: "🇯🇵", frameworkCount: JP_FRAMEWORKS.length },
       { code: "KR", name: "South Korea", flag: "🇰🇷", frameworkCount: KR_FRAMEWORKS.length },
