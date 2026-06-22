@@ -284,6 +284,7 @@ Rules:
 - Use actual values from uploaded data.
 - Never copy examples.
 - Never fabricate values.
+- Calculate and display all numerical values (Mean, Bias, Percent Bias, and Target) in the Accuracy Table to exactly three decimal places (e.g. 0.005 instead of 0.00).
 
 After the table generate:
 
@@ -339,28 +340,6 @@ Discuss:
 - Regression characteristics
 
 If only a single concentration level exists, write descriptive narrative only.
-
-==================================================
-8.1 SPECIMEN TYPE
-==================================================
-
-Write a detailed narrative describing specimen type.
-
-CRITICAL SOURCE RULE:
-- Do NOT use information from the newly uploaded performance/analytical validation documents.
-- Use ONLY the information provided in the "Vector DB Matches (IFU & Product Context)" section.
-- If the Vector DB matches do not contain specimen type details, state that it is not available in the IFU.
-
-Specifically cover:
-- Specimen matrices
-- Collection requirements
-- Preparation
-- Storage conditions
-- Transportation requirements
-- Freeze-thaw limitations
-- Anticoagulants
-
-Generate specimen comparison tables only if supported by the IFU vector matches.
 
 ==================================================
 9.1 REPRODUCIBILITY
@@ -536,7 +515,6 @@ Return a flat JSON object with exactly these keys:
   "7.1a": "<Between-Run Precision study with markdown table>",
   "7.2": "<Accuracy study with markdown table>",
   "7.3": "<Linearity study with markdown table>",
-  "8.1": "<Specimen Type narrative>",
   "9.1": "<Reproducibility narrative>",
   "10.0a": "<Analytical Sensitivity Overview narrative>",
   "10.1": "<Analytical Sensitivity Study with markdown table>",
@@ -679,7 +657,6 @@ You MUST return a JSON object with EXACTLY these keys mapping to Markdown conten
 "7.1a": Between-Run Precision Study Table
 "7.2": Accuracy Study Table and Interpretation
 "7.3": Linearity Study Table and Interpretation
-"8.1": Specimen Type Information
 "9.1": Reproducibility Summary
 "10.0a": Analytical Sensitivity Overview
 "10.1": Analytical Sensitivity Study Table and Interpretation
@@ -711,8 +688,6 @@ Do NOT include any other keys. Do NOT nest the JSON.`,
           cleanKey = "10.0a";
         } else if (cleanKey === "10" || cleanKey === "10.1") {
           cleanKey = "10.1";
-        } else if (cleanKey === "8" || cleanKey === "8.1") {
-          cleanKey = "8.1";
         } else if (cleanKey === "9" || cleanKey === "9.1") {
           cleanKey = "9.1";
         } else if (cleanKey === "7" || cleanKey === "7.0") {
@@ -734,7 +709,6 @@ Do NOT include any other keys. Do NOT nest the JSON.`,
       "7.1a": "s7",
       "7.2": "s7",
       "7.3": "s7",
-      "8.1": "s8",
       "9.1": "s9",
       "10.0a": "s10_sensitivity",
       "10.1": "s10_sensitivity",

@@ -1488,7 +1488,7 @@ export async function POST(
     if (reportType === "accelerated" || reportType === "all") {
       try {
         const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
+          model: "gpt-4o",
           messages: [
             {
               role: "system",
@@ -1500,7 +1500,7 @@ export async function POST(
               content: buildAcceleratedPrompt(docSourceContent, procedureContext, fileEntries[0]?.name ?? "uploaded document"),
             },
           ],
-          max_tokens: 16000,
+          max_tokens: 16384,
           temperature: 0.1,
         });
         generatedReports["sr_accelerated"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
