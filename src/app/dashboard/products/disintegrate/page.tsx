@@ -228,7 +228,7 @@ export default function DisintegratePage() {
                 <div className="min-w-0">
                   <p className="text-xs font-medium text-foreground leading-snug">{s.title}</p>
                   <p className="text-[10px] text-muted mt-0.5">
-                    Section_{String(s.index).padStart(2, "0")}_{s.title.replace(/\s+/g, "_").slice(0, 40)}.doc
+                    Section_{String(s.index).padStart(2, "0")}_{s.title.replace(/\s+/g, "_").slice(0, 40)}.docx
                   </p>
                 </div>
               </div>
