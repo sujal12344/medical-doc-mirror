@@ -49,6 +49,78 @@ Summarize the principal validation findings, including precision, accuracy, line
 Provide an overall scientific and regulatory conclusion explaining how the validation studies demonstrate the safety, performance, reliability, and suitability of the device for its intended use.
 
 ==================================================
+8.1 SPECIMEN TYPE
+=================
+==================================================
+8.1 SPECIMEN TYPE
+=================
+
+Describe the specimen types supported by the device.
+
+CRITICAL SOURCE RULE:
+
+* Do NOT use information from newly uploaded performance, analytical validation, precision, stability, or other study documents.
+* Use ONLY information contained in the "Vector DB Matches (IFU & Product Context)" section.
+* Do NOT use external medical or laboratory knowledge.
+* If specimen information is absent from the Vector DB matches, state:
+  "Specimen type information is not available in the IFU."
+
+IMPORTANT:
+
+* Preserve the organization and meaning provided in the IFU.
+* Do NOT merge all specimen information into a single paragraph.
+* Create a separate numbered subsection for every specimen type mentioned in the IFU.
+* Do NOT assume that only one specimen type exists.
+* Include all instructions, precautions, limitations, and notes associated with each specimen type.
+
+For each specimen type, describe (only when supported by the IFU):
+
+* Collection requirements
+* Preparation before analysis
+* Storage conditions
+* Transportation requirements
+* Temperature requirements prior to analysis
+* Freeze-thaw limitations
+* Anticoagulants, preservatives, or additives that are recommended or prohibited
+* Special handling instructions
+* Warnings, precautions, or attention statements
+
+If the IFU contains explicit notes such as "Attention:", "Warning:", or "Precaution:", reproduce them under the corresponding specimen type.
+
+OUTPUT FORMAT
+
+1. [Specimen Type]
+
+Detailed description.
+
+Attention:
+
+* ...
+
+2. [Specimen Type]
+
+Detailed description.
+
+Attention:
+
+* ...
+
+3. [Specimen Type]
+
+Detailed description.
+
+Attention:
+
+* ...
+
+Generate specimen comparison tables only when sufficient information is available from the Vector DB matches.
+
+Do not summarize multiple specimen types together.
+Do not invent collection tubes, clotting times, centrifugation procedures, storage durations, hemolysis precautions, or validation statements unless explicitly stated in the IFU.
+Maintain terminology and restrictions exactly as described in the IFU.
+
+
+==================================================
 RULES
 =====
 
@@ -68,11 +140,13 @@ Return a flat JSON object with exactly these keys:
   "6.2": "<Detailed Information paragraph>",
   "6.3": "<Validation Protocol paragraph>",
   "6.4": "<Validation Results paragraph>",
-  "6.5": "<Validation Conclusion paragraph>"
+  "6.5": "<Validation Conclusion paragraph>",
+  "8.1": "<Specimen Type narrative (including tables if applicable)>"
 }
 
 Return ONLY valid JSON — no markdown fences, no preamble, no explanation.
 `;
+
 
 export async function POST(
   req: Request,
@@ -135,16 +209,19 @@ export async function POST(
 
     let vectorContext = "";
     try {
-      const query = `${(product as Record<string, unknown>).name ?? ""} validation verification precision accuracy linearity sensitivity specificity reproducibility stability clinical evaluation CLSI CDSCO DMF`;
-      vectorContext = await queryProductDocuments(userId, productNamespaceId, query, 20);
+      // Query restricted to "autofill" purpose = IFU / product knowledge uploaded by the user.
+      // Analytics study vectors (precision, accuracy, linearity, etc.) are intentionally excluded.
+      const ifuQuery = `${(product as Record<string, unknown>).name ?? ""} instructions for use IFU intended use specimen type sample matrix collection storage transportation procedure reagents principle method clinical indication patient population contraindications warnings precautions device description`;
+      vectorContext = await queryProductDocuments(userId, productNamespaceId, ifuQuery, 20, "autofill");
     } catch (e) {
       console.warn("[section6] Pinecone query failed:", e);
     }
 
+
     // ── Build the full context for GPT ─────────────────────────────────────
     const contextParts: string[] = [];
     if (vectorContext.trim()) {
-      contextParts.push(`--- Pinecone RAG Context (product + IFU knowledge) ---\n${vectorContext}`);
+      contextParts.push(`--- Vector DB Matches (IFU & Product Context) ---\n${vectorContext}`);
     }
     if (existingSectionContent.length > 0) {
       contextParts.push(`--- Already-Generated Section Content (§7–§19) ---\n${existingSectionContent.join("\n\n")}`);
@@ -194,7 +271,7 @@ export async function POST(
       );
     }
 
-    // ── Persist to section s6 ───────────────────────────────────────────────
+    // ── Persist to section s6 and s8 ─────────────────────────────────────────
     if (!doc.sections) doc.sections = new Map();
 
     const fieldToSectionMapping: Record<string, string> = {
@@ -203,7 +280,9 @@ export async function POST(
       "6.3": "s6",
       "6.4": "s6",
       "6.5": "s6",
+      "8.1": "s8",
     };
+
 
     const affectedSections = new Set<string>();
     for (const [fieldId, val] of Object.entries(generatedData)) {

@@ -418,7 +418,6 @@ export default function DocumentEditorPage() {
           "7.1a": { sectionId: "s7", fieldId: "7.1a" },
           "7.2": { sectionId: "s7", fieldId: "7.2" },
           "7.3": { sectionId: "s7", fieldId: "7.3" },
-          "8.1": { sectionId: "s8", fieldId: "8.1" },
           "9.1": { sectionId: "s9", fieldId: "9.1" },
           "10.0a": { sectionId: "s10_sensitivity", fieldId: "10.0a" },
           "10.1": { sectionId: "s10_sensitivity", fieldId: "10.1" },
@@ -432,7 +431,7 @@ export default function DocumentEditorPage() {
 
         setAnalyticalUploadStatus("success");
         setAnalyticalUploadMsg(
-          `✅ Generated analytical, specimen type, reproducibility and sensitivity studies from "${data.filesUploaded}" successfully.`
+          `✅ Generated analytical, reproducibility and sensitivity studies from "${data.filesUploaded}" successfully.`
         );
       } else {
         setAnalyticalUploadStatus("error");
@@ -461,13 +460,14 @@ export default function DocumentEditorPage() {
           "6.3": { sectionId: "s6", fieldId: "6.3" },
           "6.4": { sectionId: "s6", fieldId: "6.4" },
           "6.5": { sectionId: "s6", fieldId: "6.5" },
+          "8.1": { sectionId: "s8", fieldId: "8.1" },
         };
         for (const [fieldId, mapping] of Object.entries(fieldMap)) {
           const content = (data.results as Record<string, string>)[fieldId];
           if (content !== undefined) setFieldValue(mapping.sectionId, mapping.fieldId, content);
         }
         setSection6Status("success");
-        setSection6Msg("✅ Section 6 generated successfully — all 5 fields auto-filled from product knowledge and study data.");
+        setSection6Msg("✅ Section 6 & 8 generated successfully — fields auto-filled from product knowledge and study data.");
       } else {
         setSection6Status("error");
         setSection6Msg(data.error || "Failed to generate Section 6.");
@@ -974,8 +974,8 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Generate Section 6 — Product Validation &amp; Verification</p>
-                      <p className="text-xs text-muted">Uses Pinecone product knowledge, uploaded documents, and already-generated §7–§11 study data to auto-fill all five §6 fields: COA Summary, Detailed Information, Validation Protocol, Results, and Conclusion.</p>
+                      <p className="text-sm font-semibold text-foreground">Generate Section 6 — Product Validation &amp; Verification (with Section 8)</p>
+                      <p className="text-xs text-muted">Uses Pinecone product knowledge, uploaded documents, and already-generated §7–§11 study data to auto-fill all five §6 fields and §8.1 Specimen Type.</p>
                     </div>
                   </div>
                   {section6Msg && (
@@ -1075,8 +1075,8 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                       </svg>
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-foreground">Generate Analytical Studies, Specimen Type, Reproducibility &amp; Sensitivity Reports</p>
-                      <p className="text-xs text-muted">Upload your performance validation data. Sections §7, §8, §9 and §10 are auto-filled with precise tables.</p>
+                      <p className="text-sm font-semibold text-foreground">Generate Analytical Studies, Reproducibility &amp; Sensitivity Reports</p>
+                      <p className="text-xs text-muted">Upload your performance validation data. Sections §7, §9 and §10 are auto-filled with precise tables.</p>
                     </div>
                   </div>
 

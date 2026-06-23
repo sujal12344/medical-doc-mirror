@@ -60,12 +60,12 @@ async function extractTextFromDocx(buffer: Buffer): Promise<string> {
     try {
       const rawString = buffer.toString("utf8");
       if (rawString.includes("<html") || rawString.includes("<body") || rawString.includes("<w:WordDocument")) {
-         return rawString.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+        return rawString.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
       } else if (rawString.startsWith("{\\rtf")) {
-         return rawString.replace(/\\[a-z]+[0-9]* ?/g, " ").replace(/[{}]/g, " ").replace(/\s+/g, " ").trim();
+        return rawString.replace(/\\[a-z]+[0-9]* ?/g, " ").replace(/[{}]/g, " ").replace(/\s+/g, " ").trim();
       } else {
-         const stripped = rawString.replace(/[^\x20-\x7E]/g, "").trim();
-         return stripped.length > 50 ? stripped : "";
+        const stripped = rawString.replace(/[^\x20-\x7E]/g, "").trim();
+        return stripped.length > 50 ? stripped : "";
       }
     } catch (fallbackError) {
       console.error("Docx extraction fallback also failed:", fallbackError);
@@ -234,7 +234,7 @@ If any symbol is not visible or present, return null for that box key. If a text
     const raw = response.choices[0]?.message?.content?.trim() || "{}";
     const cleaned = raw.replace(/^```json?\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(cleaned);
-    
+
     const logoBox = Array.isArray(parsed.logo_box) && parsed.logo_box.length === 4 ? parsed.logo_box : null;
     const lotBox = Array.isArray(parsed.lot_box) && parsed.lot_box.length === 4 ? parsed.lot_box : null;
     const deviceBox = Array.isArray(parsed.device_box) && parsed.device_box.length === 4 ? parsed.device_box : null;
@@ -360,6 +360,7 @@ TABLE GENERATION & CALCULATION RULES:
 - Generate tables dynamically based on available replicate measurements.
 - Calculate and output appropriate statistical parameters: Mean, Grand Mean, Standard Deviation (SD), Standard Error of Mean (SEM), Coefficient of Variation (%CV), Recovery (%), Bias, Percent Bias, Detection Rate, Limit of Detection (LoD), Functional Sensitivity, Analytical Specificity Ratio, Signal-to-Noise Ratio, Slope, Intercept, Correlation Coefficient, and R² where applicable.
 - Do not fabricate numerical values. Perform calculations based on actual raw measurements or sample runs present in the source files.
+- In any Accuracy Table, calculate and display all numerical values (Mean, Bias, Percent Bias, and Target) to exactly three decimal places (e.g. 0.005 instead of 0.00).
 
 LINEARITY RULES:
 - Generate a Linearity table ONLY when multiple concentration levels are available.
@@ -463,11 +464,11 @@ export async function POST(
       const file = files[0];
       const buffer = Buffer.from(await file.arrayBuffer());
       const nameLower = file.name.toLowerCase();
-      
+
       const isImage = file.type.startsWith("image/") || nameLower.match(/\.(png|jpg|jpeg|webp|gif|bmp)$/i) !== null;
       const isPdf = file.type === "application/pdf" || nameLower.endsWith(".pdf");
       const isDocx = file.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" || nameLower.endsWith(".docx") || nameLower.endsWith(".doc");
-      
+
       if (isDocx) {
         console.log(`[field-upload] Master label upload (DOCX/DOC) detected for field ${fieldId}`);
         let combinedDocxText = "";
@@ -476,7 +477,7 @@ export async function POST(
 
         try {
           const zip = await JSZip.loadAsync(buffer);
-          
+
           let headerText = "";
           const headerXmlFile = zip.file("word/header1.xml");
           if (headerXmlFile) {
@@ -484,7 +485,7 @@ export async function POST(
             const tMatch = xml.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g) || [];
             headerText = tMatch.map((t: string) => t.replace(/<[^>]+>/g, "")).join(" | ");
           }
-          
+
           let bodyText = "";
           const docXmlFile = zip.file("word/document.xml");
           if (docXmlFile) {
@@ -492,9 +493,9 @@ export async function POST(
             const tMatch = xml.match(/<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g) || [];
             bodyText = tMatch.map((t: string) => t.replace(/<[^>]+>/g, "")).join(" ");
           }
-          
+
           combinedDocxText = `Header Section:\n${headerText}\n\nBody Section:\n${bodyText}`;
-          
+
           const headerRelsFile = zip.file("word/_rels/header1.xml.rels");
           if (headerRelsFile) {
             const xml = await headerRelsFile.async("string");
@@ -509,7 +510,7 @@ export async function POST(
               }
             }
           }
-          
+
           const docRelsFile = zip.file("word/_rels/document.xml.rels");
           if (docRelsFile) {
             const xml = await docRelsFile.async("string");
@@ -535,55 +536,55 @@ export async function POST(
           } catch (weError) {
             console.warn(`[field-upload] word-extractor failed. Using raw string fallback.`);
             const rawString = buffer.toString("utf8");
-            
+
             // Strip null bytes and non-printable chars first so regexes and includes() actually match UTF-16LE docs
             const asciiString = rawString.replace(/[^\x20-\x7E\n\r\t]/g, "");
 
             // Microsoft Word "Save as Web Page" HTML disguised as .doc
             if (asciiString.includes("<html") || asciiString.includes("<w:WordDocument") || asciiString.includes("xmlns:o=\"urn:schemas-microsoft-com")) {
-               console.log("[field-upload] Fallback: Detected MSWord HTML .doc — extracting body section only");
+              console.log("[field-upload] Fallback: Detected MSWord HTML .doc — extracting body section only");
 
-               // Find <body> tag to skip the massive <head> with MSO CSS/XML
-               const bodyStartIdx = asciiString.search(/<body[^>]*>/i);
-               const bodyEndIdx = asciiString.search(/<\/body>/i);
-               const bodyHtml = bodyStartIdx > -1
-                 ? asciiString.slice(bodyStartIdx, bodyEndIdx > bodyStartIdx ? bodyEndIdx + 7 : undefined)
-                 : asciiString; // fallback to full file if body tag not found
+              // Find <body> tag to skip the massive <head> with MSO CSS/XML
+              const bodyStartIdx = asciiString.search(/<body[^>]*>/i);
+              const bodyEndIdx = asciiString.search(/<\/body>/i);
+              const bodyHtml = bodyStartIdx > -1
+                ? asciiString.slice(bodyStartIdx, bodyEndIdx > bodyStartIdx ? bodyEndIdx + 7 : undefined)
+                : asciiString; // fallback to full file if body tag not found
 
-               const cleaned = bodyHtml
-                 // Remove inline style content (but keep tag text)
-                 .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
-                 // Remove script blocks
-                 .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
-                 // Remove MSO XML conditional blobs
-                 .replace(/<!--\[if[\s\S]*?\[endif\]-->/gi, " ")
-                 // Remove XML blocks
-                 .replace(/<xml>[\s\S]*?<\/xml>/gi, " ")
-                 // Strip all HTML tags
-                 .replace(/<[^>]+>/g, " ")
-                 // Decode common HTML entities
-                 .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/&#\d+;/g, " ")
-                 // Collapse whitespace
-                 .replace(/\s+/g, " ")
-                 .trim();
+              const cleaned = bodyHtml
+                // Remove inline style content (but keep tag text)
+                .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, " ")
+                // Remove script blocks
+                .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, " ")
+                // Remove MSO XML conditional blobs
+                .replace(/<!--\[if[\s\S]*?\[endif\]-->/gi, " ")
+                // Remove XML blocks
+                .replace(/<xml>[\s\S]*?<\/xml>/gi, " ")
+                // Strip all HTML tags
+                .replace(/<[^>]+>/g, " ")
+                // Decode common HTML entities
+                .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/&#\d+;/g, " ")
+                // Collapse whitespace
+                .replace(/\s+/g, " ")
+                .trim();
 
-               console.log(`[field-upload] Extracted ${cleaned.length} chars from body section`);
-               combinedDocxText = `Body Section:\n${cleaned.slice(0, 120000)}`;
+              console.log(`[field-upload] Extracted ${cleaned.length} chars from body section`);
+              combinedDocxText = `Body Section:\n${cleaned.slice(0, 120000)}`;
             } else if (rawString.startsWith("{\\rtf")) {
-               console.log("[field-upload] Fallback: Detected RTF disguised as .doc");
-               const stripped = rawString.replace(/\\[a-z]+[0-9]* ?/g, " ").replace(/[{}]/g, " ").replace(/\s+/g, " ").trim();
-               combinedDocxText = `Body Section (Raw RTF Extraction):\n${stripped.slice(0, 100000)}`;
+              console.log("[field-upload] Fallback: Detected RTF disguised as .doc");
+              const stripped = rawString.replace(/\\[a-z]+[0-9]* ?/g, " ").replace(/[{}]/g, " ").replace(/\s+/g, " ").trim();
+              combinedDocxText = `Body Section (Raw RTF Extraction):\n${stripped.slice(0, 100000)}`;
             } else {
-               const stripped = rawString.replace(/[^\x20-\x7E]/g, "").trim();
-               if (stripped.length > 50) {
-                 combinedDocxText = `Body Section (Raw Text Extraction):\n${stripped.slice(0, 100000)}`;
-               } else {
-                 return NextResponse.json({ error: "Failed to parse legacy binary .doc file. Please resave as .docx and upload." }, { status: 400 });
-               }
+              const stripped = rawString.replace(/[^\x20-\x7E]/g, "").trim();
+              if (stripped.length > 50) {
+                combinedDocxText = `Body Section (Raw Text Extraction):\n${stripped.slice(0, 100000)}`;
+              } else {
+                return NextResponse.json({ error: "Failed to parse legacy binary .doc file. Please resave as .docx and upload." }, { status: 400 });
+              }
             }
           }
         }
-        
+
         const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
         const response = await openai.chat.completions.create({
           model: "gpt-4o-mini",
@@ -616,16 +617,16 @@ ${combinedDocxText}`,
             },
           ],
         });
-        
+
         const raw = response.choices[0]?.message?.content?.trim() || "{}";
         const parsed = JSON.parse(raw);
         console.log("[field-upload] DOCX parsed metadata:", parsed);
-        
+
         const sectionPrefix = fieldId.split(".")[0];
         const currentSectionData = doc.sections.get(sectionId) || { fields: {}, completionPct: 0 };
         let updatedFields = { ...currentSectionData.fields };
         const upserted: string[] = [];
-        
+
         for (const siblingKey of LABEL_SIBLING_FIELDS) {
           const siblingFieldId = `${sectionPrefix}.${siblingKey}`;
           if (siblingKey === "logo") {
@@ -648,35 +649,35 @@ ${combinedDocxText}`,
             }
           }
         }
-        
+
         const summaryLines = LABEL_SIBLING_FIELDS
           .filter(k => parsed[k]?.trim())
           .map(k => `**${k.charAt(0).toUpperCase() + k.slice(1)}:** ${parsed[k]?.trim()}`);
-          
+
         let summaryValue = summaryLines.length > 0
           ? `## Label OCR Summary\n\n${summaryLines.join("\n")}`
           : "Label details extracted — no metadata fields found.";
-          
+
         if (artworkBase64) {
           summaryValue += `\n\n### Label Artwork\n![Label Artwork](${artworkBase64})`;
         }
-        
+
         updatedFields[fieldId] = summaryValue;
         upserted.push(fieldId);
-        
+
         const secObj = fw.sections.find((s) => s.id === sectionId);
         if (secObj) {
           const totalFields = secObj.fields.length;
           const filledCount = secObj.fields.filter(f => updatedFields[f.id]?.trim()).length;
           currentSectionData.completionPct = Math.round((filledCount / totalFields) * 100);
         }
-        
+
         currentSectionData.fields = updatedFields;
         doc.sections.set(sectionId, currentSectionData);
         doc.markModified("sections");
         await product.save();
         await doc.save();
-        
+
         return NextResponse.json({
           success: true,
           fileName: file.name,
@@ -702,28 +703,28 @@ ${combinedDocxText}`,
               useSystemFonts: true,
               disableFontFace: true,
             }).promise;
-            
+
             const totalPages = pdf.numPages;
             console.log(`[field-upload] PDF loaded: ${totalPages} page(s).`);
-            
+
             // Loop through pages up to 5 pages
             const pagesToProcess = Math.min(totalPages, 5);
-            
+
             for (let i = 1; i <= pagesToProcess; i++) {
               console.log(`[field-upload] Rendering and processing PDF page ${i} of ${pagesToProcess}...`);
               const pageRendered = await renderPdfPage(pdf, i);
               const pageBuffer = pageRendered.buffer;
               const pageMime = pageRendered.mime;
-              
+
               if (i === 1) {
                 finalActiveMime = pageMime;
                 finalLabelImageDataUri = `data:${pageMime};base64,${pageBuffer.toString("base64")}`;
               }
-              
+
               const openaiForVision = new OpenAI({ apiKey: env.OPENAI_API_KEY });
               const { fields: pageExtracted, logoBox: pageLogoBox } = await extractLabelFieldsFromImage(openaiForVision, pageBuffer, pageMime);
               console.log(`[field-upload] Page ${i} extracted fields:`, pageExtracted, "logoBox:", pageLogoBox);
-              
+
               // Merge non-empty fields
               for (const key of LABEL_SIBLING_FIELDS) {
                 const val = pageExtracted[key];
@@ -731,7 +732,7 @@ ${combinedDocxText}`,
                   aggregatedFields[key] = val.trim();
                 }
               }
-              
+
               // Keep the first logo box we successfully crop
               if (pageLogoBox && !finalLogoValue) {
                 try {
@@ -745,7 +746,7 @@ ${combinedDocxText}`,
                 }
               }
             }
-            
+
             await pdf.destroy();
           } catch (pdfErr) {
             console.error(`[field-upload] PDF processing failed:`, pdfErr);
@@ -757,7 +758,7 @@ ${combinedDocxText}`,
           const { fields: pageExtracted, logoBox: pageLogoBox } = await extractLabelFieldsFromImage(openaiForVision, buffer, finalActiveMime);
           aggregatedFields = pageExtracted;
           finalLabelImageDataUri = `data:${finalActiveMime};base64,${buffer.toString("base64")}`;
-          
+
           if (pageLogoBox) {
             try {
               console.log(`[field-upload] Cropping logo using box:`, pageLogoBox);
@@ -774,7 +775,7 @@ ${combinedDocxText}`,
         const currentSectionData = doc.sections.get(sectionId) || { fields: {}, completionPct: 0 };
         let updatedFields = { ...currentSectionData.fields };
         const upserted: string[] = [];
-        
+
         for (const siblingKey of LABEL_SIBLING_FIELDS) {
           const siblingFieldId = `${sectionPrefix}.${siblingKey}`;
           if (siblingKey === "logo") {
@@ -796,34 +797,34 @@ ${combinedDocxText}`,
             }
           }
         }
-        
+
         const logoText = aggregatedFields.logo || "";
         const summaryLines = LABEL_SIBLING_FIELDS
           .filter(k => aggregatedFields[k]?.trim())
           .map(k => `**${k.charAt(0).toUpperCase() + k.slice(1)}:** ${aggregatedFields[k]?.trim()}`);
-          
+
         const summaryValue = summaryLines.length > 0
           ? `## Label OCR Summary\n\n${summaryLines.join("\n")}\n\n### Label Artwork\n![Label Artwork](${finalLabelImageDataUri})`
           : `Label image uploaded — no text could be extracted.\n\n### Label Artwork\n![Label Artwork](${finalLabelImageDataUri})`;
-          
+
         updatedFields[fieldId] = summaryValue;
         upserted.push(fieldId);
-        
+
         const secObj = fw.sections.find((s) => s.id === sectionId);
         if (secObj) {
           const totalFields = secObj.fields.length;
           const filledCount = secObj.fields.filter(f => updatedFields[f.id]?.trim()).length;
           currentSectionData.completionPct = Math.round((filledCount / totalFields) * 100);
         }
-        
+
         currentSectionData.fields = updatedFields;
         doc.sections.set(sectionId, currentSectionData);
         doc.markModified("sections");
         await product.save();
         await doc.save();
-        
+
         console.log(`[field-upload] Label upsert complete — ${upserted.length} fields updated:`, upserted);
-        
+
         return NextResponse.json({
           success: true,
           fileName: file.name,
@@ -843,10 +844,10 @@ ${combinedDocxText}`,
       const file = files[0];
       const buffer = Buffer.from(await file.arrayBuffer());
       const nameLower = file.name.toLowerCase();
-      
+
       const isImage = file.type.startsWith("image/") || nameLower.match(/\.(png|jpg|jpeg|webp|gif|bmp)$/i) !== null;
       const isPdf = file.type === "application/pdf" || nameLower.endsWith(".pdf");
-      
+
       if (!isImage && !isPdf) {
         return NextResponse.json({ error: "Unsupported symbols file format. Upload an image or PDF." }, { status: 400 });
       }
@@ -866,18 +867,18 @@ ${combinedDocxText}`,
             useSystemFonts: true,
             disableFontFace: true,
           }).promise;
-          
+
           const totalPages = pdf.numPages;
           const pagesToProcess = Math.min(totalPages, 5);
-          
+
           for (let i = 1; i <= pagesToProcess; i++) {
             const pageRendered = await renderPdfPage(pdf, i);
             const pageBuffer = pageRendered.buffer;
             const pageMime = pageRendered.mime;
-            
+
             const openaiForVision = new OpenAI({ apiKey: env.OPENAI_API_KEY });
             const { symbolBoxes } = await extractLabelFieldsFromImage(openaiForVision, pageBuffer, pageMime);
-            
+
             if (symbolBoxes.lot && !finalSymbolLot) {
               const cropped = await cropImageBuffer(pageBuffer, symbolBoxes.lot);
               finalSymbolLot = `data:image/png;base64,${cropped.toString("base64")}`;
@@ -907,7 +908,7 @@ ${combinedDocxText}`,
       } else {
         const openaiForVision = new OpenAI({ apiKey: env.OPENAI_API_KEY });
         const { symbolBoxes } = await extractLabelFieldsFromImage(openaiForVision, buffer, file.type || "image/png");
-        
+
         if (symbolBoxes.lot) {
           const cropped = await cropImageBuffer(buffer, symbolBoxes.lot);
           finalSymbolLot = `data:image/png;base64,${cropped.toString("base64")}`;
@@ -966,7 +967,7 @@ ${combinedDocxText}`,
         const filledCount = secObj.fields.filter(f => updatedFields[f.id]?.trim()).length;
         currentSectionData.completionPct = Math.round((filledCount / totalFields) * 100);
       }
-      
+
       currentSectionData.fields = updatedFields;
       doc.sections.set(sectionId, currentSectionData);
       doc.markModified("sections");
@@ -989,7 +990,7 @@ ${combinedDocxText}`,
       const file = files[0];
       const buffer = Buffer.from(await file.arrayBuffer());
       const nameLower = file.name.toLowerCase();
-      
+
       let extractedText = "";
       const isImage = file.type.startsWith("image/") || nameLower.match(/\.(png|jpg|jpeg|webp|gif|bmp)$/i) !== null;
       const isPdf = file.type === "application/pdf" || nameLower.endsWith(".pdf");
@@ -1015,16 +1016,16 @@ ${combinedDocxText}`,
 
       const currentSectionData = doc.sections.get(sectionId) || { fields: {}, completionPct: 0 };
       let updatedFields = { ...currentSectionData.fields };
-      
+
       updatedFields[fieldId] = extractedText.trim();
-      
+
       const secObj = fw.sections.find((s) => s.id === sectionId);
       if (secObj) {
         const totalFields = secObj.fields.length;
         const filledCount = secObj.fields.filter(f => updatedFields[f.id]?.trim()).length;
         currentSectionData.completionPct = Math.round((filledCount / totalFields) * 100);
       }
-      
+
       currentSectionData.fields = updatedFields;
       doc.sections.set(sectionId, currentSectionData);
       doc.markModified("sections");
@@ -1186,20 +1187,20 @@ Generate the Metrological Traceability section now as described in the system in
           const zip = await JSZip.loadAsync(buffer);
           const docXmlFile = zip.file("word/document.xml");
           if (!docXmlFile) throw new Error("Invalid docx: word/document.xml not found");
-          
+
           let docXmlText = await docXmlFile.async("string");
           const tables = docXmlText.split("<w:tbl>");
           let data: any[] = [];
           let headers: string[] = [];
-          
+
           for (let i = 1; i < tables.length; i++) {
             const tbl = tables[i].split("</w:tbl>")[0];
             const rows = tbl.split("<w:tr");
-            
+
             for (let j = 1; j < rows.length; j++) {
               const rowStr = rows[j].split("</w:tr>")[0];
               const cells = rowStr.split("<w:tc");
-              
+
               const rowData: string[] = [];
               for (let k = 1; k < cells.length; k++) {
                 const cellStr = cells[k].split("</w:tc>")[0];
@@ -1210,7 +1211,7 @@ Generate the Metrological Traceability section now as described in the system in
                 }
                 rowData.push(cellText);
               }
-              
+
               if (headers.length === 0) {
                 const paramIdx = rowData.findIndex(col => col.trim().toLowerCase().includes("parameter"));
                 if (paramIdx !== -1) {
@@ -1218,11 +1219,11 @@ Generate the Metrological Traceability section now as described in the system in
                   continue;
                 }
               }
-              
+
               if (headers.length > 0 && rowData.length >= headers.length) {
                 const obj: Record<string, string> = {};
-                headers.forEach((h, idx) => { 
-                  if (h) obj[h] = rowData[idx]?.trim() || ""; 
+                headers.forEach((h, idx) => {
+                  if (h) obj[h] = rowData[idx]?.trim() || "";
                 });
                 data.push(obj);
               }
@@ -1252,17 +1253,17 @@ Generate the Metrological Traceability section now as described in the system in
           let coaProductName = product?.name || "Product Name";
           let mfgDate = "";
           let expDate = "";
-          
+
           doc.sections?.forEach((secData: any) => {
-             const f = secData.fields || {};
-             if (!mfgDate) {
-               mfgDate = f["20.mfgDate"] || f["8.mfgDate"] || "";
-             }
-             if (!expDate) {
-               expDate = f["20.expDate"] || f["8.expDate"] || "";
-             }
-             if (f["1.name"]) coaProductName = f["1.name"];
-             if (f["1.1a"]) coaProductName = f["1.1a"];
+            const f = secData.fields || {};
+            if (!mfgDate) {
+              mfgDate = f["20.mfgDate"] || f["8.mfgDate"] || "";
+            }
+            if (!expDate) {
+              expDate = f["20.expDate"] || f["8.expDate"] || "";
+            }
+            if (f["1.name"]) coaProductName = f["1.name"];
+            if (f["1.1a"]) coaProductName = f["1.1a"];
           });
 
           if (!mfgDate) mfgDate = "_______";
@@ -1295,18 +1296,18 @@ Generate the Metrological Traceability section now as described in the system in
           const baseBatch = batchNumMatch ? batchNumMatch[1].trim() : "";
 
           for (const batch of batches) {
-             let rowsHtml = "";
-             let markdownTable = `### Batch: ${batch}\n\n| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |\n|---|---|---|---|---|---|---|---|\n`;
+            let rowsHtml = "";
+            let markdownTable = `### Batch: ${batch}\n\n| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |\n|---|---|---|---|---|---|---|---|\n`;
 
-             data.forEach((row, idx) => {
-                const target = row["Target"] || "-";
-                const rep1 = generateRep(target);
-                const rep2 = generateRep(target);
-                const rep3 = generateRep(target);
-                
-                markdownTable += `| ${row["S. No"] || idx + 1} | ${row["Parameter"] || ""} | ${row["Method"] || ""} | ${row["Unit"] || ""} | ${target} | ${rep1} | ${rep2} | ${rep3} |\n`;
+            data.forEach((row, idx) => {
+              const target = row["Target"] || "-";
+              const rep1 = generateRep(target);
+              const rep2 = generateRep(target);
+              const rep3 = generateRep(target);
 
-                rowsHtml += `
+              markdownTable += `| ${row["S. No"] || idx + 1} | ${row["Parameter"] || ""} | ${row["Method"] || ""} | ${row["Unit"] || ""} | ${target} | ${rep1} | ${rep2} | ${rep3} |\n`;
+
+              rowsHtml += `
                   <tr>
                     <td style="border: 1px solid black; padding: 5px; text-align: center;">${row["S. No"] || idx + 1}</td>
                     <td style="border: 1px solid black; padding: 5px;">${row["Parameter"] || ""}</td>
@@ -1318,19 +1319,19 @@ Generate the Metrological Traceability section now as described in the system in
                     <td style="border: 1px solid black; padding: 5px; text-align: center;">${rep3}</td>
                   </tr>
                 `;
-             });
+            });
 
-             allMarkdown += markdownTable + "\n\n---\n\n";
+            allMarkdown += markdownTable + "\n\n---\n\n";
 
-             let currentRemark = remarkStr;
-             if (baseBatch) {
-               const safeBaseBatch = baseBatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-               currentRemark = currentRemark.replace(new RegExp(safeBaseBatch, 'gi'), batch);
-             } else {
-               currentRemark = currentRemark.replace(/CAL-Bio-TB-01/gi, batch);
-             }
+            let currentRemark = remarkStr;
+            if (baseBatch) {
+              const safeBaseBatch = baseBatch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+              currentRemark = currentRemark.replace(new RegExp(safeBaseBatch, 'gi'), batch);
+            } else {
+              currentRemark = currentRemark.replace(/CAL-Bio-TB-01/gi, batch);
+            }
 
-             const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+            const docHtml = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
 <head><meta charset="utf-8"><style>table { border-collapse: collapse; width: 100%; font-family: Arial, sans-serif; font-size: 11pt; }</style></head>
 <body>
   <div style="text-align: center; font-weight: bold; font-family: Arial; font-size: 14pt;">QUALITY ASSURANCE DEPARTMENT</div>
@@ -1387,7 +1388,7 @@ Generate the Metrological Traceability section now as described in the system in
 </body>
 </html>`;
 
-             outZip.file(`CoA_Biochemistry_Multical_${batch}.doc`, docHtml);
+            outZip.file(`CoA_Biochemistry_Multical_${batch}.doc`, docHtml);
           }
 
           const content = await outZip.generateAsync({ type: "base64" });
@@ -1410,7 +1411,7 @@ Generate the Metrological Traceability section now as described in the system in
           // Save directly to document for COA
           const currentSectionData = doc.sections.get(sectionId) || { id: sectionId, fields: {}, completionPct: 0 };
           currentSectionData.fields[fieldId] = finalValue;
-          
+
           const secObj = fw.sections.find((s) => s.id === sectionId);
           if (secObj) {
             const filled = secObj.fields.filter((f) => currentSectionData.fields[f.id]?.trim()).length;
@@ -1586,16 +1587,6 @@ Generate the Metrological Traceability section now as described in the system in
     // Example Configuration Objects to pass along with your execution flow 
     // (Populate these dynamically from your database or user input for each unique device)
     const deviceConfig = {
-      section5_0: {
-        ercRowAudits: [
-          "Row 1.1: Detail specific analytical performance characteristics and listing of tested interfering substances from the source documentation.",
-          "Row 1.2: Detail the physical presentation of liquid/solid components to mitigate the risk of product leakage or chemical exposure during transport.",
-          "Rows 2.1 & 2.2: Identify whether biological or hazardous substances are utilized, and explain the precise containment or risk mitigation measures implemented.",
-          "Row 2.5 & 2.7: Detail the bioburden, sterility validation protocols, or microbiological state baseline along with stability recovery metrics matching the product specifications.",
-          "Rows 3.1, 3.2 & 3.3: Clearly declare equipment interoperability boundaries (e.g., manual methods, semi-automated systems, or fully-automated analyzer applications).",
-          "Row 8.7 (Mathematical Approach): Explicitly output the exact quantitative calculation formulas, calibration models, or mathematical logic used to compute patient analytical results."
-        ]
-      },
       section5_1: {
         structureGuidelines: [
           "Narrative explanation of the device's design, operational principles, and structural composition.",
@@ -1608,30 +1599,14 @@ Generate the Metrological Traceability section now as described in the system in
         processSteps: "Raw Material Blending/Compounding -> In-Process Inspection Decision Gate (with a loop back on failure, or progression on passing) -> Primary Container Dispensing/Filling -> Finished Product Quality Control Validation Gate -> Temperature-Controlled Finished Product Storage."
       },
       section5_3: {
-        packagingSteps: "Primary Sorting & Batch/Lot Traceability Stamping (Lot number, Manufacturing date, Expiration date tracking) -> Secondary Kit Packaging (enclosing primary elements and required technical literature/Instructions for Use) -> Quality Assurance Batch Record Verification & Authorization -> Distribution Logistics."
+        packagingSteps: "Primary Sorting & Batch/Lot Traceability Stamping (Manufacturing date, Expiration date tracking) -> Secondary Kit Packaging (enclosing primary elements and required technical literature/Instructions for Use) -> Quality Assurance Batch Record Verification & Authorization -> Distribution Logistics."
       }
     };
 
     await Promise.all(
       fieldsToGenerate.map(async (targetFieldId) => {
         let targetPrompt = "";
-
-        if (targetFieldId === "5.0") {
-          targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
-Your task is to generate the Essential Requirements Checklist (ERC) table for section 5.0 of the IVD Technical File for the device specified in the source documentation.
-
-The output must be a fully compliant markdown-formatted table with the exact columns:
-No | Essential Requirement | Applies (Yes/No/NA) | Applicable Std /Procedure | Response
-
-Audits/Corrections to perform (Extract device-specific metrics from the source documentation to replace generic templates):
-${deviceConfig.section5_0.ercRowAudits.map(audit => `- ${audit}`).join("\n")}
-
-Source text and reference context from uploaded documents:
-${docSourceContent.slice(0, 120000)}
-
-Output only the raw Markdown table. No code blocks, no conversational text.`;
-
-        } else if (targetFieldId === "5.1") {
+        if (targetFieldId === "5.1") {
           targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
 Your task is to generate Section 5.1 Device Design for the medical device described in the attached documentation.
 
@@ -1651,11 +1626,6 @@ Generate a comprehensive narrative description of the bulk manufacturing process
 
 The flowchart logic must capture the physical process pipeline from:
 ${deviceConfig.section5_2.processSteps}
-
-For the "Finished Product QC Release Gate" or final quality appraisal node, extract and embed the exact analytical acceptance criteria, performance specifications, tolerances, and stability thresholds directly from the source batch test records or Certificates of Analysis. Do not use placeholder criteria.
-
-Source text and reference context from uploaded documents:
-${docSourceContent.slice(0, 120000)}
 
 Output only the raw Markdown content. No code blocks (except the mermaid fence for the diagram), no conversational text.`;
 
@@ -1677,7 +1647,7 @@ Output only the raw Markdown content. No code blocks (except the mermaid fence f
 
         } else if (targetFieldId === "5.4") {
           targetPrompt = `You are an expert Regulatory Affairs and Quality Assurance (QA/RA) engineer specializing in In Vitro Diagnostic (IVD) medical devices.
-Your task is to generate Section 5.4 Manufacturing Site for the device described in the attached documentation.
+Your task is to generate  Manufacturing Site for the device described in the attached documentation.
 
 Please extract and format:
 1. The legal manufacturing entity name and the complete physical industrial address.

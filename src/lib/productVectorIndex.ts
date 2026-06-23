@@ -90,12 +90,16 @@ export async function indexProductDocument(
 /**
  * Query Pinecone for the top-k most relevant chunks matching `queryText`
  * in the given product namespace. Returns concatenated text of matches.
+ *
+ * @param purposeFilter - If provided, only returns vectors whose `purpose` metadata
+ *   field matches this value (e.g. "autofill" for IFU-only data).
  */
 export async function queryProductDocuments(
   userId: string,
   productNamespaceId: string,
   queryText: string,
   topK = 12,
+  purposeFilter?: string,
 ): Promise<string> {
   const indexName = process.env.PINECONE_INDEX;
   const pineconeKey = process.env.PINECONE_KEY;
@@ -107,11 +111,18 @@ export async function queryProductDocuments(
     const pc = new Pinecone({ apiKey: pineconeKey });
     const index = pc.index(indexName).namespace(namespace);
 
-    const result = await index.query({
+    const queryOptions: Parameters<typeof index.query>[0] = {
       vector: queryEmbedding,
       topK,
       includeMetadata: true,
-    });
+    };
+
+    // Restrict to IFU/product-origin vectors when a purpose filter is given
+    if (purposeFilter) {
+      queryOptions.filter = { purpose: { $eq: purposeFilter } };
+    }
+
+    const result = await index.query(queryOptions);
 
     const chunks = (result.matches ?? [])
       .filter((m) => m.score && m.score > 0.35)

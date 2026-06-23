@@ -880,12 +880,24 @@ ${docContent.slice(0, 85000)}
 `;
 }
 
-function buildAcceleratedPrompt(docContent: string, procedureContext: string, fileLabel: string): string {
+function buildAcceleratedLotPrompt(
+  docContent: string,
+  procedureContext: string,
+  fileLabel: string,
+  lotNumber: 1 | 2 | 3
+): string {
   const procSection = procedureContext.trim()
     ? `--- PROCEDURE CONTENT FROM VECTOR DATABASE ---\n${procedureContext}\n--- END PROCEDURE CONTENT ---`
     : "(No procedure retrieved from vector DB — extract from document content below)";
 
-  return `${MASTER_RULES}
+  // Table numbering for this lot
+  const lotOffset = (lotNumber - 1) * 6;
+  const tableNums = Array.from({ length: 6 }, (_, i) => `Table 8.${lotOffset + i + 1}`);
+  const [t1, t2, t3, t4, t5, t6] = tableNums;
+
+  if (lotNumber === 1) {
+    // Lot 1: full report (sections 1–10 + approval)
+    return `${MASTER_RULES}
 
 ${PROCEDURE_EXTRACTION_RULES}
 
@@ -929,7 +941,6 @@ State normal storage conditions from IFU AND accelerated study conditions (37°C
 
 ---
 
-
 ### 4. Calendar For Accelerated Stability Testing
 
 **Table 4.1 Calendar for Accelerated Stability Testing**
@@ -954,14 +965,7 @@ Date calculation rules:
 * Week 4 = Release Date + 28 days
 * Week 5 = Release Date + 35 days
 
-Apply weekend adjustment.
-
-Do not assign Sundays as testing dates.
-
-If the calculated date falls on Sunday, move to the next working day.
-
-Expected Date and Testing Date shall follow the same adjustment rules.
-
+Apply weekend adjustment. Do not assign Sundays as testing dates.
 
 ---
 
@@ -993,133 +997,30 @@ Using PROCEDURE EXTRACTION RULES, reproduce the complete procedure from IFU exac
 
 ### 8. Accelerated Stability Study
 
-Use the Value Sheet document as the primary source.
+Generate ONLY **Lot 1** (Tables ${t1} through ${t6}).
 
-Generate THREE independent lots.
+Six separate analytical tables:
 
-Examples:
+${t1} — Lot 1, Day 0
+${t2} — Lot 1, Week 1
+${t3} — Lot 1, Week 2
+${t4} — Lot 1, Week 3
+${t5} — Lot 1, Week 4
+${t6} — Lot 1, Week 5
 
-Lot 1
-
-Lot 2
-
-Lot 3
-
-Each lot shall contain its own complete weekly stability study.
-
-────────────────────────
-LOT 1
-
-Table 8.1 Day 0
-
-Table 8.2 Week 1
-
-Table 8.3 Week 2
-
-Table 8.4 Week 3
-
-Table 8.5 Week 4
-
-Table 8.6 Week 5
-
-────────────────────────
-LOT 2
-
-Table 8.7 Day 0
-
-Table 8.8 Week 1
-
-Table 8.9 Week 2
-
-Table 8.10 Week 3
-
-Table 8.11 Week 4
-
-Table 8.12 Week 5
-
-────────────────────────
-LOT 3
-
-Table 8.13 Day 0
-
-Table 8.14 Week 1
-
-Table 8.15 Week 2
-
-Table 8.16 Week 3
-
-Table 8.17 Week 4
-
-Table 8.18 Week 5
-
-────────────────────────
-TABLE STRUCTURE
-
-Every table shall preserve:
+Each table format:
 
 | S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
 
-Preserve exactly:
+Rules:
+- Preserve all analytes from the Value Sheet in original order.
+- Preserve method names, units, target values, decimal precision exactly.
+- Replicate values must exhibit realistic analytical variation.
+- Values must remain within acceptable limits throughout.
+- Do NOT add Mean, SD, CV, Recovery, or Result columns.
+- Generate every table completely — do NOT stop early.
 
-* Parameter names
-* Method names
-* Units
-* Decimal precision
-* Row order
-
-from the Value Sheet.
-
-────────────────────────
-REPLICATE VALUE RULES
-
-Rep 1, Rep 2 and Rep 3 are mandatory.
-
-Generate realistic laboratory variation.
-
-Values should fluctuate naturally around the target values.
-
-Week-to-week changes should be gradual.
-
-Lot-to-lot values should also vary naturally.
-
-Lot 1, Lot 2 and Lot 3 must not contain identical values.
-
-All values should remain within acceptable limits.
-
-Values should resemble actual QC measurements.
-
-────────────────────────
-LOT RULES
-
-Generate:
-
-Lot 1 → Day 0 to Week 5
-
-Lot 2 → Day 0 to Week 5
-
-Lot 3 → Day 0 to Week 5
-
-All lots must contain the same analytes and structure.
-
-Only replicate values should differ between lots.
-
-────────────────────────
-FORBIDDEN
-
-Do NOT generate:
-
-| Time Point | Measured Activity | % Recovery vs Day 0 | Result |
-
-Do NOT calculate recovery percentages.
-
-Do NOT create Result columns.
-
-Do NOT summarize all weeks into one table.
-
-Do NOT merge lots together.
-
-Generate separate analytical tables for every week and every lot.
-
+---
 
 ### 9. Conclusion
 
@@ -1134,16 +1035,57 @@ Write a formal conclusion:
 
 | Role | Name | Signature | Date |
 |------|------|-----------|------|
-| Analyzed By | | | [3 Month test date] |
-| Checked By | | | [3 Month test date] |
-| Approved By | | | [3 Month test date] |
+| Analyzed By | | | [Week 5 testing date] |
+| Checked By | | | [Week 5 testing date] |
+| Approved By | | | [Week 5 testing date] |
 
 ---
 
 DOCUMENT CONTENT:
 ${docContent.slice(0, 85000)}
 `;
+  }
+
+  // Lot 2 or 3: generate ONLY the 6 analytical tables for this lot
+  return `${MASTER_RULES}
+
+${ACCELERATED_STABILITY_DATA_RULES}
+
+---
+
+Generate ONLY the analytical stability data tables for **Lot ${lotNumber}** of the Accelerated Stability Study for: ${fileLabel}
+
+Generate EXACTLY SIX tables (${t1} through ${t6}):
+
+${t1} — Lot ${lotNumber}, Day 0
+${t2} — Lot ${lotNumber}, Week 1
+${t3} — Lot ${lotNumber}, Week 2
+${t4} — Lot ${lotNumber}, Week 3
+${t5} — Lot ${lotNumber}, Week 4
+${t6} — Lot ${lotNumber}, Week 5
+
+Each table format:
+
+| S. No | Parameter | Method | Unit | Target | Rep 1 | Rep 2 | Rep 3 |
+
+Rules:
+- Use the SAME analytes, methods, units and targets from the Value Sheet as in Lot 1.
+- Lot ${lotNumber} replicate values must differ slightly from Lot 1 and other lots (natural lot-to-lot variation).
+- Values must remain close to target values and within acceptable limits.
+- Variation between weeks must be gradual, no sudden jumps.
+- Preserve method names, units, decimal precision exactly.
+- Do NOT add Mean, SD, CV, Recovery, or Result columns.
+- Do NOT generate any introduction, conclusion, procedure, or approval section — ONLY the 6 tables.
+- Begin output directly with the Lot ${lotNumber} section heading and tables.
+- Generate every table completely — do NOT stop early.
+- add conclusion and approved by table after the 6 tables in lot 3
+
+DOCUMENT CONTENT:
+${docContent.slice(0, 60000)}
+`;
 }
+
+
 
 function buildShippingPrompt(docContent: string, procedureContext: string): string {
   const procSection = procedureContext.trim()
@@ -1484,30 +1426,56 @@ export async function POST(
       }
     }
 
-    // ── Generate Accelerated Stability (3 lots, each lot: Day 0 + Week 1–5) ──
+    // ── Generate Accelerated Stability — 3 separate calls, one per lot ─────────
     if (reportType === "accelerated" || reportType === "all") {
       try {
-        const completion = await openai.chat.completions.create({
-          model: "gpt-4o-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are a Regulatory Affairs Specialist. Generate a professional Accelerated Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only. CRITICAL: Generate ALL 3 lots completely. Each lot must have: Day 0, Week 1, Week 2, Week 3, Week 4, Week 5 — each as a separate complete table. Do NOT truncate. Do NOT stop early. Total = 18 tables (6 per lot × 3 lots).",
-            },
-            {
-              role: "user",
-              content: buildAcceleratedPrompt(docSourceContent, procedureContext, fileEntries[0]?.name ?? "uploaded document"),
-            },
-          ],
-          max_tokens: 16000,
-          temperature: 0.1,
-        });
-        generatedReports["sr_accelerated"] = recalculateTableRecoveries(completion.choices[0]?.message?.content?.trim() || "");
+        const accLotResults: string[] = [];
+
+        for (const lotNum of [1, 2, 3] as const) {
+          console.log(`[stability-all] Generating Accelerated Stability — Lot ${lotNum}…`);
+          const lotCompletion = await openai.chat.completions.create({
+            model: "gpt-4o",
+            messages: [
+              {
+                role: "system",
+                content:
+                  lotNum === 1
+                    ? "You are a Regulatory Affairs Specialist. Generate a professional Accelerated Stability Study Report for CDSCO DMF. Follow instructions exactly. Output raw Markdown only. CRITICAL: Generate ALL 6 tables for Lot 1 completely (Day 0, Week 1, Week 2, Week 3, Week 4, Week 5). Each table must be complete with all analyte rows. Do NOT truncate. Do NOT stop early."
+                    : `You are a Regulatory Affairs Specialist. Generate ONLY the 6 analytical stability tables for Lot ${lotNum} of the Accelerated Stability Study. Output raw Markdown only. Start directly with the Lot ${lotNum} heading. Generate all 6 tables completely (Day 0 through Week 5). Do NOT stop early. Do NOT add any introduction, conclusion, or approval sections.`,
+              },
+              {
+                role: "user",
+                content: buildAcceleratedLotPrompt(
+                  docSourceContent,
+                  procedureContext,
+                  fileEntries[0]?.name ?? "uploaded document",
+                  lotNum
+                ),
+              },
+            ],
+            max_tokens: 16384,
+            temperature: 0.1,
+          });
+
+          const lotText = lotCompletion.choices[0]?.message?.content?.trim() || "";
+          accLotResults.push(lotText);
+          console.log(`[stability-all] Lot ${lotNum} generated: ${lotText.length} chars`);
+        }
+
+        // Stitch: Lot 1 full report + Lot 2/3 table sections appended
+        const combinedAccelerated =
+          accLotResults[0] +
+          "\n\n---\n\n" +
+          accLotResults[1] +
+          "\n\n---\n\n" +
+          accLotResults[2];
+
+        generatedReports["sr_accelerated"] = recalculateTableRecoveries(combinedAccelerated);
       } catch (e) {
         console.error("[stability-all] Accelerated generation failed:", e);
       }
     }
+
 
     // ── Generate Shipping Stability (one table per day) ───────────────────────
     if (reportType === "shipping" || reportType === "all") {
