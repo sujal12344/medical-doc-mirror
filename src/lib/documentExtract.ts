@@ -1,6 +1,7 @@
 import { createCanvas } from "@napi-rs/canvas";
 import { OpenAI } from "openai";
 import { getDocument, type PDFDocumentProxy, type PDFPageProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
+import mammoth from "mammoth";
 
 export type DocumentExtractMethod = "pdf-text" | "ocr-vision";
 
@@ -251,6 +252,17 @@ export async function extractDocumentText(
       pageCount: 1,
       charCount: text.length,
       ocrPages: 1,
+    };
+  }
+
+  if (lower.endsWith(".docx")) {
+    console.log("[documentExtract] DOCX detected, running mammoth");
+    const result = await mammoth.extractRawText({ buffer });
+    return {
+      text: result.value,
+      method: "pdf-text",
+      pageCount: 1,
+      charCount: result.value.length,
     };
   }
 
