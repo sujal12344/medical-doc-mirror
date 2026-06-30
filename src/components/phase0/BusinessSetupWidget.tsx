@@ -45,7 +45,7 @@ export default function BusinessSetupWidget({ initialSetup }: { initialSetup?: P
       label: "0.9 IP & brand",
     },
   ];
-
+  //u
   return (
     <div className="bg-surface border border-border rounded-xl p-5 relative overflow-hidden h-full flex flex-col">
       <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full -mr-16 -mt-16 pointer-events-none" />
