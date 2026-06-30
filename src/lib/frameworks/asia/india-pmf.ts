@@ -22,7 +22,6 @@ export const IN_PMF_FRAMEWORK: RegulatoryFramework = {
         { id: "1.5", label: "Manufacturing Activities", hint: "Brief description of products and manufacturing operations", textarea: true },
         { id: "1.6", label: "Manufacturing Flow", hint: "Raw material receipt to finished goods release", textarea: true },
         { id: "1.7", label: "Product Categories", hint: "Biochemistry, Hematology, ELISA, CLIA, FIA, Molecular Diagnostics", textarea: true },
-        { id: "1.8", label: "Flow Diagram", hint: "Manufacturing process flow diagram", textarea: true }
       ]
     },
     {

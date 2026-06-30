@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { MermaidChart } from "./MermaidChart";
@@ -40,9 +40,9 @@ function convertLegacyPipeRowsToGfm(value: string): string {
         i === 0
           ? c.trim()
           : c
-              .replace(/^Subject\s*(\([^)]*\))?\s*:\s*/i, "")
-              .replace(/^Predicate\s*(\([^)]*\))?\s*:\s*/i, "")
-              .trim() || "—"
+            .replace(/^Subject\s*(\([^)]*\))?\s*:\s*/i, "")
+            .replace(/^Predicate\s*(\([^)]*\))?\s*:\s*/i, "")
+            .trim() || "—"
       );
       while (cells.length < 4) cells.push("—");
       out.push(`| ${cells.slice(0, 4).join(" | ")} |`);
@@ -95,6 +95,454 @@ function convertLegacyPipeRowsToGfm(value: string): string {
   return out.join("\n");
 }
 
+interface TableSegment {
+  type: "table";
+  headers: string[];
+  rows: string[][];
+  alignments: string[];
+}
+
+interface TextSegment {
+  type: "text";
+  content: string;
+}
+
+type Segment = TableSegment | TextSegment;
+
+function parseSegments(markdown: string): Segment[] {
+  if (!markdown) return [];
+  const lines = markdown.split("\n");
+  const segments: Segment[] = [];
+  let currentTextLines: string[] = [];
+
+  const flushText = () => {
+    if (currentTextLines.length > 0) {
+      segments.push({
+        type: "text",
+        content: currentTextLines.join("\n"),
+      });
+      currentTextLines = [];
+    }
+  };
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    const isHeaderLine = line.trim().startsWith("|") && line.trim().endsWith("|") && line.includes("|");
+
+    const nextLine = lines[i + 1];
+    const isSeparatorLine = nextLine && nextLine.trim().startsWith("|") && nextLine.trim().endsWith("|") && /^\|[\s:|:-]+\|$/.test(nextLine.trim());
+
+    if (isHeaderLine && isSeparatorLine) {
+      flushText();
+
+      const headers = line.trim().slice(1, -1).split("|").map(c => c.trim());
+      const sepCells = nextLine.trim().slice(1, -1).split("|").map(c => c.trim());
+      const alignments = sepCells.map(cell => {
+        const left = cell.startsWith(":");
+        const right = cell.endsWith(":");
+        if (left && right) return "center";
+        if (right) return "right";
+        return "left";
+      });
+
+      const rows: string[][] = [];
+      i += 2;
+
+      while (i < lines.length) {
+        const dataLine = lines[i];
+        if (dataLine.trim().startsWith("|") && dataLine.trim().endsWith("|") && dataLine.includes("|")) {
+          const cells = dataLine.trim().slice(1, -1).split("|").map(c => c.trim());
+          while (cells.length < headers.length) {
+            cells.push("");
+          }
+          rows.push(cells.slice(0, headers.length));
+          i++;
+        } else {
+          break;
+        }
+      }
+
+      segments.push({
+        type: "table",
+        headers,
+        alignments,
+        rows,
+      });
+    } else {
+      currentTextLines.push(line);
+      i++;
+    }
+  }
+
+  flushText();
+  return segments;
+}
+
+function serializeSegments(segments: Segment[]): string {
+  return segments.map(seg => {
+    if (seg.type === "text") {
+      return seg.content;
+    } else {
+      const headerRow = `| ${seg.headers.join(" | ")} |`;
+      const sepRow = `| ${seg.alignments.map(align => {
+        if (align === "center") return ":---:";
+        if (align === "right") return "---:";
+        return "---";
+      }).join(" | ")} |`;
+      const dataRows = seg.rows.map(row => `| ${row.join(" | ")} |`).join("\n");
+      return `${headerRow}\n${sepRow}\n${dataRows}`;
+    }
+  }).join("\n");
+}
+
+function EditablePMFTable({
+  segment,
+  onTableChange,
+}: {
+  segment: TableSegment;
+  onTableChange: (newSeg: TableSegment) => void;
+}) {
+  const [headers, setHeaders] = useState(segment.headers);
+  const [rows, setRows] = useState(segment.rows);
+
+  useEffect(() => {
+    setHeaders(segment.headers);
+    setRows(segment.rows);
+  }, [segment.headers, segment.rows]);
+
+  const updateParent = (newHeaders: string[], newRows: string[][]) => {
+    onTableChange({
+      type: "table",
+      headers: newHeaders,
+      rows: newRows,
+      alignments: segment.alignments.slice(0, newHeaders.length).concat(Array(Math.max(0, newHeaders.length - segment.alignments.length)).fill("left")),
+    });
+  };
+
+  const handleCellChange = (rowIndex: number, colIndex: number, val: string) => {
+    const updatedRows = rows.map((r, rIdx) =>
+      rIdx === rowIndex ? r.map((c, cIdx) => (cIdx === colIndex ? val : c)) : r
+    );
+    setRows(updatedRows);
+    updateParent(headers, updatedRows);
+  };
+
+  const handleHeaderChange = (colIndex: number, val: string) => {
+    const updatedHeaders = headers.map((h, hIdx) => (hIdx === colIndex ? val : h));
+    setHeaders(updatedHeaders);
+    updateParent(updatedHeaders, rows);
+  };
+
+  const addRow = () => {
+    const newRow = Array(headers.length).fill("");
+    const updatedRows = [...rows, newRow];
+    setRows(updatedRows);
+    updateParent(headers, updatedRows);
+  };
+
+  const deleteRow = (rowIndex: number) => {
+    const updatedRows = rows.filter((_, idx) => idx !== rowIndex);
+    setRows(updatedRows);
+    updateParent(headers, updatedRows);
+  };
+
+  const addColumn = () => {
+    const updatedHeaders = [...headers, `Header ${headers.length + 1}`];
+    const updatedRows = rows.map(r => [...r, ""]);
+    setHeaders(updatedHeaders);
+    setRows(updatedRows);
+    updateParent(updatedHeaders, updatedRows);
+  };
+
+  const deleteColumn = (colIndex: number) => {
+    if (headers.length <= 1) return;
+    const updatedHeaders = headers.filter((_, idx) => idx !== colIndex);
+    const updatedRows = rows.map(r => r.filter((_, idx) => idx !== colIndex));
+    setHeaders(updatedHeaders);
+    setRows(updatedRows);
+    updateParent(updatedHeaders, updatedRows);
+  };
+
+  return (
+    <div className="overflow-x-auto my-4 rounded-lg border border-border bg-surface">
+      <table className="w-full text-left text-xs border-collapse">
+        <thead className="bg-surface2/80">
+          <tr>
+            {headers.map((h, colIdx) => (
+              <th key={colIdx} className="px-2 py-1.5 font-semibold text-foreground border border-border/70 text-xs min-w-[120px] relative group">
+                <input
+                  type="text"
+                  value={h}
+                  onChange={(e) => handleHeaderChange(colIdx, e.target.value)}
+                  className="w-full bg-transparent px-1 py-0.5 font-semibold border-none outline-none focus:bg-surface focus:ring-1 focus:ring-accent rounded text-xs text-foreground"
+                />
+                <button
+                  type="button"
+                  onClick={() => deleteColumn(colIdx)}
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700 text-[10pt] font-bold px-1 transition"
+                  title="Delete Column"
+                >
+                  ✕
+                </button>
+              </th>
+            ))}
+            <th className="px-2 py-1.5 text-center border border-border/70 text-xs w-[40px]">
+              <button
+                type="button"
+                onClick={addColumn}
+                className="text-accent hover:text-accent-hover font-bold text-sm px-1.5 py-0.5 rounded border border-accent/20 bg-accent/5 hover:bg-accent/10 transition"
+                title="Add Column"
+              >
+                +
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, rowIdx) => (
+            <tr key={rowIdx} className="even:bg-surface2/20 hover:bg-surface2/40 transition-colors group">
+              {row.map((cell, colIdx) => (
+                <td key={colIdx} className="px-2 py-1.5 text-foreground border border-border/50 align-middle text-xs">
+                  <textarea
+                    rows={1}
+                    value={cell}
+                    onChange={(e) => handleCellChange(rowIdx, colIdx, e.target.value)}
+                    className="w-full bg-transparent px-1 py-0.5 border-none outline-none focus:bg-surface focus:ring-1 focus:ring-accent rounded text-xs text-foreground resize-none"
+                    style={{ height: 'auto' }}
+                  />
+                </td>
+              ))}
+              <td className="px-2 py-1.5 text-center border border-border/50 text-xs w-[40px]">
+                <button
+                  type="button"
+                  onClick={() => deleteRow(rowIdx)}
+                  className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 text-[11pt] font-bold px-1.5 transition"
+                  title="Delete Row"
+                >
+                  ✕
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="p-2 border-t border-border/50 flex justify-between bg-surface2/20">
+        <button
+          type="button"
+          onClick={addRow}
+          className="text-xs px-2.5 py-1 text-accent font-semibold border border-accent/30 rounded bg-accent/5 hover:bg-accent/10 transition"
+        >
+          + Add Row
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function HardcodedOrgChart() {
+  return (
+    <div className="p-6 bg-surface2/30 rounded-xl border border-border mt-4 overflow-x-auto text-center font-sans">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-4">Organization Chart</h4>
+      <div className="inline-block p-4 bg-surface rounded-xl border border-border/60 shadow-sm min-w-[700px]">
+        {/* Director */}
+        <div className="flex justify-center">
+          <div className="w-36 py-2.5 bg-amber-500 text-white font-bold text-xs rounded-lg shadow border border-amber-400">
+            Director
+          </div>
+        </div>
+        
+        {/* Vertical line from Director */}
+        <div className="flex justify-center">
+          <div className="w-0.5 h-4 bg-green-600/50"></div>
+        </div>
+
+        {/* Horizontal line connecting top row */}
+        <div className="flex justify-center">
+          <div className="w-[83.33%] h-0.5 bg-green-600/50"></div>
+        </div>
+
+        {/* Vertical drops to Level 2 */}
+        <div className="grid grid-cols-6 justify-items-center">
+          <div className="w-0.5 h-3 bg-green-600/50"></div>
+          <div className="w-0.5 h-3 bg-green-600/50"></div>
+          <div className="w-0.5 h-3 bg-green-600/50"></div>
+          <div className="w-0.5 h-3 bg-green-600/50"></div>
+          <div className="w-0.5 h-3 bg-green-600/50"></div>
+          <div className="w-0.5 h-3 bg-green-600/50"></div>
+        </div>
+
+        {/* Level 2 row */}
+        <div className="grid grid-cols-6 gap-4 items-stretch">
+          <div className="flex flex-col items-center">
+            <div className="w-full py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+              FM
+            </div>
+            {/* Connection line going down to sub-departments */}
+            <div className="w-0.5 h-4 bg-blue-500/50"></div>
+          </div>
+          <div className="py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+            Sales & Marketing
+          </div>
+          <div className="py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+            Store/Dispatch/Purchase
+          </div>
+          <div className="py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+            HR
+          </div>
+          <div className="py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+            Regulatory
+          </div>
+          <div className="py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+            R & D
+          </div>
+        </div>
+
+        {/* Level 3 Horizontal line spanning under FM over to Production */}
+        <div className="flex" style={{ width: "100%" }}>
+          <div className="flex" style={{ width: "100%", paddingLeft: "8.33%" }}>
+            <div className="w-[50%] h-0.5 bg-blue-500/50"></div>
+          </div>
+        </div>
+
+        {/* Drops for Level 3 */}
+        <div className="grid grid-cols-6 justify-items-center">
+          <div className="w-0.5 h-3 bg-blue-500/50"></div>
+          <div className="w-0.5 h-3 bg-blue-500/50"></div>
+          <div className="w-0.5 h-3 bg-blue-500/50"></div>
+          <div className="w-0.5 h-3 bg-blue-500/50"></div>
+          <div></div>
+          <div></div>
+        </div>
+
+        {/* Level 3 row */}
+        <div className="grid grid-cols-6 gap-4">
+          <div className="py-2 bg-blue-600 text-white font-medium text-[11px] rounded-lg shadow-sm border border-blue-500 flex items-center justify-center min-h-[40px]">
+            Maintenance
+          </div>
+          <div className="py-2 bg-blue-600 text-white font-medium text-[11px] rounded-lg shadow-sm border border-blue-500 flex items-center justify-center min-h-[40px]">
+            QA & QC
+          </div>
+          <div className="py-2 bg-blue-600 text-white font-medium text-[11px] rounded-lg shadow-sm border border-blue-500 flex items-center justify-center min-h-[40px]">
+            Store/Dispatch/Purchase
+          </div>
+          <div className="py-2 bg-blue-600 text-white font-medium text-[11px] rounded-lg shadow-sm border border-blue-500 flex items-center justify-center min-h-[40px]">
+            Production
+          </div>
+          <div></div>
+          <div></div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HardcodedWaterSystem() {
+  return (
+    <div className="p-6 bg-surface2/30 rounded-xl border border-border mt-4 overflow-x-auto font-sans">
+      <h4 className="text-xs font-semibold uppercase tracking-wider text-muted mb-4">Water System Process Flow</h4>
+      <div className="inline-block p-6 bg-surface rounded-xl border border-border/60 shadow-sm min-w-[760px]">
+        {/* Row 1 */}
+        <div className="flex items-center gap-6 mb-8 justify-center">
+          <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+            Potable water
+          </div>
+          <svg className="w-6 h-6 text-blue-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+          <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+            Filter
+          </div>
+          <svg className="w-6 h-6 text-blue-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+          <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+            RO system
+          </div>
+          <svg className="w-6 h-6 text-blue-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+          </svg>
+          <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+            Carbon Filter
+          </div>
+        </div>
+
+        {/* Connector from Row 1 to Row 2 */}
+        <div className="flex justify-end mb-4" style={{ paddingRight: "72px" }}>
+          <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+          </svg>
+        </div>
+
+        {/* Row 2 */}
+        <div className="flex items-center gap-6 mb-8 justify-center">
+          <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+            Ion exchange
+          </div>
+          <svg className="w-6 h-6 text-blue-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+            Tank Storage
+          </div>
+          <svg className="w-6 h-6 text-blue-500 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+          </svg>
+          <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+            Filter
+          </div>
+        </div>
+
+        {/* Row 3 (Ion exchange drops down, middle has recirculation loop, right has Points of Use) */}
+        <div className="grid grid-cols-3 gap-6 items-center">
+          {/* Col 1: Ion exchange flow downwards */}
+          <div className="flex flex-col items-center gap-6">
+            <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+            </svg>
+            <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+              Resistivity meter
+            </div>
+            <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3" />
+            </svg>
+            <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center">
+              Filter 0,2µm
+            </div>
+          </div>
+
+          {/* Col 2: Recirculation Loop */}
+          <div className="flex flex-col items-center justify-center relative py-6">
+            {/* Loop graphic */}
+            <div className="w-32 h-32 rounded-full border-2 border-dashed border-blue-400 flex items-center justify-center text-center p-3">
+              <span className="text-[10px] font-semibold text-blue-500 leading-tight">Continuous water recirculation</span>
+            </div>
+          </div>
+
+          {/* Col 3: Points of use and return path */}
+          <div className="flex flex-col items-center gap-12">
+            <div className="w-36 py-3 bg-blue-600 text-white text-xs font-bold rounded-lg shadow-sm border border-blue-500 text-center mt-24">
+              Points of use
+            </div>
+            {/* Return Arrow up to Tank Storage */}
+            <svg className="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18" />
+            </svg>
+          </div>
+        </div>
+
+        {/* Connection from Filter 0,2um to Points of use */}
+        <div className="flex justify-between items-center mt-6 px-18" style={{ paddingLeft: "72px", paddingRight: "72px" }}>
+          <svg className="w-full h-6 text-blue-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 100 24" preserveAspectRatio="none">
+            <path d="M 0 12 L 100 12 M 95 6 L 100 12 L 95 18" fill="none" />
+          </svg>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
 type Props = {
   fieldId: string;
   label: string;
@@ -113,6 +561,7 @@ type Props = {
   redirectSectionId?: string;
   redirectLabel?: string;
   onRedirect?: (sectionId: string) => void;
+  isPmf?: boolean;
 };
 
 export function RegulatoryFieldEditor({
@@ -132,7 +581,8 @@ export function RegulatoryFieldEditor({
   redirectSectionId,
   redirectLabel,
   onRedirect,
-  onUploadComplete
+  onUploadComplete,
+  isPmf
 }: Props) {
   const [view, setView] = useState<"structured" | "edit">("structured");
   const [uploading, setUploading] = useState(false);
@@ -342,132 +792,186 @@ export function RegulatoryFieldEditor({
 
           {/* Image field rendering */}
           {isImageField || isImageValue ? (
-          <div className="space-y-3">
-            {isImageValue ? (
-              <div className="rounded-lg border border-border bg-surface2/50 p-3 flex items-center justify-center min-h-[100px]">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={value}
-                  alt={label}
-                  className="max-h-48 max-w-full object-contain rounded"
-                />
+            <div className="space-y-3">
+              {isImageValue ? (
+                <div className="rounded-lg border border-border bg-surface2/50 p-3 flex items-center justify-center min-h-[100px]">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={value}
+                    alt={label}
+                    className="max-h-48 max-w-full object-contain rounded"
+                  />
+                </div>
+              ) : (
+                <div className="rounded-lg border border-dashed border-border bg-surface2/20 p-6 flex items-center justify-center text-xs text-muted">
+                  No image uploaded yet
+                </div>
+              )}
+            </div>
+          ) : showStructured ? (
+            isLabellingUploadField ? (
+              <div
+                className="rounded-lg overflow-auto bg-white p-4"
+                style={{ fontFamily: 'Arial, sans-serif' }}
+                dangerouslySetInnerHTML={{ __html: buildLabelCardHtml(value, allFields || {}, fieldId, documentTitle || "") }}
+              />
+            ) : isPmf && parseSegments(gfmDisplayValue).some(s => s.type === "table") ? (
+              <div className="rounded-lg border border-border bg-surface2/50 p-4 overflow-hidden space-y-4">
+                {parseSegments(gfmDisplayValue).map((seg, idx, allSegs) => {
+                  if (seg.type === "text") {
+                    return (
+                      <ReactMarkdown
+                        key={idx}
+                        remarkPlugins={[remarkGfm]}
+                        components={{
+                          h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground" {...props} />,
+                          h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-5 mb-2.5 text-foreground" {...props} />,
+                          h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
+                          h4: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-3 mb-1.5 text-foreground" {...props} />,
+                          p: ({ node, ...props }) => <p className="text-xs text-foreground leading-relaxed mb-3 last:mb-0" {...props} />,
+                          ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                          ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                          strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
+                          em: ({ node, ...props }) => <em className="italic text-muted" {...props} />,
+                          hr: ({ node, ...props }) => <hr className="my-4 border-border/50" {...props} />,
+                          img: ({ node, ...props }) => {
+                            if (!props.src) return null;
+                            return <img className="max-w-full max-h-96 object-contain rounded-lg border border-border p-1 bg-surface" {...props} />;
+                          },
+                          code: ({ node, className, children, ...props }) => {
+                            const match = /language-mermaid/.exec(className || "");
+                            if (match) {
+                              return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
+                            }
+                            return <code className={className} {...props}>{children}</code>;
+                          }
+                        }}
+                      >
+                        {seg.content}
+                      </ReactMarkdown>
+                    );
+                  } else {
+                    return (
+                      <EditablePMFTable
+                        key={idx}
+                        segment={seg}
+                        onTableChange={(newSeg) => {
+                          const updatedSegments = [...allSegs];
+                          updatedSegments[idx] = newSeg;
+                          onChange(serializeSegments(updatedSegments));
+                        }}
+                      />
+                    );
+                  }
+                })}
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border bg-surface2/20 p-6 flex items-center justify-center text-xs text-muted">
-                No image uploaded yet
+              <div className="rounded-lg border border-border bg-surface2/50 p-4 overflow-hidden">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground" {...props} />,
+                    h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-5 mb-2.5 text-foreground" {...props} />,
+                    h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
+                    h4: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-3 mb-1.5 text-foreground" {...props} />,
+                    p: ({ node, ...props }) => <p className="text-xs text-foreground leading-relaxed mb-3 last:mb-0" {...props} />,
+                    ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                    ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
+                    table: ({ node, ...props }) => (
+                      <div className="overflow-x-auto my-4 rounded-lg border border-border">
+                        <table className="w-full text-left text-xs border-collapse" {...props} />
+                      </div>
+                    ),
+                    thead: ({ node, ...props }) => (
+                      <thead className="bg-surface2/80" {...props} />
+                    ),
+                    th: ({ node, ...props }) => (
+                      <th
+                        className="px-3 py-2.5 font-semibold text-foreground border border-border/70 text-xs whitespace-nowrap"
+                        {...props}
+                      />
+                    ),
+                    td: ({ node, ...props }) => (
+                      <td
+                        className="px-3 py-2.5 text-foreground border border-border/50 align-top text-xs"
+                        {...props}
+                      />
+                    ),
+                    tr: ({ node, ...props }) => (
+                      <tr className="even:bg-surface2/20 hover:bg-surface2/40 transition-colors" {...props} />
+                    ),
+                    strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
+                    em: ({ node, ...props }) => <em className="italic text-muted" {...props} />,
+                    hr: ({ node, ...props }) => <hr className="my-4 border-border/50" {...props} />,
+                    img: ({ node, ...props }) => {
+                      if (!props.src) return null;
+                      // eslint-disable-next-line @next/next/no-img-element
+                      return <img className="max-w-full max-h-96 object-contain rounded-lg border border-border p-1 bg-surface" {...props} />;
+                    },
+                    code: ({ node, className, children, ...props }) => {
+                      const match = /language-mermaid/.exec(className || "");
+                      if (match) {
+                        return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
+                      }
+                      return <code className={className} {...props}>{children}</code>;
+                    }
+                  }}
+                >
+                  {gfmDisplayValue}
+                </ReactMarkdown>
               </div>
-            )}
-          </div>
-        ) : showStructured ? (
-          isLabellingUploadField ? (
-            <div
-              className="rounded-lg overflow-auto bg-white p-4"
-              style={{ fontFamily: 'Arial, sans-serif' }}
-              dangerouslySetInnerHTML={{ __html: buildLabelCardHtml(value, allFields || {}, fieldId, documentTitle || "") }}
+            )
+          ) : textarea ? (
+            <textarea
+              rows={rows}
+              value={displayValue}
+              onChange={(e) => onChange(e.target.value)}
+              disabled={safeValue.startsWith("[ZIP_DATA]:")}
+              className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y min-h-[120px] disabled:opacity-70 disabled:cursor-not-allowed"
+              placeholder={`Enter ${label.toLowerCase()}…`}
             />
           ) : (
-            <div className="rounded-lg border border-border bg-surface2/50 p-4 overflow-hidden">
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ node, ...props }) => <h1 className="text-xl font-bold mt-6 mb-3 text-foreground" {...props} />,
-                  h2: ({ node, ...props }) => <h2 className="text-lg font-bold mt-5 mb-2.5 text-foreground" {...props} />,
-                  h3: ({ node, ...props }) => <h3 className="text-base font-semibold mt-4 mb-2 text-foreground" {...props} />,
-                  h4: ({ node, ...props }) => <h4 className="text-sm font-semibold mt-3 mb-1.5 text-foreground" {...props} />,
-                  p: ({ node, ...props }) => <p className="text-xs text-foreground leading-relaxed mb-3 last:mb-0" {...props} />,
-                  ul: ({ node, ...props }) => <ul className="list-disc pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
-                  ol: ({ node, ...props }) => <ol className="list-decimal pl-5 mb-3 space-y-1 text-xs text-foreground" {...props} />,
-                  table: ({ node, ...props }) => (
-                    <div className="overflow-x-auto my-4 rounded-lg border border-border">
-                      <table className="w-full text-left text-xs border-collapse" {...props} />
-                    </div>
-                  ),
-                  thead: ({ node, ...props }) => (
-                    <thead className="bg-surface2/80" {...props} />
-                  ),
-                  th: ({ node, ...props }) => (
-                    <th
-                      className="px-3 py-2.5 font-semibold text-foreground border border-border/70 text-xs whitespace-nowrap"
-                      {...props}
-                    />
-                  ),
-                  td: ({ node, ...props }) => (
-                    <td
-                      className="px-3 py-2.5 text-foreground border border-border/50 align-top text-xs"
-                      {...props}
-                    />
-                  ),
-                  tr: ({ node, ...props }) => (
-                    <tr className="even:bg-surface2/20 hover:bg-surface2/40 transition-colors" {...props} />
-                  ),
-                  strong: ({ node, ...props }) => <strong className="font-semibold text-foreground" {...props} />,
-                  em: ({ node, ...props }) => <em className="italic text-muted" {...props} />,
-                  hr: ({ node, ...props }) => <hr className="my-4 border-border/50" {...props} />,
-                  img: ({ node, ...props }) => {
-                    if (!props.src) return null;
-                    // eslint-disable-next-line @next/next/no-img-element
-                    return <img className="max-w-full max-h-96 object-contain rounded-lg border border-border p-1 bg-surface" {...props} />;
-                  },
-                  code: ({ node, className, children, ...props }) => {
-                    const match = /language-mermaid/.exec(className || "");
-                    if (match) {
-                      return <MermaidChart chartCode={String(children).replace(/\n$/, "")} />;
-                    }
-                    return <code className={className} {...props}>{children}</code>;
-                  }
-                }}
-              >
-                {gfmDisplayValue}
-              </ReactMarkdown>
-            </div>
-          )
-        ) : textarea ? (
-          <textarea
-            rows={rows}
-            value={displayValue}
-            onChange={(e) => onChange(e.target.value)}
-            disabled={safeValue.startsWith("[ZIP_DATA]:")}
-            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 font-mono text-sm leading-relaxed text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent resize-y min-h-[120px] disabled:opacity-70 disabled:cursor-not-allowed"
-            placeholder={`Enter ${label.toLowerCase()}…`}
-          />
-        ) : (
-          <input
-            type="text"
-            value={displayValue}
-            onChange={(e) => {
-              const content = "base64_data_here";
-              const finalValue = `[ZIP_DATA]: # (data:application/zip;base64,${content})\n\n${e.target.value}`;
-              onChange(finalValue);
-            }}
-            disabled={safeValue.startsWith("[ZIP_DATA]:")}
-            className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent disabled:opacity-70 disabled:cursor-not-allowed"
-            placeholder={`Enter ${label.toLowerCase()}…`}
-          />
-        )}
-
-        {allowUpload && !showStructured && (
-          <div className="mt-3 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => document.getElementById(`upload-${fieldId}`)?.click()}
-              disabled={uploading}
-              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-lg hover:bg-accent/10 transition disabled:opacity-50"
-            >
-              {uploading ? "Uploading..." : "Upload File"}
-            </button>
             <input
-              id={`upload-${fieldId}`}
-              type="file"
-              className="hidden"
+              type="text"
+              value={displayValue}
               onChange={(e) => {
-                if (e.target.files?.length) handleFieldFileUpload(e.target.files);
-                e.target.value = "";
+                const content = "base64_data_here";
+                const finalValue = `[ZIP_DATA]: # (data:application/zip;base64,${content})\n\n${e.target.value}`;
+                onChange(finalValue);
               }}
+              disabled={safeValue.startsWith("[ZIP_DATA]:")}
+              className="w-full rounded-lg border border-border bg-surface2 px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-accent/30 focus:border-accent disabled:opacity-70 disabled:cursor-not-allowed"
+              placeholder={`Enter ${label.toLowerCase()}…`}
             />
-            {uploadError && <span className="text-xs text-red-500">{uploadError}</span>}
-            {fileName && !uploadError && <span className="text-xs text-muted">Uploaded: {fileName}</span>}
-          </div>
-        )}
+          )}
+
+          {allowUpload && !showStructured && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => document.getElementById(`upload-${fieldId}`)?.click()}
+                disabled={uploading}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-accent border border-accent/40 bg-accent/5 rounded-lg hover:bg-accent/10 transition disabled:opacity-50"
+              >
+                {uploading ? "Uploading..." : "Upload File"}
+              </button>
+              <input
+                id={`upload-${fieldId}`}
+                type="file"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.length) handleFieldFileUpload(e.target.files);
+                  e.target.value = "";
+                }}
+              />
+              {uploadError && <span className="text-xs text-red-500">{uploadError}</span>}
+              {fileName && !uploadError && <span className="text-xs text-muted">Uploaded: {fileName}</span>}
+            </div>
+          )}
+
+          {/* Hardcoded charts – always visible (even during autofill streaming) */}
+          {isPmf && fieldId === "2.1" && <HardcodedOrgChart />}
+          {isPmf && fieldId === "3.9" && <HardcodedWaterSystem />}
         </div>
       )}
     </div>

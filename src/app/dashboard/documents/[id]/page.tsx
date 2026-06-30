@@ -111,6 +111,9 @@ export default function DocumentEditorPage() {
   const [section3Generating, setSection3Generating] = useState(false);
   const [section3Status, setSection3Status] = useState<"idle" | "success" | "error">("idle");
   const [section3Msg, setSection3Msg] = useState("");
+  const [section1Generating, setSection1Generating] = useState(false);
+  const [section1Status, setSection1Status] = useState<"idle" | "success" | "error">("idle");
+  const [section1Msg, setSection1Msg] = useState("");
   const [chatFileRef] = [useRef<HTMLInputElement>(null)];
   const stabilityFileRef = useRef<HTMLInputElement>(null);
   const initialAutofillStarted = useRef(false);
@@ -142,6 +145,49 @@ export default function DocumentEditorPage() {
       }
     });
   }, [id]);
+
+  const skipAutosave = useRef(true);
+  const autosaveTimeout = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    if (!doc || doc.frameworkId !== "IN_PMF" || !activeSection) {
+      return;
+    }
+
+    if (skipAutosave.current) {
+      skipAutosave.current = false;
+      return;
+    }
+
+    if (autosaveTimeout.current) {
+      clearTimeout(autosaveTimeout.current);
+    }
+
+    autosaveTimeout.current = setTimeout(async () => {
+      const section = framework?.sections.find((s) => s.id === activeSection);
+      if (!section) return;
+      const fields: Record<string, string> = {};
+      section.fields.forEach((f) => {
+        fields[f.id] = doc.sections?.[activeSection]?.fields?.[f.id] || "";
+      });
+
+      try {
+        await fetch(`/api/documents/${id}/sections`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sectionId: activeSection, fields }),
+        });
+      } catch (err) {
+        console.error("Autosave failed:", err);
+      }
+    }, 1500);
+
+    return () => {
+      if (autosaveTimeout.current) {
+        clearTimeout(autosaveTimeout.current);
+      }
+    };
+  }, [doc?.sections?.[activeSection]?.fields, activeSection, doc?.frameworkId, id, framework]);
 
   const refetchDocument = useCallback(async () => {
     try {
@@ -539,6 +585,30 @@ export default function DocumentEditorPage() {
     }
   }
 
+  async function handleSection1Generate() {
+    if (!doc) return;
+    setSection1Generating(true);
+    setSection1Status("idle");
+    setSection1Msg("Generating Section 1 — General Information from uploaded documents and product context…");
+    try {
+      const r = await fetch(`/api/documents/${id}/section1-pmf`, { method: "POST" });
+      const data = await r.json();
+      if (r.ok && data.success) {
+        await refetchDocument();
+        setSection1Status("success");
+        setSection1Msg("✅ Section 1 generated and auto-filled successfully!");
+      } else {
+        setSection1Status("error");
+        setSection1Msg(data.error || "Failed to generate Section 1.");
+      }
+    } catch {
+      setSection1Status("error");
+      setSection1Msg("Network error: failed to connect to Section 1 generation service.");
+    } finally {
+      setSection1Generating(false);
+    }
+  }
+
   async function handleSection5Upload(files: FileList) {
     if (!files.length || !doc) return;
     setSection5Uploading(true);
@@ -858,7 +928,57 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
             </div>
 
             <div className="space-y-5">
-              {currentSection.id === "s3" && (
+              {/*{currentSection.id === "s1" && doc.frameworkId === "IN_PMF" && (
+                <div className="rounded-xl border border-dashed border-emerald-500/50 bg-emerald-500/5 p-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center">
+                      <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground">Generate Section 1 — General Information</p>
+                      <p className="text-xs text-muted">Auto-generate and populate all Section 1 fields using details extracted from your uploaded documents and product profile.</p>
+                    </div>
+                  </div>
+                  {section1Msg && (
+                    <p className={`text-xs mb-3 font-medium rounded-lg px-3 py-2 ${section1Status === "success"
+                      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                      : section1Status === "error"
+                        ? "bg-red-500/10 text-red-600 dark:text-red-400 border border-red-500/20"
+                        : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-300 border border-emerald-500/20"
+                      }`}>
+                      {section1Msg}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    disabled={section1Generating}
+                    onClick={handleSection1Generate}
+                    className={`inline-flex items-center gap-2 px-4 py-2.5 border rounded-xl text-xs font-semibold transition shadow-sm ${section1Generating
+                      ? "border-border text-muted bg-surface2 cursor-not-allowed opacity-60"
+                      : "border-emerald-400/40 text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 hover:border-emerald-400/60"
+                      }`}
+                  >
+                    {section1Generating ? (
+                      <>
+                        <span className="inline-block w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        Generating Section 1…
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+                        </svg>
+                        Generate Section 1 Info
+                      </>
+                    )}
+                  </button>
+                  <p className="mt-2 text-[10px] text-muted">Tip: Results are drawn from Pinecone RAG and your uploaded documents.</p>
+                </div>
+              )}*/}
+
+              {currentSection.id === "s3" && doc.frameworkId !== "IN_PMF" && (
                 <div className="rounded-xl border border-dashed border-amber-400/50 bg-amber-500/5 p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-400/30 flex items-center justify-center">
@@ -909,7 +1029,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               )}
 
               {/* Section 5 combined upload panel */}
-              {currentSection.id === "s5" && (
+              {currentSection.id === "s5" && doc.frameworkId !== "IN_PMF" && (
                 <div className="rounded-xl border border-dashed border-violet-400/50 bg-violet-500/5 p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-violet-500/10 border border-violet-400/30 flex items-center justify-center">
@@ -965,7 +1085,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               )}
 
               {/* Section 6 — Product Validation & Verification AI Generation Panel */}
-              {currentSection.id === "s6" && (
+              {currentSection.id === "s6" && doc.frameworkId !== "IN_PMF" && (
                 <div className="rounded-xl border border-dashed border-teal-400/50 bg-teal-500/5 p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-400/30 flex items-center justify-center">
@@ -1014,7 +1134,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                   <p className="mt-2 text-[10px] text-muted">Tip: Run this after generating §7 Analytical Studies for the most complete output. Results are drawn from Pinecone RAG and already-saved section data.</p>
                 </div>
               )}
-              {currentSection.id === "s22" && (
+              {currentSection.id === "s22" && doc.frameworkId !== "IN_PMF" && (
                 <div className="rounded-xl border border-dashed border-teal-400/50 bg-teal-500/5 p-5">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-teal-500/10 border border-teal-400/30 flex items-center justify-center">
@@ -1065,7 +1185,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               )}
 
               {/* Combined Analytical Studies Upload Panel — shown ONLY on Section 7 */}
-              {currentSection.id === "s7" && (
+              {currentSection.id === "s7" && doc.frameworkId !== "IN_PMF" && (
                 <div className="rounded-xl border border-dashed border-indigo-400/50 bg-indigo-500/5 p-5 space-y-4">
                   {/* Header */}
                   <div className="flex items-center gap-3">
@@ -1131,7 +1251,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
 
 
               {/* Combined Stability Upload Panel — shown ONLY on the Stability Reports section */}
-              {currentSection.id === "s_stability_reports" && (
+              {currentSection.id === "s_stability_reports" && doc.frameworkId !== "IN_PMF" && (
                 <div className="rounded-xl border border-dashed border-blue-400/50 bg-blue-500/5 p-5 space-y-5">
                   {/* Header */}
                   <div className="flex items-center gap-3">
@@ -1271,26 +1391,27 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               {currentSection.fields.map((field) => {
                 if (field.id === "5.0") return null;
                 return (
-                <RegulatoryFieldEditor
-                  key={field.id}
-                  fieldId={field.id}
-                  label={field.label}
-                  hint={field.hint}
-                  textarea={field.textarea}
-                  allowUpload={field.allowUpload}
-                  fieldType={field.fieldType}
-                  documentId={doc._id}
-                  value={getFieldValue(currentSection.id, field.id)}
-                  onChange={(v) => setFieldValue(currentSection.id, field.id, v)}
-                  onUploadComplete={refetchDocument}
-                  allFields={doc?.sections?.[currentSection.id]?.fields || {}}
-                  documentVersion={doc?.version}
-                  documentUpdatedAt={doc?.updatedAt}
-                  documentTitle={doc?.title}
-                  redirectSectionId={field.redirectSectionId}
-                  redirectLabel={field.redirectLabel}
-                  onRedirect={(s) => setActiveSection(s)}
-                />
+                  <RegulatoryFieldEditor
+                    key={field.id}
+                    fieldId={field.id}
+                    label={field.label}
+                    hint={field.hint}
+                    textarea={field.textarea}
+                    allowUpload={field.allowUpload}
+                    fieldType={field.fieldType}
+                    documentId={doc._id}
+                    value={getFieldValue(currentSection.id, field.id)}
+                    onChange={(v) => setFieldValue(currentSection.id, field.id, v)}
+                    onUploadComplete={refetchDocument}
+                    allFields={doc?.sections?.[currentSection.id]?.fields || {}}
+                    documentVersion={doc?.version}
+                    documentUpdatedAt={doc?.updatedAt}
+                    documentTitle={doc?.title}
+                    redirectSectionId={field.redirectSectionId}
+                    redirectLabel={field.redirectLabel}
+                    onRedirect={(s) => setActiveSection(s)}
+                    isPmf={doc.frameworkId === "IN_PMF"}
+                  />
                 );
               })}
 
