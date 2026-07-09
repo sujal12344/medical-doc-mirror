@@ -16,6 +16,9 @@ export default async function ProductsPage() {
           <p className="text-sm text-muted mt-1">Manage your medical devices and IVD products</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link href="/dashboard/qms-disintegrator" className="px-5 py-2.5 border border-border bg-surface hover:bg-surface2 text-foreground font-semibold rounded-xl text-sm transition">
+            + Disintegrate QMS
+          </Link>
           <Link href="/dashboard/products/disintegrate?fresh=1" className="px-5 py-2.5 border border-border bg-surface hover:bg-surface2 text-foreground font-semibold rounded-xl text-sm transition">
             + Disintegrate Product
           </Link>
