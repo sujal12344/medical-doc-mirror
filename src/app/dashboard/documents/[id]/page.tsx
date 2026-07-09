@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { RegulatoryFieldEditor } from "@/components/documents/RegulatoryFieldEditor";
 import { FRAMEWORKS } from "@/lib/frameworks";
@@ -78,6 +78,7 @@ async function upsertProductKnowledgeIndex(
 
 export default function DocumentEditorPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
   const [doc, setDoc] = useState<DocData | null>(null);
   const [framework, setFramework] = useState<typeof FRAMEWORKS[0] | null>(null);
   const [activeSection, setActiveSection] = useState("");
@@ -139,6 +140,11 @@ export default function DocumentEditorPage() {
           sections: normalizeDocumentSections(data.document.sections),
         };
         setDoc(normalized);
+        if (data.document.frameworkId === "IN_TEST_LICENSE") {
+          router.replace(`/dashboard/products/${data.document.productId}/test-license?docId=${id}`);
+          return;
+        }
+
         const fw = FRAMEWORKS.find((f) => f.id === data.document.frameworkId);
         setFramework(fw || null);
         if (fw) setActiveSection(fw.sections[0]?.id || "");
@@ -1039,7 +1045,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-foreground">Generate Section 5 — Design & Manufacturing</p>
-                      <p className="text-xs text-muted">Upload your IFU, COA or manufacturing documents to auto-generate all §5 fields: the Essential Requirements Checklist, Device Design, Manufacturing Process, QC Flow Chart, and Manufacturing Site.</p>
+                      <p className="text-xs text-muted">Upload your COA or manufacturing documents to auto-generate all §5 fields: the Essential Requirements Checklist, Device Design, Manufacturing Process, QC Flow Chart, and Manufacturing Site.</p>
                     </div>
                   </div>
                   {section5UploadMsg && (

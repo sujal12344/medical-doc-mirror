@@ -1,5 +1,12 @@
 import { Schema, model, models, Types } from "mongoose";
 
+export type UploadedDoc = {
+  fileName: string;
+  mimeType: string;
+  base64: string;
+  uploadedAt: Date;
+};
+
 export type DocumentDocument = {
   _id: string;
   productId: Types.ObjectId;
@@ -9,6 +16,7 @@ export type DocumentDocument = {
   title: string;
   status: "draft" | "in-review" | "approved" | "submitted";
   sections: Map<string, { fields: Record<string, string>; completionPct: number }>;
+  uploadedDocs: UploadedDoc[];
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -32,6 +40,20 @@ const documentSchema = new Schema<DocumentDocument>(
       default: () => new Map(),
     },
     version: { type: Number, default: 1 },
+    uploadedDocs: {
+      type: [
+        new Schema(
+          {
+            fileName: { type: String, required: true },
+            mimeType: { type: String, default: "application/octet-stream" },
+            base64: { type: String, required: true },
+            uploadedAt: { type: Date, default: () => new Date() },
+          },
+          { _id: false },
+        ),
+      ],
+      default: () => [],
+    },
   },
   { timestamps: true },
 );

@@ -8,6 +8,7 @@ import { RegulatoryDocument } from "@/models/Document";
 import { FRAMEWORKS, REGION_GROUPS, filterFrameworksByDeviceType } from "@/lib/frameworks";
 import type { FrameworkDeviceType } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
+import CreateTestLicenseButton from "./CreateTestLicenseButton";
 import ProductDetailsButton from "../../../../components/ProductDetailsButton";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -135,32 +136,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                       );
                     })}
 
-                    {/*{code === "IN" && (
-                      <>
-                        <Link
-                          href={`/dashboard/products/${id}/md14`}
-                          className="flex flex-col text-left bg-surface border border-border rounded-xl p-4 hover:border-violet-500/50 hover:shadow-sm transition"
-                        >
-                          <span className="text-sm font-semibold text-foreground">Form MD-14</span>
-                          <span className="text-xs text-muted mt-1 line-clamp-2">Import License Application</span>
-                          <div className="flex gap-2 mt-3">
-                            <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md font-medium">CDSCO</span>
-                            <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-600 rounded-md font-medium">Auto-fill</span>
-                          </div>
-                        </Link>
-                        <Link
-                          href={`/dashboard/products/${id}/md16`}
-                          className="flex flex-col text-left bg-surface border border-border rounded-xl p-4 hover:border-violet-500/50 hover:shadow-sm transition"
-                        >
-                          <span className="text-sm font-semibold text-foreground">Form MD-16</span>
-                          <span className="text-xs text-muted mt-1 line-clamp-2">Manufacturing License</span>
-                          <div className="flex gap-2 mt-3">
-                            <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 rounded-md font-medium">CDSCO</span>
-                            <span className="text-[10px] px-2 py-0.5 bg-green-50 text-green-600 rounded-md font-medium">Auto-fill</span>
-                          </div>
-                        </Link>
-                      </>
-                    )}*/}
+                    {code === "IN" && (
+                      <CreateTestLicenseButton
+                        productId={String(product._id)}
+                        productName={product.name}
+                      />
+                    )}
                     
                   </div>
                 </div>
