@@ -67,6 +67,16 @@ export interface CompanyDocument extends Document {
     lastUpdated: Date;
   };
 
+  regulatoryLicenses?: {
+    fileName: string;
+    mimeType: string;
+    documentUrl: string;
+    licenseType: string;
+    issueDate?: Date;
+    expiryDate?: Date;
+    uploadedAt: Date;
+  }[];
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -166,6 +176,17 @@ const CompanySchema = new Schema<CompanyDocument>(
       },
       default: {},
     },
+    regulatoryLicenses: [
+      {
+        fileName: { type: String, required: true },
+        mimeType: { type: String, required: true },
+        documentUrl: { type: String, required: true },
+        licenseType: { type: String, required: true },
+        issueDate: { type: Date },
+        expiryDate: { type: Date },
+        uploadedAt: { type: Date, default: Date.now },
+      }
+    ]
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt
