@@ -102,215 +102,37 @@ Resource Planning
 Management Commitment
 `,
     specific: `
-Generate a complete **Level-II Quality System Procedure (QSP)** titled **Management Responsibility**.
+Generate a **Quality Manual Section** for **Management Responsibility**.
 
 Use ONLY the retrieved Quality Manual sections as the source of organization-specific information.
-
-Expand the retrieved content into a detailed Management Responsibility procedure compliant with ISO 13485:2016, Medical Device Rules (India), CDSCO requirements and Good Documentation Practices (GDP).
-
-Do NOT merely copy the Quality Manual. Expand it into an audit-ready procedure.
+Expand the retrieved content into a detailed Management Responsibility section compliant with ISO 13485:2016, Medical Device Rules (India), and CDSCO requirements.
 
 Never invent company-specific information.
-
-If information is missing, expand it only using ISO 13485 best practices while remaining fully consistent with the Quality Manual.
-
-Do not explain anything. Return ONLY the completed procedure.
+Do not explain anything. Return ONLY the completed document.
 
 ────────────────────────────────────
 IMPORTANT FORMATTING RULE
 ────────────────────────────────────
 
 Do NOT use Markdown tables anywhere in this document.
-Write every section as plain numbered paragraphs and prose only.
-Do NOT output any pipe characters ( | ) or table syntax.
-Use continuous written paragraphs for all content.
+Do NOT include a title block, Document Control block, Purpose, Scope, References, or Flowcharts unless they are explicitly present in the retrieved text.
 
-────────────────────────────────────
-DOCUMENT FORMAT
-────────────────────────────────────
+Write the document as plain numbered paragraphs matching exactly the standard ISO 13485 numbering for Clause 5 (e.g. 5.0, 5.1, 5.4.1, 5.5, 5.5.1).
 
-# Management Responsibility
-
-**Document Title:** Management Responsibility
-**Document Type:** Quality System Procedure
-**Level:** II
-**ISO Clause:** 5
-**Document Number:** (use retrieved value if available)
-**Revision No.:** (use retrieved value if available)
-
-────────────────────────────────────
-
-## 1 Purpose
-
-Write 2–3 paragraphs describing the purpose of this procedure. Cover: establishing management responsibilities, implementing and maintaining the QMS, and continual improvement. Use formal regulatory language.
-
-────────────────────────────────────
-
-## 2 Scope
-
-Write 1–2 paragraphs describing the applicability of this procedure across the organization. Include: Top Management, Management Representative, Department Heads, Quality Assurance, Production, Regulatory, and all employees.
-
-────────────────────────────────────
-
-## 3 References
-
-List references as numbered items:
-
-3.1 ISO 13485:2016 – Clause 5 Management Responsibility
-3.2 Medical Device Rules 2017 (India)
-3.3 CDSCO Guidelines
-3.4 Quality Manual (retrieved sections)
-3.5 Good Documentation Practices (GDP)
-
-────────────────────────────────────
-
-## 4 Definitions
-
-Write each definition as a numbered paragraph:
-
-4.1 **Top Management:** ...
-4.2 **Management Representative:** ...
-4.3 **Quality Policy:** ...
-4.4 **Quality Objective:** ...
-4.5 **Management Review:** ...
-4.6 **Customer Focus:** ...
-4.7 **Continual Improvement:** ...
-4.8 **Process Approach:** ...
-
-────────────────────────────────────
-
-## 5 Responsibilities
-
-Write responsibilities as numbered paragraphs per role:
-
-5.1 **Managing Director:** ...
-5.2 **Top Management:** ...
-5.3 **Management Representative:** ...
-5.4 **Department Heads:** ...
-5.5 **Quality Assurance:** ...
-5.6 **All Employees:** ...
-
-────────────────────────────────────
-
-## 6 Procedure
-
-Write each subsection as numbered paragraphs with full procedural prose. Do NOT use tables or bullet points.
-
-### 6.1 Management Commitment
-
-Expand into 3–4 paragraphs covering: commitment to QMS, regulatory compliance, customer requirements, resource allocation, and continual improvement.
-
-### 6.2 Customer Focus
-
-Expand into 3–4 paragraphs covering: identification of customer requirements, monitoring customer satisfaction, regulatory compliance, feedback mechanisms, and complaint monitoring.
-
-### 6.3 Quality Policy
-
-Expand into 3–4 paragraphs covering: establishment of the quality policy, communication across the organization, display at relevant locations, employee awareness, periodic review, and continual suitability.
-
-### 6.4 Quality Objectives
-
-Expand into 3–4 paragraphs covering: establishment of measurable quality objectives at relevant functions and levels, monitoring, departmental objectives, and periodic review.
-
-### 6.5 Quality Management System Planning
-
-Expand into 3–4 paragraphs covering: planning activities, process approach, risk consideration, resource planning, change management, and maintaining QMS integrity during changes.
-
-### 6.6 Responsibility and Authority
-
-Expand into 3–4 paragraphs covering: organizational structure, defined authority, job responsibilities, and communication of responsibilities across all levels.
-
-### 6.7 Management Representative
-
-Expand into 3–4 paragraphs covering: appointment, responsibilities for establishing and maintaining the QMS, reporting to Top Management, regulatory liaison, promoting awareness, and monitoring effectiveness.
-
-### 6.8 Internal Communication
-
-Expand into 3–4 paragraphs covering: communication channels, scheduled meetings, circulars, email communications, quality meetings, and feedback mechanisms.
-
-### 6.9 Management Review
-
-Expand into 4–5 paragraphs covering: purpose of the review, frequency (minimum annually), review inputs, review outputs, agenda, action items, follow-up, and records maintained.
-
-────────────────────────────────────
-
-## 7 Management Review Inputs
-
-Write as a numbered list of paragraphs:
-
-7.1 Quality Policy – ...
-7.2 Quality Objectives – ...
-7.3 Internal Audit Results – ...
-7.4 Customer Complaints – ...
-7.5 Customer Feedback – ...
-7.6 CAPA Status – ...
-7.7 Supplier Performance – ...
-7.8 Process Performance and Product Conformity – ...
-7.9 Resource Needs – ...
-7.10 Regulatory Changes – ...
-7.11 Risk Management Updates – ...
-7.12 Follow-up Actions from Previous Reviews – ...
-
-────────────────────────────────────
-
-## 8 Management Review Outputs
-
-Write as a numbered list of paragraphs:
-
-8.1 Improvement Actions – ...
-8.2 Resource Allocation – ...
-8.3 Quality Policy Revision – ...
-8.4 Quality Objective Revision – ...
-8.5 CAPA Decisions – ...
-8.6 Training Requirements – ...
-8.7 Regulatory Compliance Actions – ...
-
-────────────────────────────────────
-
-## 9 Records
-
-Write as numbered items:
-
-9.1 Management Review Minutes of Meetings – Retained by Management Representative for minimum 5 years.
-9.2 Attendance Register – Retained by QA.
-9.3 Action Tracker – Maintained by Management Representative.
-9.4 Quality Objectives Record – Retained by QA Manager.
-9.5 Quality Policy – Maintained by Management Representative.
-9.6 Management Reports – Retained by Top Management.
-
-────────────────────────────────────
-
-## 10 Abbreviations
-
-Write as numbered items:
-
-10.1 MR – Management Representative
-10.2 QMS – Quality Management System
-10.3 QA – Quality Assurance
-10.4 CAPA – Corrective Action and Preventive Action
-10.5 SOP – Standard Operating Procedure
-10.6 QSP – Quality System Procedure
-10.7 MD – Managing Director
-
-────────────────────────────────────
-
-## 11 Flowchart
-
-Management Commitment
-↓
-Quality Policy
-↓
-Quality Objectives
-↓
-Resource Planning
-↓
-Implementation
-↓
-Internal Communication
-↓
-Management Review
-↓
-Continual Improvement
+Example Format:
+5.0 Management Responsibility:
+  Management Commitment:
+  ...
+  Customer Focus:
+  ...
+  Quality Policy:
+  ...
+5.4.1 [Quality Planning content]
+5.5 Responsibility, Authority and Communication:
+5.5.1 Responsibility and Authority:
+  ...
+  Management Representative:
+  ...
 `
   },
   {
@@ -335,110 +157,117 @@ Electronic Documents
 Backup
 Security
 Document Retention
+Documents and Records
+Cross-referred Procedures
+Abbreviations used
+FMT EFT
+MR/FMT QC/FMT
+QM QC Dept FM MD M.R.
+Laboratory Quality Management Systems are reviewed once a year
+Changes in the documents are initiated by the users
+handwritten changes to the laboratory QMS documents
+Photocopies of the revised issue
+access to documents maintained in computers is restricted
+protect data and documents in computers from virus attacks
 `,
     specific: `
-Generate a complete **Level-II Quality System Procedure (QSP)** titled **Control of Documents**.
+Generate a **Quality System Procedure** for **Control of Documents** following the EXACT format and structure used in the retrieved Quality Manual.
 
-The document must be written exactly in the style of an ISO 13485 medical device Quality Management System document and should resemble a real SOP used during CDSCO, ISO 13485 and MDR audits.
-
-Use ONLY the retrieved QMS Manual information as the source of organization-specific information.
-
-Expand the content using ISO 13485:2016 best practices wherever necessary while remaining fully consistent with the Quality Manual.
-
-Never invent company-specific information. Do not explain anything. Return ONLY the completed procedure.
+Use ONLY information found in the retrieved Quality Manual sections.
+Do NOT invent abbreviations, format codes, document numbers, or personnel names that are not in the retrieved content.
+Do not explain anything. Return ONLY the completed document.
 
 ════════════════════════════════════
-CRITICAL FORMATTING INSTRUCTION
+FORMATTING INSTRUCTIONS
 ════════════════════════════════════
 
-This document will be converted directly to Microsoft Word.
+The document must be written with these exact section headers (DO NOT use markdown hashes like # or ###, and DO NOT use numbers like 1., 2.):
 
-The PROCEDURE STEPS section (Section 4) MUST be formatted as a SINGLE continuous two-column Markdown table with Action and Responsibility columns.
+Purpose:
+Write 1-2 sentences describing the purpose. Use exact language from the retrieved content if available.
 
-The table rows must be numbered exactly like this example:
+Scope:
+Write 1-2 sentences describing the scope. Use exact language from the retrieved content if available.
+
+Authority and Responsibility:
+Write 1-2 sentences. Use exact language from the retrieved content if available.
+
+Procedure Steps:
+CRITICAL: The source document splits the procedure steps into multiple sections (e.g., "Procedure Steps:", followed by several "Procedure Steps contd.:"). You MUST recreate this EXACT format. Create a separate Markdown pipe table for EACH section, separated by the "Procedure Steps contd.:" text.
+Do NOT write Action and Responsibility on separate lines. The ONLY acceptable format is a pipe table.
+
+Format exactly like this:
+
+Procedure Steps:
 
 | Action | Responsibility |
 |--------|----------------|
-| **4.1** All internal documents of the QMS are identified with unique document numbers as described below: | M.R. |
-| 4.1.1 Quality Manual – QM/Section number | M.R. |
-| 4.1.2 Quality System Procedures – QSP/Clause number/serial no. | M.R. |
-| 4.1.3 Standard Operating Procedures – Dept./SOP/serial number | M.R. |
-| 4.1.4 Work Instructions – Dept./WI/serial number | M.R. |
-| 4.1.5 Formats (Hard Copies) – Dept./FMT/serial number | M.R. |
-| 4.1.6 Formats (Computerized) – Dept./EFT/serial number | M.R. |
-| **4.2** Preparation of documents | Department Author / M.R. |
-| 4.2.1 Author prepares draft document using approved template | Department Author |
-| 4.2.2 Draft submitted to QA for review | QA Manager |
-| **4.3** Review of documents | QA Manager |
-| 4.3.1 QA Manager reviews draft for accuracy and compliance | QA Manager |
-| 4.3.2 Comments returned to author for revision if required | QA Manager |
-| **4.4** Approval of documents | Management Representative |
-| 4.4.1 Reviewed document submitted to MR for approval | QA Manager |
-| 4.4.2 MR signs and dates the document upon approval | M.R. |
-| **4.5** Issuance and Distribution | Document Controller |
-| ... continue with all remaining procedure steps ... | ... |
+| [Steps from first page] | [exact role] |
 
-IMPORTANT: Continue the single procedure table through ALL steps (document numbering, preparation, review, approval, issuance, controlled copies, master copy, uncontrolled copies, revision, amendment, obsolete documents, external documents, electronic documents, security, backup, document retention, annual review). Use the same numbered hierarchy (4.x, 4.x.x) throughout.
+Procedure Steps contd.:
 
-Do NOT break the procedure into separate subsection headings. Keep it as ONE continuous table.
+| Action | Responsibility |
+|--------|----------------|
+| [Steps from second page] | [exact role] |
+
+(Continue creating "Procedure Steps contd.:" tables until ALL steps from the source are included).
+Every row MUST be on a SINGLE line starting with | and ending with |.
+
+Cross-referred Procedures:
+MANDATORY: You MUST output exactly the following text for this section, with no changes:
+Nil
+
+Documents and Records:
+MANDATORY: You MUST output exactly the following text for this section, line by line, with no changes:
+MR/FMT/01 - Master List of Quality System Documents
+MR/FMT/02 - Distribution List
+MR/FMT/03 – Amendment Sheet
+MR/FMT/04 - List of External Documents
+
+Abbreviations used:
+MANDATORY: You MUST output exactly the following text for this section, line by line, with no changes:
+M.R. - Management Representative
+QC - Quality Control
+QM- Quality Manager
+Dept. – Department
+FM – Factory manager
+MD – Managing Director
+`
+  },
+  {
+    title: "Quality Policy",
+    query: `
+ISO 13485 Clause 5.3
+Quality Policy
+Management Commitment
+Establishment of Quality Policy
+Maintenance of Quality Policy
+Communication of Quality Policy
+Quality Objectives
+Cross-referred Procedures
+Documents and Records
+Abbreviations used
+`,
+    specific: `
+Generate a **Quality Policy** document following the EXACT format and structure used in the retrieved Quality Manual.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+Do not explain anything. Return ONLY the completed document.
 
 ════════════════════════════════════
-DOCUMENT STRUCTURE
+FORMATTING INSTRUCTIONS
 ════════════════════════════════════
 
-Output the document in the following order:
+The document must be written with EXACTLY these section headers (DO NOT use markdown hashes like # or ###, and DO NOT use numbers like 1., 2.):
 
----
+Quality Policy
+Extract and copy the exact Quality Policy statement verbatim from the source document. Include all commitments, mission statements, and compliance pledges.
 
-**Document Title:** Control of Documents
-**Document Type:** Quality System Procedure | Level II
-**ISO Clause:** 4.2.4
-**Document Number:** (use retrieved value if available)
-**Revision No.:** (use retrieved value if available)
+Organizational Quality Objectives
+Extract and copy the exact list of Quality Objectives verbatim from the source document (e.g. Zero manufacturing defects, training days, etc.). Do not invent objectives.
 
----
-
-**1. Purpose:**
-
-Write 2–3 sentences. The purpose of this procedure is to detail the process for control of documents required by the Quality Management System.
-
----
-
-**2. Scope:**
-
-Write 2–3 sentences. The scope covers all documents of the Quality Management System including documents pertaining to the Laboratory Quality Management System and documents of external origin.
-
----
-
-**3. Authority and Responsibility:**
-
-Write 2–3 sentences. The Management Representative is the authority to review and approve this procedure. The procedure is issued by the M.R. and implemented by all personnel.
-
----
-
-**4. Procedure Steps:**
-
-Now output the SINGLE continuous Markdown table covering ALL procedure steps with numbered hierarchy as shown in the example above. The table must include at minimum the following major numbered steps with their sub-steps:
-
-4.1 Document Identification and Numbering (with sub-steps 4.1.1 to 4.1.6+ covering QM, QSP, SOP, WI, Formats hard copy, Formats computerized, Lab documents)
-4.2 Preparation of Documents
-4.3 Review of Documents
-4.4 Approval of Documents
-4.5 Issuance and Distribution
-4.6 Master Copy Control
-4.7 Controlled Copies
-4.8 Uncontrolled / Information Copies
-4.9 Revision of Documents
-4.10 Amendment Sheet
-4.11 Obsolete Documents
-4.12 External Documents
-4.13 Electronic Documents
-4.14 Security and Access Control
-4.15 Backup
-4.16 Document Retention
-4.17 Annual Review
-
-Each major step (4.x) should have multiple detailed sub-steps (4.x.x). Assign the correct Responsibility for each row. Make the table comprehensive and audit-ready.
+Director
+Leave this exactly as "Director" at the bottom of the document to represent the signature block. Do not add any extra text or names unless explicitly stated in the source.
 `
   }
 ];

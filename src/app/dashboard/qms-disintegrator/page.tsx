@@ -42,39 +42,6 @@ function SectionCard({
   index: number;
   documentTitle: string;
 }) {
-  const [dlState, setDlState] = useState<DownloadState>("idle");
-
-  async function downloadSection() {
-    setDlState("loading");
-    try {
-      const res = await fetch("/api/qms/download-section", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          sectionNumber: section.number,
-          sectionTitle: section.title,
-          content: section.content,
-        }),
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error || "Download failed");
-      }
-      const blob = await res.blob();
-      const filename =
-        `${section.number ? section.number + "_" : ""}${section.title}`
-          .replace(/\s+/g, "_")
-          .replace(/[^a-zA-Z0-9_\-\.]/g, "")
-          .slice(0, 80) + ".docx";
-      triggerDownload(blob, filename);
-      setDlState("done");
-      setTimeout(() => setDlState("idle"), 2500);
-    } catch (e) {
-      console.error(e);
-      setDlState("error");
-      setTimeout(() => setDlState("idle"), 3000);
-    }
-  }
 
   const preview =
     section.content.length > 220
@@ -109,49 +76,6 @@ function SectionCard({
               {section.title}
             </h3>
           </div>
-
-          <button
-            id={`dl-section-${section.id}`}
-            onClick={downloadSection}
-            disabled={dlState === "loading"}
-            className={`shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all duration-150 ${
-              dlState === "done"
-                ? "bg-emerald-500/15 text-emerald-600 border border-emerald-500/30"
-                : dlState === "error"
-                ? "bg-red-500/15 text-red-600 border border-red-400/30"
-                : dlState === "loading"
-                ? "bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 opacity-70"
-                : "bg-[var(--accent)]/10 text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)]/20"
-            }`}
-          >
-            {dlState === "loading" ? (
-              <>
-                <span className="w-3 h-3 border-2 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-                Downloading…
-              </>
-            ) : dlState === "done" ? (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                Downloaded
-              </>
-            ) : dlState === "error" ? (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Error
-              </>
-            ) : (
-              <>
-                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                </svg>
-                Download .docx
-              </>
-            )}
-          </button>
         </div>
 
         {/* Content preview */}
@@ -543,43 +467,6 @@ export default function QmsDisintegratorPage() {
                 ))}
               </div>
             )}
-
-            {/* Bottom action */}
-            <div className="mt-8 pt-6 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-muted">
-                {sections.length} documents · Each document is exported as a standalone MDR 2017-formatted Word document
-              </p>
-              <button
-                onClick={downloadAll}
-                disabled={dlAllState === "loading"}
-                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 shadow-sm ${
-                  dlAllState === "done"
-                    ? "bg-emerald-500 text-white"
-                    : "bg-[#1B4F8A] hover:bg-[#1a3d6b] text-white"
-                } disabled:opacity-60`}
-              >
-                {dlAllState === "loading" ? (
-                  <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    Building ZIP…
-                  </>
-                ) : dlAllState === "done" ? (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                    </svg>
-                    All Downloaded!
-                  </>
-                ) : (
-                  <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download All Documents as ZIP
-                  </>
-                )}
-              </button>
-            </div>
           </div>
         )}
       </div>

@@ -33,15 +33,136 @@ function wHeading(text: string, sz = 24): string {
   </w:p>`;
 }
 
-/** Convert plain text into a sequence of Word XML paragraphs */
+/** Convert plain text into a sequence of Word XML paragraphs (and tables) */
+
+/**
+ * Pre-process text: if we detect a "Procedure Steps:" section followed by
+ * alternating Action / single-word-Responsibility lines (not pipe-formatted),
+ * convert that block into a proper Markdown pipe table.
+ */
+function normalizeTableBlocks(text: string): string {
+  const SHORT_RESPONSIBILITY = /^[A-Z][^\n]{0,60}$/;
+  const ROLE_PATTERN = /^(M\.R\.|MR|Factory Manager|QA Manager|Concerned User|Manager QA|QA|MD|MR\/ FM|MR\/FM|MR\/ FM\/QM|MR\/FM\/QM|Concerned Personnel|Computer User|QM|FM|Document Controller|Department Author|IT Department)[^\n]{0,40}$/i;
+
+  const lines = text.split(/\n/);
+  const result: string[] = [];
+  let i = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const trimmed = line.trim();
+
+    // Detect start of alternating table block: "Action" followed by "Responsibility"
+    if (trimmed === "Action" && lines[i + 1]?.trim() === "Responsibility") {
+      // Skip the header lines — we'll produce our own
+      i += 2;
+      const tableLines: string[] = [];
+      tableLines.push("| Action | Responsibility |");
+      tableLines.push("|--------|----------------|")
+;
+      while (i < lines.length) {
+        const action = lines[i]?.trim();
+        const resp = lines[i + 1]?.trim();
+
+        // Stop if we hit an empty line followed by a new section header or end
+        if (!action) { i++; break; }
+        if (!resp || (!ROLE_PATTERN.test(resp) && resp.endsWith(":"))) break;
+
+        tableLines.push(`| ${action} | ${resp} |`);
+        i += 2;
+
+        // Skip any extra blank lines between pairs
+        while (i < lines.length && !lines[i]?.trim()) i++;
+      }
+      result.push(...tableLines);
+      continue;
+    }
+
+    result.push(line);
+    i++;
+  }
+
+  return result.join("\n");
+}
+
 function textToWordXml(text: string): string {
   if (!text) return wPara(wRun(""));
 
+  text = normalizeTableBlocks(text);
+
   const lines = text.split(/\n/);
   const parts: string[] = [];
+  let inTable = false;
+  let tableRows: string[][] = [];
+
+  function flushTable() {
+    if (!inTable) return;
+    if (tableRows.length > 0) {
+      const maxCols = Math.max(...tableRows.map(r => r.length));
+      
+      // 5000 pct = 100%. For 2 columns: 75% (3750) and 25% (1250).
+      const colWidths = maxCols === 2
+        ? [3750, 1250]
+        : Array(maxCols).fill(Math.floor(5000 / maxCols));
+
+      const xmlRows = tableRows.map((row, i) => {
+        const isHeader = i === 0;
+        const headerFill = isHeader ? "F0F0F0" : "auto";
+        const cells = row.map((cellText, ci) => {
+          const colW = colWidths[ci] ?? colWidths[colWidths.length - 1];
+          return `<w:tc>
+            <w:tcPr>
+              <w:tcW w:w="${colW}" w:type="pct"/>
+              <w:tcBorders>
+                <w:top w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+                <w:left w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+                <w:bottom w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+                <w:right w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+              </w:tcBorders>
+              <w:shd w:val="clear" w:color="auto" w:fill="${headerFill}"/>
+              <w:tcMar><w:top w:w="80" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
+            </w:tcPr>
+            <w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:rPr>${isHeader ? '<w:b/><w:bCs/>' : ''}<w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">${xmlEsc(cellText)}</w:t></w:r></w:p>
+          </w:tc>`;
+        }).join("");
+        return `<w:tr>${cells}</w:tr>`;
+      }).join("");
+
+      parts.push(`<w:tbl>
+        <w:tblPr>
+          <w:tblW w:w="5000" w:type="pct"/>
+          <w:tblLayout w:type="fixed"/>
+          <w:tblBorders>
+            <w:top w:val="single" w:sz="6" w:space="0" w:color="999999"/>
+            <w:left w:val="single" w:sz="6" w:space="0" w:color="999999"/>
+            <w:bottom w:val="single" w:sz="6" w:space="0" w:color="999999"/>
+            <w:right w:val="single" w:sz="6" w:space="0" w:color="999999"/>
+            <w:insideH w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+            <w:insideV w:val="single" w:sz="4" w:space="0" w:color="CCCCCC"/>
+          </w:tblBorders>
+        </w:tblPr>
+        ${xmlRows}
+      </w:tbl>
+      <w:p><w:pPr><w:spacing w:after="120"/></w:pPr></w:p>`);
+    }
+    inTable = false;
+    tableRows = [];
+  }
 
   for (const line of lines) {
     const trimmed = line.trim();
+
+    if (trimmed.startsWith("|") && trimmed.endsWith("|")) {
+      if (trimmed.match(/^\|[-:|\s]+\|$/)) {
+        continue;
+      }
+      inTable = true;
+      const cells = trimmed.split("|").slice(1, -1).map(c => c.trim());
+      tableRows.push(cells);
+      continue;
+    } else {
+      flushTable();
+    }
 
     if (!trimmed) {
       parts.push(`<w:p><w:pPr><w:spacing w:after="60"/></w:pPr></w:p>`);
@@ -78,6 +199,8 @@ function textToWordXml(text: string): string {
 
     parts.push(wPara(wRun(trimmed)));
   }
+  
+  flushTable();
 
   return parts.join("\n") || wPara(wRun(""));
 }
