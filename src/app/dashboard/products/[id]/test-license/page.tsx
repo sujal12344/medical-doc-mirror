@@ -29,6 +29,7 @@ export default function TestLicensePage() {
   const [generating, setGenerating] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [statusType, setStatusType] = useState<"info" | "success" | "error">("info");
+  const [licenseType, setLicenseType] = useState<"domestic" | "import">("domestic");
   // Stores the object URL of the generated ZIP so user can re-download without re-generating
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -101,7 +102,11 @@ export default function TestLicensePage() {
     setStatusMsg("Extracting data and generating documents — this may take up to 30 seconds...");
     setStatusType("info");
     try {
-      const res = await fetch(`/api/documents/${docId}/generate-test-license`, { method: "POST" });
+      const res = await fetch(`/api/documents/${docId}/generate-test-license`, { 
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ licenseType })
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setStatusMsg(data.message || "Generation failed.");
@@ -235,6 +240,27 @@ export default function TestLicensePage() {
             No files uploaded yet. Upload the IFU to generate documents.
           </div>
         )}
+      </div>
+
+      {/* License Type Selection */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+        <h2 className="text-base font-semibold text-foreground mb-4">Application Type</h2>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition ${licenseType === 'domestic' ? 'border-violet-500 bg-violet-500/5' : 'border-border hover:border-violet-500/50'}`}>
+            <input type="radio" name="licenseType" value="domestic" checked={licenseType === 'domestic'} onChange={() => setLicenseType('domestic')} className="accent-violet-600" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Domestic (MD-12/13)</p>
+              <p className="text-xs text-muted mt-0.5">Test License to manufacture in India</p>
+            </div>
+          </label>
+          <label className={`flex items-center gap-3 p-4 border rounded-lg cursor-pointer transition ${licenseType === 'import' ? 'border-violet-500 bg-violet-500/5' : 'border-border hover:border-violet-500/50'}`}>
+            <input type="radio" name="licenseType" value="import" checked={licenseType === 'import'} onChange={() => setLicenseType('import')} className="accent-violet-600" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Import (MD-14/15)</p>
+              <p className="text-xs text-muted mt-0.5">Test License to import into India</p>
+            </div>
+          </label>
+        </div>
       </div>
 
       {/* Generate & Download Section */}

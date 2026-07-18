@@ -140,7 +140,7 @@ async function runProductAutofill(userId: string, documentText: string, supplied
   const index = pc.index(INDEX_NAME).namespace(namespace);
 
   const queries = [
-      "product name trade name manufacturer company name brand",
+      "product name trade name manufacturer company name brand Q-Line ACCUREX Labsystems manufacturer address registered office",
       "intended use intended purpose patient population anatomical site clinical indication",
       "sterile active invasive software drug combination IVD in-vitro diagnostic classification class",
       "surgical implant body orifice contact duration invasive CNS cardiac life support radiation drug delivery absorbed tissue",
@@ -194,7 +194,7 @@ Do not repeat the same wording across suggestions. Set "description" to the best
 Return ONLY valid raw JSON with exactly these keys (use empty string or false if not found):
 {
   "name": string,
-  "manufacturer": string,
+  "manufacturer": string,  // CRITICAL: extract from brand prefix in product name (e.g. "Q-Line® Molecular Dengue RT-PCR" → manufacturer = "Q-Line"), OR from company address block, OR from header/footer. If no explicit manufacturer field, extract from the brand name embedded in the product name.
   "description": string,
   "descriptionSuggestions": string[],
   "intendedUse": string,
@@ -241,6 +241,17 @@ Return ONLY valid raw JSON with exactly these keys (use empty string or false if
   "ivdCancerMarkers": boolean,
   "ivdFertility": boolean
 }
+
+FIELD EXTRACTION RULES:
+
+"name": The trade/brand name of the product (e.g. "Dengue RT-PCR Kit", "Q-Line Molecular Dengue RT-PCR Assay").
+
+"manufacturer": The name of the company that makes the product.
+  - Look for: company name in document header, footer, address block, "Manufactured by", "Supplied by", or similar.
+  - If not labelled explicitly: extract the brand/company name from the PRODUCT NAME itself.
+    Example: "Q-Line\u00ae Molecular Dengue RT-PCR assay" → manufacturer = "Q-Line" (or "Q-Line Biotech" if found elsewhere).
+  - Do NOT leave this empty if a company or brand prefix appears in the product name.
+  - Return full company name if found (e.g. "Q-Line Biotech Private Limited") or short brand name if not.
 
 REGULATORY DEFINITIONS — apply these precisely:
 

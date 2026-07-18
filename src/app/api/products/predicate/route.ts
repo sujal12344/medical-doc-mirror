@@ -275,8 +275,30 @@ export async function POST(req: NextRequest) {
         const keyword = await extractSearchKeyword(intendedUse);
 
         // ── Step 2: Scrape CDSCO ──────────────────────────────────────────────
-        const browser = await chromium.launch({ headless: false });
+        // The CDSCO site loads a massive client-side DataTable that causes Chromium 
+        // to OOM (Aw, Snap!) if memory limits aren't raised and resources aren't blocked.
+        const browser = await chromium.launch({
+            headless: false,
+            args: [
+                '--disable-dev-shm-usage', // Use /tmp instead of /dev/shm
+                '--js-flags=--max-old-space-size=8192', // Increase V8 JS memory to 8GB (correct format without inner quotes)
+                '--disable-gpu',
+                '--no-sandbox',
+                '--disable-features=IsolateOrigins,site-per-process', // Disable site isolation to save memory
+                '--disable-site-isolation-trials',
+            ]
+        });
         const page = await browser.newPage();
+
+        // Block images, fonts, and stylesheets to save huge amounts of memory
+        await page.route('**/*', (route) => {
+            const type = route.request().resourceType();
+            if (['image', 'font', 'stylesheet', 'media'].includes(type)) {
+                route.abort();
+            } else {
+                route.continue();
+            }
+        });
 
         await page.goto(
             "https://cdscomdonline.gov.in/NewMedDev/ListOfApprovedDevices",

@@ -51,6 +51,35 @@ const EMPTY_EXTRACTION: TestLicenseExtraction = {
   productSummary: "", intendedUse: "", material: "", shelfLife: "", packSize: "", storage: "",
 };
 
+// ── Import Test License types ───────────────────────────────────────────────────
+interface ImportProduct {
+  productGenericName: string;
+  brandName: string;
+  referenceNumber: string;
+  category: string;
+  class: string;
+  use: string;
+  importedquantity: string;
+  material: string;
+  size: string;
+  temperature: string;
+}
+
+const EMPTY_IMPORT_PRODUCT: ImportProduct = {
+  productGenericName: "", brandName: "", referenceNumber: "",
+  category: "", class: "", use: "", importedquantity: "",
+  material: "", size: "", temperature: "",
+};
+
+// Scalar company fields extracted at the import level
+interface ImportExtractionResult {
+  companyName: string;
+  companyAddress: string;
+  companyNumber: string;
+  companyEmail: string;
+  products: ImportProduct[];
+}
+
 /** Extract text and the largest image from a base64-encoded file (PDF or DOCX). */
 async function extractDataFromBase64(base64: string, mimeType: string, fileName: string): Promise<{ text: string; logoBuffer?: Buffer }> {
   const buffer = Buffer.from(base64, "base64");
@@ -125,6 +154,109 @@ function safeParseLLMJson<T extends object>(raw: string, fallback: T): T {
     return fallback;
   }
 }
+
+/**
+ * For large documents (>15K chars), naive first+last slicing misses content buried in the middle.
+ * This function searches the full text for keyword-anchored windows and assembles a targeted
+ * context block that is far more likely to contain manufacturer info, product tables,
+ * intended use, class, quantity, etc.
+ */
+function buildTargetedContext(fullText: string, maxTotalChars = 14000): string {
+  const KEYWORD_GROUPS: {
+    label: string;
+    keywords: string[];
+    windowChars: number;
+    useLast?: boolean;  // use LAST occurrence instead of first (avoids TOC references)
+  }[] = [
+    {
+      // Use specific physical-address keywords that appear ONLY ONCE in the document
+      // (near the real address block), never in the TOC or in product-label footers.
+      label: "MANUFACTURER INFO",
+      keywords: [
+        "manufacturer information\n",  // section heading (not in TOC — TOC has dots after it)
+        "geumcheon",                   // Seoul district name — unique to KR address block
+        "gasan",                       // Street name — unique to KR address block
+        "#1604",                       // Building number — unique to KR address block
+        "republic of korea",           // Country line — first occurrence is in address block
+      ],
+      windowChars: 1600,
+      // useLast is intentionally NOT set (defaults to indexOf/first occurrence)
+    },
+    {
+      label: "INTENDED USE",
+      keywords: ["intended use", "indications for use", "intended purpose"],
+      windowChars: 1500,
+    },
+    {
+      label: "PRODUCT TABLE / PRODUCT LIST",
+      keywords: ["model no", "catalogue no", "reference no", "product list", "kit contents", "accessories"],
+      windowChars: 2000,
+    },
+    {
+      label: "CLASSIFICATION / RISK CLASS",
+      keywords: ["risk class", "device class", "class a", "class b", "class c", "class d"],
+      windowChars: 800,
+    },
+    {
+      label: "STORAGE / TEMPERATURE",
+      keywords: ["storage condition", "store at", "storage temperature", "-20°c", "2~8°c", "shelf life"],
+      windowChars: 800,
+    },
+    {
+      label: "QUANTITY",
+      keywords: ["quantity", "number of units", "no. of units", "pack size", "kits per pack"],
+      windowChars: 600,
+    },
+  ];
+
+  const lower = fullText.toLowerCase();
+  const usedRanges: Array<[number, number]> = [];
+  const sections: string[] = [];
+
+  // Always include the very beginning (title, product name usually here)
+  const leadChars = Math.min(2000, Math.floor(maxTotalChars * 0.14));
+  sections.push(`[DOCUMENT START]\n${fullText.slice(0, leadChars)}`);
+  usedRanges.push([0, leadChars]);
+
+  let totalUsed = leadChars;
+
+  for (const group of KEYWORD_GROUPS) {
+    if (totalUsed >= maxTotalChars) break;
+
+    // Find the best keyword occurrence — LAST for groups marked useLast, FIRST otherwise
+    let bestIdx = -1;
+    for (const kw of group.keywords) {
+      const idx = group.useLast ? lower.lastIndexOf(kw) : lower.indexOf(kw);
+      if (idx === -1) continue;
+      if (bestIdx === -1) { bestIdx = idx; continue; }
+      bestIdx = group.useLast
+        ? Math.max(bestIdx, idx)   // latest match
+        : Math.min(bestIdx, idx);  // earliest match
+    }
+    if (bestIdx === -1) continue;
+
+    const start = Math.max(0, bestIdx - 200);
+    const end   = Math.min(fullText.length, start + group.windowChars);
+
+    // Skip if it overlaps heavily with an already-included range
+    const overlaps = usedRanges.some(([rs, re]) => start < re && end > rs);
+    if (overlaps) continue;
+
+    usedRanges.push([start, end]);
+    totalUsed += end - start;
+    sections.push(`[${group.label}]\n${fullText.slice(start, end)}`);
+  }
+
+  // Fill remaining budget with the document tail
+  const remaining = maxTotalChars - totalUsed;
+  if (remaining > 500) {
+    const tailStart = Math.max(0, fullText.length - remaining);
+    sections.push(`[DOCUMENT END]\n${fullText.slice(tailStart)}`);
+  }
+
+  return sections.join("\n\n---\n\n");
+}
+
 
 /**
  * Very basic PNG/JPEG dimension parser to preserve aspect ratio.
@@ -261,6 +393,16 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     const doc = await RegulatoryDocument.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
     if (!doc) return NextResponse.json({ message: "Document not found" }, { status: 404 });
 
+    let licenseType = "domestic";
+    try {
+      const body = await req.json();
+      if (body?.licenseType === "import") {
+        licenseType = "import";
+      }
+    } catch {
+      // ignore
+    }
+
     const uploadedDocs = (doc as Record<string, unknown>).uploadedDocs as Array<{
       fileName: string; mimeType: string; base64: string;
     }> | undefined;
@@ -284,12 +426,145 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     const combinedText = allTexts.join("\n\n---\n\n");
     console.log(`[generate-test-license] Extracted ${combinedText.length} chars, logo found: ${!!companyLogoBuffer}`);
 
-    // ── LLM Extraction ────────────────────────────────────────────────────────
+    // ── LLM Extraction — branched by licenseType ──────────────────────────────
     const openaiKey = process.env.OPENAI_API_KEY;
-    let result: TestLicenseExtraction = { ...EMPTY_EXTRACTION };
+    let mergedValues: Record<string, string> = {};
 
-    if (openaiKey && combinedText.trim()) {
-      const openai = new OpenAI({ apiKey: openaiKey });
+    if (licenseType === "import") {
+      // ── IMPORT PATH: extract company + multi-product array ──────────────────
+      let importResult: ImportExtractionResult = {
+        companyName: "", companyAddress: "", companyNumber: "", companyEmail: "", products: [],
+      };
+
+      if (openaiKey && combinedText.trim()) {
+        const openai = new OpenAI({ apiKey: openaiKey });
+        // Use keyword-targeted extraction so manufacturer address, product tables,
+        // intended use, class, quantity are never truncated away in large PDFs
+        const docText = combinedText.length > 14000
+          ? buildTargetedContext(combinedText, 14000)
+          : combinedText;
+        console.log(`[generate-test-license:import] docText length: ${docText.length} chars (from ${combinedText.length})`);
+
+        const importSystemPrompt = `You are a precise data extraction assistant for medical regulatory documents.
+Extract structured data ONLY from the provided document. Return ONLY valid JSON.
+
+CRITICAL RULES:
+1. Extract ONLY information explicitly stated in the document. Do NOT guess, infer, or hallucinate.
+2. The Legal Manufacturer is the entity that DESIGNED and PRODUCED the device — look for labels like "Manufacturer", "Legal Manufacturer", "Manufactured by".
+3. Do NOT select importers, agents, or distributors as the company.
+4. List each individual product up to a maximum of 5.
+5. If a field is entirely missing, return "".
+
+Required JSON shape:
+{
+  "companyName": "",
+  "companyAddress": "",
+  "companyNumber": "",
+  "companyEmail": "",
+  "products": [
+    {
+      "productGenericName": "",
+      "brandName": "",
+      "referenceNumber": "",
+      "category": "",
+      "class": "",
+      "use": "",
+      "importedquantity": "",
+      "material": "",
+      "size": "",
+      "temperature": ""
+    }
+  ]
+}
+
+Field guidance:
+- companyName: Name of the primary Legal Manufacturer. Look in [MANUFACTURER INFO] section for the company name that appears directly above the address lines.
+- companyAddress: CRITICAL — The address in the [MANUFACTURER INFO] section appears on SEPARATE LINES like this:
+    QuantaMatrix Inc.
+    #1604, #1605, 17F, Bldg. B, 
+    131 Gasan digital 1-ro, Geumcheon-gu, 
+    Seoul 08506, 
+    Republic of Korea
+    E-mail: CS@quantamatrix.com
+  JOIN all address lines (STOP before the E-mail/http line) into one comma-separated string.
+  The correct output is: "#1604, #1605, 17F, Bldg. B, 131 Gasan digital 1-ro, Geumcheon-gu, Seoul 08506, Republic of Korea"
+  NEVER return empty string if you can see street lines below the manufacturer company name.
+- companyNumber: Phone or fax number in the [MANUFACTURER INFO] section. If the primary Legal Manufacturer has no phone number listed, fallback to any other phone number present in the block (e.g. look for "Sales & Marketing: +33 (0) 9 75 29 18 65" under regional offices). Return "" only if no phone number exists anywhere in the block.
+- companyEmail: Email address of the Legal Manufacturer. Look for "E-mail:" immediately after the address block (e.g. "CS@quantamatrix.com").
+- productGenericName: Broad generic/category name (e.g. "Rapid Susceptibility Testing Kit", "In Vitro Diagnostic Instrument"). Use the generic/category column in any product table.
+- brandName: Specific commercial device variant name (e.g. "QMAC-dRAST GN S17", "dRAST"). Look in Brand Name or Device Name column.
+- referenceNumber: Model number, catalogue number, or part number (e.g. "QMdRASTN02"). Look in Model No or Ref No column.
+- category: Device category label (e.g. "In Vitro Diagnostic Device", "Reagent Kit", "Instrument"). Look in Category or Device Type column.
+- class: Regulatory risk class EXACTLY as written (e.g. "Class A", "Class B", "Class IIa"). Look in Class or Risk Class column of any product table.
+- use: Full intended use statement. Look in [INTENDED USE] section. Include the full sentence describing what the device detects/measures and the specimen type.
+- importedquantity: Quantity proposed to be imported WITH UNITS (e.g. "2 Units", "25 Kits"). Look for quantity columns or tables listing number of units/kits.
+- material: Kit components or materials supplied (e.g. "QMAC-dRAST Broth, QMAC-dRAST Gel").
+- size: Pack size or kit size (e.g. "1x25 Tests", "12 tests/kit"). Look in pack size or kit size columns.
+- temperature: Storage or operating temperature (e.g. "-20°C ± 5°C", "2~8°C"). Look in [STORAGE / TEMPERATURE] section.
+
+Output rules:
+- No explanation, no markdown, ONLY valid JSON
+- Missing values = ""
+- Maximum 5 products`;
+
+        const llmRes = await openai.chat.completions.create({
+          model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+          temperature: 0,
+          messages: [
+            { role: "system", content: importSystemPrompt },
+            { role: "user", content: `Extract from this document:\n\n${docText}` },
+          ],
+        });
+
+        const rawImport = llmRes.choices?.[0]?.message?.content || "{}";
+        console.log(`[generate-test-license:import] LLM output: ${rawImport.length} chars`);
+
+        const parsed = safeParseLLMJson<{
+          companyName?: string; companyAddress?: string;
+          companyNumber?: string; companyEmail?: string;
+          products?: unknown[];
+        }>(rawImport, { companyName: "", companyAddress: "", companyNumber: "", companyEmail: "", products: [] });
+        importResult = {
+          companyName:    typeof parsed.companyName    === "string" ? parsed.companyName    : "",
+          companyAddress: typeof parsed.companyAddress === "string" ? parsed.companyAddress : "",
+          companyNumber:  typeof parsed.companyNumber  === "string" ? parsed.companyNumber  : "",
+          companyEmail:   typeof parsed.companyEmail   === "string" ? parsed.companyEmail   : "",
+          products: Array.isArray(parsed.products)
+            ? parsed.products.map((p) => ({ ...EMPTY_IMPORT_PRODUCT, ...(p as object) })).slice(0, 5)
+            : [],
+        };
+      }
+
+      // Build flat numbered mergedValues for import templates
+      mergedValues["companyName"]    = importResult.companyName;
+      mergedValues["companyAddress"] = importResult.companyAddress;
+      mergedValues["companyNumber"]  = importResult.companyNumber;
+      mergedValues["companyEmail"]   = importResult.companyEmail;
+      mergedValues["shelfLife"]      = "";
+
+      // Fill slots 1-5 with product data (empty string for unfilled slots)
+      for (let i = 1; i <= 5; i++) {
+        const prod = importResult.products[i - 1] ?? EMPTY_IMPORT_PRODUCT;
+        mergedValues[`productGenericName${i}`] = prod.productGenericName;
+        mergedValues[`brandName${i}`]          = prod.brandName;
+        mergedValues[`referenceNumber${i}`]    = prod.referenceNumber;
+        mergedValues[`category${i}`]           = prod.category;
+        mergedValues[`class${i}`]              = prod.class;
+        mergedValues[`use${i}`]                = prod.use;
+        mergedValues[`importedquantity${i}`]   = prod.importedquantity;
+        mergedValues[`material${i}`]           = prod.material;
+        mergedValues[`size${i}`]               = prod.size;
+        mergedValues[`temperature${i}`]        = prod.temperature;
+      }
+
+      console.log(`[generate-test-license:import] company="${importResult.companyName}" | ${importResult.products.length} products`);
+
+    } else {
+      // ── DOMESTIC PATH: single-product extraction (existing logic) ────────────
+      let result: TestLicenseExtraction = { ...EMPTY_EXTRACTION };
+
+      if (openaiKey && combinedText.trim()) {
+        const openai = new OpenAI({ apiKey: openaiKey });
         const systemPrompt = `You are an expert regulatory document extraction assistant specializing in Medical Device and IVD documentation.
 
 Your task is to extract information ONLY from the provided IFU/reference document.
@@ -489,8 +764,8 @@ JSON Rules
       result = safeParseLLMJson<TestLicenseExtraction>(raw, EMPTY_EXTRACTION);
     }
 
-    // ── Build mergedValues from result ────────────────────────────────────────
-    const mergedValues: Record<string, string> = {
+    // Build mergedValues from domestic result
+    mergedValues = {
       productName:        result.productName,
       productClass:       result.productClass,
       manufacturerName:   result.manufacturerName,
@@ -508,7 +783,6 @@ JSON Rules
       keyperson:          result.keyperson,
       qualification:      result.qualification,
       responsibility:     result.responsibility,
-      // new fields
       productSummary:     result.productSummary,
       intendedUse:        result.intendedUse,
       material:           result.material || result.components,
@@ -516,16 +790,17 @@ JSON Rules
       packSize:           result.packSize || result.quantity,
       storage:            result.storage,
     };
+  } // end licenseType branch
 
     console.log("[generate-test-license] Merged values:", mergedValues);
 
     // ── Load templates and render ─────────────────────────────────────────────
-    const formatDir = path.join(process.cwd(), "format");
+    const formatDir = path.join(process.cwd(), "format", licenseType);
     let dirEntries: string[];
     try {
       dirEntries = await fs.readdir(formatDir);
     } catch {
-      return NextResponse.json({ message: `Cannot read format directory: ${formatDir}` }, { status: 500 });
+      return NextResponse.json({ message: `Cannot read format directory: ${formatDir}. Please ensure templates are uploaded.` }, { status: 500 });
     }
     const docxTemplates = dirEntries.filter((f) => f.toLowerCase().endsWith(".docx"));
 
