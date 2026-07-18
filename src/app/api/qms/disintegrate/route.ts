@@ -269,6 +269,443 @@ Extract and copy the exact list of Quality Objectives verbatim from the source d
 Director
 Leave this exactly as "Director" at the bottom of the document to represent the signature block. Do not add any extra text or names unless explicitly stated in the source.
 `
+  },
+  {
+    title: "Control of Quality Records",
+
+    query: `
+ISO 13485 Clause 4.2.5
+Control of Records
+Documentation Requirements
+Quality Records
+Record Identification
+Record Storage
+Record Protection
+Record Retrieval
+Record Retention
+Record Disposition
+Electronic Records
+Record Backup
+Record Numbering
+Quality Record List
+External Records
+Retention Period
+`,
+
+    specific: `
+Generate a Level-II Quality System Procedure titled:
+
+CONTROL OF QUALITY RECORDS
+
+The purpose of this task is NOT to create a new SOP.
+
+The purpose is to generate a procedure that matches the organization's existing Quality System Procedure format as derived from its Quality Manual.
+
+The retrieved Quality Manual is the PRIMARY SOURCE OF TRUTH.
+
+The generated procedure must look like it was written by the same organization that wrote the Quality Manual.
+
+---------------------------------------------------
+SOURCE OF INFORMATION
+---------------------------------------------------
+
+Use ONLY information present in the retrieved Quality Manual.
+
+If additional explanation is required, expand ONLY enough to connect the existing statements.
+
+Never introduce new company practices.
+
+Never introduce new departments.
+
+Never introduce new responsibilities.
+
+Never introduce new document numbering systems.
+
+Never introduce new retention periods.
+
+Never introduce new workflows.
+
+Never introduce ISO examples that are not supported by the Quality Manual.
+
+If information is not available,
+leave that section concise instead of inventing content.
+
+---------------------------------------------------
+STYLE
+---------------------------------------------------
+
+The document MUST resemble an existing Quality System Procedure.
+
+Write short procedural statements.
+
+Avoid long descriptive paragraphs.
+
+Avoid consultant-style writing.
+
+Avoid textbook explanations.
+
+Write exactly like a controlled QMS procedure.
+
+Each procedural step should usually be one or two sentences.
+
+---------------------------------------------------
+DOCUMENT STRUCTURE
+---------------------------------------------------
+
+The document SHALL contain ONLY the following sections.
+
+DOCUMENT HEADER
+
+Generate the header exactly in this format.
+
+| Field | Value |
+|-------|-------|
+| Company | Retrieved from QMS |
+| Document No. | Retrieved from QMS |
+| ISO Clause | Retrieved from QMS |
+| Level | II |
+| Document Title | Control of Quality Records |
+| Revision No. | Retrieved |
+| Revision Date | Retrieved |
+| Issue Date | Retrieved |
+| Approved By | Retrieved |
+| Issued By | Retrieved |
+
+---------------------------------------------------
+
+1 Purpose
+
+Write only one concise paragraph.
+
+Do not create bullet points.
+
+---------------------------------------------------
+
+2 Scope
+
+Write only one concise paragraph.
+
+---------------------------------------------------
+
+3 Authority and Responsibility
+
+Write only one concise paragraph describing:
+
+• Approval authority
+
+• Issuing authority
+
+• Implementation responsibility
+
+Do not create matrices.
+
+---------------------------------------------------
+
+4 Procedure Steps
+
+This section MUST resemble the original document.
+
+Generate the procedure as numbered clauses.
+
+Example
+
+4.1
+
+4.2
+
+4.3
+
+4.4
+
+etc.
+
+DO NOT convert each clause into a separate heading.
+
+Instead use the following format.
+
+| Action | Responsibility |
+
+4.1 Statement...
+
+4.2 Statement...
+
+4.3 Statement...
+
+4.4 Statement...
+
+The Action column should contain the procedural clause.
+
+The Responsibility column should contain ONLY the responsible role.
+
+Do NOT write explanations underneath.
+
+Do NOT create additional subsections.
+
+Do NOT add examples.
+
+Maintain exactly the same style as a QMS Procedure.
+
+---------------------------------------------------
+
+5 Cross Referred Procedures
+
+Keep this section short.
+
+Use only retrieved procedures.
+
+---------------------------------------------------
+
+6 Documents and Records
+
+List only the records mentioned in the Quality Manual.
+
+Do not invent forms.
+
+---------------------------------------------------
+
+7 Abbreviations
+
+List only abbreviations appearing in the retrieved QMS.
+
+---------------------------------------------------
+
+STRICT RULES
+
+The generated document should look like an existing company SOP.
+
+Do NOT modernize it.
+
+Do NOT improve it.
+
+Do NOT elaborate unnecessarily.
+
+Do NOT generate additional sections.
+
+Do NOT generate ISO guidance.
+
+Do NOT create new responsibilities.
+
+Do NOT create new workflows.
+
+Do NOT create new numbering systems.
+
+Do NOT create examples.
+
+If a sentence already exists in the QMS, preserve its wording as much as possible while adapting it into procedure format.
+
+The final output should closely resemble the company's existing Level-II procedure rather than a newly written SOP.`
+  },
+  {
+    title: "Internal Audit",
+
+    query: `
+ISO 13485 Clause 8.2.4
+Internal Audit
+Audit Programme
+Audit Schedule
+Audit Planning
+Audit Criteria
+Audit Scope
+Audit Frequency
+Audit Team
+Lead Auditor
+Auditor Independence
+Audit Checklist
+Audit Execution
+Audit Evidence
+Audit Findings
+Audit Observation
+Nonconformity
+Major Nonconformity
+Minor Nonconformity
+Opportunity for Improvement
+Audit Report
+Corrective Action
+CAPA
+Follow-up Audit
+Audit Closure
+Audit Records
+Management Review
+Quality Management System Audit
+Process Audit
+Product Audit
+Supplier Audit
+Audit Competence
+Audit Training
+Audit Records
+Audit Planning
+Audit Responsibilities
+`,
+
+    specific: `Generate a complete Level-II Quality System Procedure (QSP) titled:
+
+{{DOCUMENT_NAME}}
+
+The document shall be generated by transforming the retrieved Quality Manual into a standalone Quality System Procedure.
+
+The retrieved Quality Manual is the ONLY source of organization-specific information.
+
+=========================================================
+OBJECTIVE
+=========================================================
+
+Transform the retrieved Quality Manual clauses into a Quality System Procedure.
+
+Preserve:
+
+• terminology
+• writing style
+• responsibilities
+• numbering
+• references
+• document hierarchy
+
+Expand only where required to make the procedure complete.
+
+Do not invent company-specific information.
+
+=========================================================
+DOCUMENT STRUCTURE
+=========================================================
+
+Generate the document using the exact structure below.
+
+---------------------------------------------------------
+
+1. Purpose
+
+Write one concise procedural paragraph describing the purpose of the procedure.
+
+---------------------------------------------------------
+
+2. Scope
+
+Write one concise procedural paragraph describing the applicability of the procedure.
+
+---------------------------------------------------------
+
+3. Authority and Responsibility
+
+Write one concise procedural paragraph describing:
+
+- approval authority
+- implementation responsibility
+- applicable functions
+
+Use ONLY information available in the retrieved Quality Manual.
+
+---------------------------------------------------------
+
+4. Procedure Steps
+
+Generate this section exactly in the following style.
+
+Create a Markdown table with TWO columns.
+
+| Action | Responsibility |
+|---------|----------------|
+
+Each row represents one procedural step.
+
+The Action column shall contain numbered procedural clauses.
+
+Example structure only:
+
+| Action | Responsibility |
+|---------|----------------|
+| 4.1 Procedure step... | Responsible Function |
+| 4.2 Procedure step... | Responsible Function |
+| 4.3 Procedure step... | Responsible Function |
+| 4.4 Procedure step... | Responsible Function |
+
+Do NOT generate paragraphs outside this table.
+
+Do NOT merge multiple actions into one row.
+
+Generate as many rows as required based on the retrieved Quality Manual.
+
+Use only responsibilities found or clearly implied in the retrieved QMS.
+
+If the retrieved QMS references specific forms, records or document numbers, include them.
+
+Otherwise do not invent them.
+
+---------------------------------------------------------
+
+5. Cross-referred Procedures
+
+Generate a numbered list or table containing ONLY procedures referenced in the retrieved Quality Manual.
+
+If none are referenced, state "Nil".
+
+---------------------------------------------------------
+
+6. Documents and Records
+
+Generate a numbered list or Markdown table of all documents, forms and records referenced in the retrieved Quality Manual for this procedure.
+
+Do not invent document numbers.
+
+Do not invent form names.
+
+---------------------------------------------------------
+
+7. Abbreviations Used
+
+Generate a numbered list or Markdown table of abbreviations used in the procedure.
+
+Only include abbreviations appearing in the retrieved Quality Manual.
+
+=========================================================
+WRITING STYLE
+=========================================================
+
+The generated document must resemble an existing company Quality System Procedure.
+
+Write concise procedural statements.
+
+Avoid long explanations.
+
+Avoid ISO guidance.
+
+Avoid consultant language.
+
+Avoid textbook style.
+
+Do not explain why something is done.
+
+Simply state what shall be done.
+
+=========================================================
+STRICT RULES
+=========================================================
+
+• Do not create additional sections.
+
+• Do not add examples.
+
+• Do not invent departments.
+
+• Do not invent responsibilities.
+
+• Do not invent document numbers.
+
+• Do not invent forms.
+
+• Do not invent review frequencies.
+
+• Do not invent retention periods.
+
+• Do not invent approval hierarchies.
+
+• Preserve wording from the retrieved Quality Manual wherever possible.
+
+• Expand only enough to convert the Quality Manual into a complete Level-II procedure.
+
+• The final document should appear to have been written by the same organization that authored the Quality Manual.
+
+Return ONLY the completed procedure in Markdown.
+`
   }
 ];
 
