@@ -126,7 +126,64 @@ function buildDescriptionSuggestions(
   return out.slice(0, 6);
 }
 
+/**
+ * Deterministically derives the India MDR 2017 First Schedule Part II device class
+ * from the extracted boolean IVD flags.  Applied AFTER the LLM response to prevent
+ * reasoning drift from overriding clearly extractable classification rules.
+ *
+ * Priority order: D → C → B → A
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deriveIvdClass(fields: any): "A" | "B" | "C" | "D" {
+  const {
+    ivdTargetsHIV,
+    ivdTargetsHBV,
+    ivdTargetsHCV,
+    ivdTargetsHTLV,
+    ivdTargetsMalaria,
+    ivdTargetsSyphilis,
+    ivdTargetsCMV,
+    ivdBloodDonorScreening,
+    ivdBloodGrouping,
+    ivdHLATyping,
+    ivdNearPatient,
+    ivdSelfTest,
+  } = fields;
+
+  // ── Class D (Rule 2(viii)) ─────────────────────────────────────────────────
+  // HIV in any context, OR any of the listed high-risk infection markers used
+  // specifically for blood/plasma/cell donation screening.
+  const classDDonorMarkers =
+    ivdTargetsHBV || ivdTargetsHCV || ivdTargetsHTLV ||
+    ivdTargetsMalaria || ivdTargetsSyphilis || ivdTargetsCMV;
+
+  if (ivdTargetsHIV || (ivdBloodDonorScreening && classDDonorMarkers)) {
+    return "D";
+  }
+
+  // ── Class C (Rule 2(vii)) ──────────────────────────────────────────────────
+  // Blood grouping, HLA typing, or donor screening for markers outside Class D,
+  // OR HBV/HCV near-patient / self-test diagnostics.
+  if (
+    ivdBloodGrouping ||
+    ivdHLATyping ||
+    ivdBloodDonorScreening ||
+    ((ivdTargetsHBV || ivdTargetsHCV) && (ivdNearPatient || ivdSelfTest))
+  ) {
+    return "C";
+  }
+
+  // ── Class B (Rule 2(vi)) ───────────────────────────────────────────────────
+  // Performance evaluation reagents / calibrators — left for the LLM to detect;
+  // we only fall through here if the LLM already returned "B".
+  if (fields.deviceClass === "B") return "B";
+
+  // ── Class A (Rule 2(v)) ────────────────────────────────────────────────────
+  return "A";
+}
+
 async function runProductAutofill(userId: string, documentText: string, suppliedNamespaceProductId: string | null) {
+
   const chunks = chunkText(documentText);
   console.log(`[autofill:product] ${chunks.length} chunks from ${documentText.length} chars`);
 
@@ -300,11 +357,18 @@ hasSoftware: TRUE if device includes embedded firmware, mobile app, or onboard a
 
 deviceType: "ivd" for in-vitro diagnostics (tests samples outside body). "medical-device" for all others.
 
-deviceClass (India MDR 2017 First Schedule — only assign if you can cite a specific rule):
-  Leave empty if insufficient information.
-  FOR IVDs (Part II): Class A (Rule 2(v)) = specific-purpose reagent/kit. Class B (Rule 2(vi)) = performance evaluation substance only.
-  Class C = blood grouping, HLA, certain infection markers. Class D = HIV/HBV/HCV blood donor screening.
-  IMPORTANT: A colorimetric/enzymatic/turbidimetric reagent kit for a specific analyte is almost always Class A (Rule 2(v)).
+deviceClass (India MDR 2017 First Schedule Part II — apply rules in order; first matching rule wins):
+  Class D (highest risk — Rule 2(viii)): assign if ANY of these are true:
+    • ivdBloodDonorScreening=true AND (ivdTargetsHIV OR ivdTargetsHBV OR ivdTargetsHCV OR ivdTargetsHTLV OR ivdTargetsMalaria OR ivdTargetsSyphilis OR ivdTargetsCMV)
+    • ivdTargetsHIV=true (any setting)
+  Class C (Rule 2(vii)): assign if none of the Class D conditions apply AND ANY of these are true:
+    • ivdBloodGrouping=true
+    • ivdHLATyping=true
+    • ivdBloodDonorScreening=true (for markers NOT in Class D list above)
+    • ivdTargetsHBV OR ivdTargetsHCV used in non-donor-screening clinical diagnosis context AND near-patient/self-test
+  Class B (Rule 2(vi)): performance evaluation/calibrator substances only — very rare.
+  Class A (Rule 2(v)): only if NONE of the above Class D/C/B conditions apply — general-purpose reagent/kit for specific analyte.
+  NOTE: A HBsAg test used for blood donor screening is Class D, NOT Class A.
 
 patientPopulation: who the device is intended for (e.g. "adults", "neonates", "human serum samples").
 
@@ -341,6 +405,12 @@ IVD PART II FIELDS (First Schedule Part II, MDR 2017 — only set for deviceType
     });
 
     const parsed = JSON.parse(completion.choices[0].message.content || "{}");
+
+    // ── Deterministic IVD classification override (MDR 2017, First Schedule Part II) ──
+    // Re-derive deviceClass from the boolean flags; LLM reasoning can drift but flags are reliable.
+    if (parsed.deviceType === "ivd") {
+      parsed.deviceClass = deriveIvdClass(parsed);
+    }
 
     const descriptionContext = contexts[QUERY_LABELS.length - 1] ?? "";
     const descriptionSuggestions = buildDescriptionSuggestions(
