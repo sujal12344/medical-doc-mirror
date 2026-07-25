@@ -608,6 +608,7 @@ productName
 productClass
 - Extract the regulatory device classification (Class A, Class B, Class C, or Class D) if explicitly stated.
 - If the class is not explicitly stated, determine the most appropriate CDSCO IVD risk classification from the intended use, technology, analyte, specimen type, and diagnostic purpose.
+- Note: Routine general clinical chemistry reagents (e.g., Albumin, Glucose, Creatinine) are almost always Class B. Wash buffers and general equipment are Class A. Infectious disease and cancer markers are Class C or D.
 - Return ONLY one of:
   Class A
   Class B
@@ -669,6 +670,7 @@ totalKits
 
 components
 - Extract ONLY the kit components supplied with the product.
+- Look under sections like "REAGENTS", "REAGENTS COMPOSITION", "KIT COMPONENTS", or "MATERIALS PROVIDED".
 - Do not include external equipment or consumables.
 
 site
@@ -702,6 +704,7 @@ intendedUse
 
 material
 - Extract the materials/reagents supplied with the kit (same as components but may include storage tubes, swabs, buffers, etc.).
+- Look under sections like "REAGENTS", "REAGENTS COMPOSITION", "KIT COMPONENTS", or "MATERIALS PROVIDED".
 - If a separate "Materials Provided" or "Kit Contents" section exists, extract its full content.
 - Do not include equipment required but not provided.
 
