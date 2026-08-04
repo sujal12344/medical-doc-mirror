@@ -1,0 +1,267 @@
+/* Dark Mode CSS - To revert: remove the import from layout.tsx and delete ThemeToggle.tsx */
+
+/* Dark mode is now controlled by [data-theme="dark"] attribute on <html> */
+/* Light mode uses default CSS variables from globals.css */
+
+[data-theme="dark"] {
+  /* ═══════════════════════════════════════════════════════════════════
+     CSS Variables for Dark Mode
+     ═══════════════════════════════════════════════════════════════════ */
+  --background: #0f0e0d;
+  --foreground: #e8e3dc;
+  --accent: #d97757;
+  --accent-hover: #e88667;
+  --border: #2a2622;
+  --muted: #9a8f82;
+  --surface: #1a1816;
+  --surface2: #242220;
+
+  /* ═══════════════════════════════════════════════════════════════════
+     Override hardcoded Tailwind color classes for dark mode
+     ═══════════════════════════════════════════════════════════════════ */
+  
+  /* Green colors */
+  .bg-green-50 { background-color: rgb(20 30 24) !important; }
+  .bg-green-100 { background-color: rgb(30 45 36) !important; }
+  .bg-green-400 { background-color: rgb(74 222 128) !important; }
+  .bg-green-400\/80 { background-color: rgba(74, 222, 128, 0.8) !important; }
+  .bg-green-500 { background-color: rgb(34 197 94) !important; }
+  .bg-green-600 { background-color: rgb(22 163 74) !important; }
+  .text-green-500 { color: rgb(74 222 128) !important; }
+  .text-green-600 { color: rgb(74 222 128) !important; }
+  .text-green-700 { color: rgb(134 239 172) !important; }
+  .text-green-800 { color: rgb(187 247 208) !important; }
+  .text-green-900 { color: rgb(220 252 231) !important; }
+  .border-green-200 { border-color: rgb(40 60 48) !important; }
+  .border-green-300 { border-color: rgb(50 75 60) !important; }
+  .border-green-500 { border-color: rgb(34 197 94) !important; }
+  .ring-green-200 { --tw-ring-color: rgb(40 60 48) !important; }
+  .ring-green-400 { --tw-ring-color: rgb(74 222 128) !important; }
+  .hover\:bg-green-100:hover { background-color: rgb(40 55 46) !important; }
+  .hover\:bg-green-50\/50:hover { background-color: rgba(20, 30, 24, 0.5) !important; }
+  .hover\:border-green-300:hover { border-color: rgb(50 75 60) !important; }
+  
+  /* Yellow colors */
+  .bg-yellow-50 { background-color: rgb(30 28 20) !important; }
+  .bg-yellow-100 { background-color: rgb(45 42 30) !important; }
+  .bg-yellow-400 { background-color: rgb(250 204 21) !important; }
+  .bg-yellow-500 { background-color: rgb(234 179 8) !important; }
+  .text-yellow-600 { color: rgb(250 204 21) !important; }
+  .text-yellow-700 { color: rgb(253 224 71) !important; }
+  .text-yellow-800 { color: rgb(254 240 138) !important; }
+  .border-yellow-200 { border-color: rgb(60 56 40) !important; }
+  .border-yellow-300 { border-color: rgb(75 70 50) !important; }
+  .border-yellow-500 { border-color: rgb(234 179 8) !important; }
+  .ring-yellow-200 { --tw-ring-color: rgb(60 56 40) !important; }
+  
+  /* Orange colors */
+  .bg-orange-50 { background-color: rgb(30 24 20) !important; }
+  .bg-orange-100 { background-color: rgb(45 36 30) !important; }
+  .bg-orange-300 { background-color: rgb(251 146 60) !important; }
+  .bg-orange-500 { background-color: rgb(249 115 22) !important; }
+  .text-orange-700 { color: rgb(254 215 170) !important; }
+  .text-orange-800 { color: rgb(254 215 170) !important; }
+  .text-orange-900 { color: rgb(255 237 213) !important; }
+  .border-orange-200 { border-color: rgb(60 48 40) !important; }
+  .border-orange-300 { border-color: rgb(75 60 50) !important; }
+  .border-orange-400 { border-color: rgb(90 75 60) !important; }
+  
+  /* Red colors */
+  .bg-red-50 { background-color: rgb(30 20 20) !important; }
+  .bg-red-100 { background-color: rgb(45 30 30) !important; }
+  .bg-red-400 { background-color: rgb(248 113 113) !important; }
+  .bg-red-400\/80 { background-color: rgba(248, 113, 113, 0.8) !important; }
+  .bg-red-500 { background-color: rgb(239 68 68) !important; }
+  .bg-red-600 { background-color: rgb(220 38 38) !important; }
+  .text-red-500 { color: rgb(248 113 113) !important; }
+  .text-red-600 { color: rgb(252 165 165) !important; }
+  .text-red-700 { color: rgb(252 165 165) !important; }
+  .text-red-800 { color: rgb(254 202 202) !important; }
+  .text-red-900 { color: rgb(254 226 226) !important; }
+  .border-red-200 { border-color: rgb(60 40 40) !important; }
+  .border-red-300 { border-color: rgb(75 50 50) !important; }
+  .border-red-500 { border-color: rgb(239 68 68) !important; }
+  .hover\:text-red-500:hover { color: rgb(248 113 113) !important; }
+  
+  /* Blue colors */
+  .bg-blue-50 { background-color: rgb(20 24 30) !important; }
+  .bg-blue-100 { background-color: rgb(30 36 45) !important; }
+  .bg-blue-500 { background-color: rgb(59 130 246) !important; }
+  .bg-blue-500\/50 { background-color: rgba(59, 130, 246, 0.5) !important; }
+  .bg-blue-600 { background-color: rgb(37 99 235) !important; }
+  .text-blue-600 { color: rgb(96 165 250) !important; }
+  .text-blue-700 { color: rgb(147 197 253) !important; }
+  .text-blue-800 { color: rgb(191 219 254) !important; }
+  .text-blue-900 { color: rgb(219 234 254) !important; }
+  .border-blue-200 { border-color: rgb(40 48 60) !important; }
+  .border-blue-300 { border-color: rgb(50 60 75) !important; }
+  .hover\:bg-blue-100:hover { background-color: rgb(40 46 55) !important; }
+  .hover\:border-blue-300:hover { border-color: rgb(50 60 75) !important; }
+  
+  /* Purple colors */
+  .bg-purple-50 { background-color: rgb(28 20 30) !important; }
+  .text-purple-700 { color: rgb(216 180 254) !important; }
+  
+  /* Violet colors */
+  .bg-violet-500\/5 { background-color: rgba(139, 92, 246, 0.08) !important; }
+  .bg-violet-500\/10 { background-color: rgba(139, 92, 246, 0.15) !important; }
+  .bg-violet-600 { background-color: rgb(124 58 237) !important; }
+  .bg-violet-700 { background-color: rgb(109 40 217) !important; }
+  .text-violet-600 { color: rgb(196 181 253) !important; }
+  .text-violet-300 { color: rgb(196 181 253) !important; }
+  .border-violet-400 { border-color: rgb(167 139 250) !important; }
+  .border-violet-500 { border-color: rgb(139 92 246) !important; }
+  .border-violet-500\/50 { border-color: rgba(139, 92, 246, 0.5) !important; }
+  .hover\:bg-violet-700:hover { background-color: rgb(109 40 217) !important; }
+  .hover\:border-violet-400:hover { border-color: rgb(167 139 250) !important; }
+  .hover\:border-violet-500\/50:hover { border-color: rgba(139, 92, 246, 0.5) !important; }
+  .hover\:bg-violet-50:hover { background-color: rgba(139, 92, 246, 0.08) !important; }
+  .accent-violet-600 { accent-color: rgb(124 58 237) !important; }
+  
+  /* Teal colors */
+  .bg-teal-500\/10 { background-color: rgba(20, 184, 166, 0.15) !important; }
+  .text-teal-600 { color: rgb(94 234 212) !important; }
+  .text-teal-300 { color: rgb(94 234 212) !important; }
+  .border-teal-500 { border-color: rgb(20 184 166) !important; }
+  
+  /* Amber colors */
+  .bg-amber-400 { background-color: rgb(251 191 36) !important; }
+  .bg-amber-400\/80 { background-color: rgba(251, 191, 36, 0.8) !important; }
+  .bg-amber-500 { background-color: rgb(245 158 11) !important; }
+  .bg-amber-500\/5 { background-color: rgba(245, 158, 11, 0.08) !important; }
+  .bg-amber-500\/10 { background-color: rgba(245, 158, 11, 0.15) !important; }
+  .text-amber-400 { color: rgb(252 211 77) !important; }
+  .text-amber-600 { color: rgb(252 211 77) !important; }
+  .text-amber-300 { color: rgb(252 211 77) !important; }
+  .border-amber-400 { border-color: rgb(251 191 36) !important; }
+  .border-amber-400\/30 { border-color: rgba(251, 191, 36, 0.3) !important; }
+  .border-amber-400\/50 { border-color: rgba(251, 191, 36, 0.5) !important; }
+  .border-amber-500 { border-color: rgb(245 158 11) !important; }
+  
+  /* Emerald colors */
+  .bg-emerald-500 { background-color: rgb(16 185 129) !important; }
+  .bg-emerald-500\/5 { background-color: rgba(16, 185, 129, 0.08) !important; }
+  .bg-emerald-500\/10 { background-color: rgba(16, 185, 129, 0.15) !important; }
+  .bg-emerald-600 { background-color: rgb(5 150 105) !important; }
+  .bg-emerald-700 { background-color: rgb(4 120 87) !important; }
+  .text-emerald-500 { color: rgb(110 231 183) !important; }
+  .text-emerald-600 { color: rgb(110 231 183) !important; }
+  .text-emerald-400 { color: rgb(110 231 183) !important; }
+  .text-emerald-300 { color: rgb(110 231 183) !important; }
+  .border-emerald-400 { border-color: rgb(52 211 153) !important; }
+  .border-emerald-500 { border-color: rgb(16 185 129) !important; }
+  .hover\:bg-emerald-700:hover { background-color: rgb(4 120 87) !important; }
+  
+  /* Gray colors */
+  .bg-gray-50 { background-color: rgb(30 30 32) !important; }
+  .bg-gray-100 { background-color: rgb(38 38 38) !important; }
+  .bg-gray-200 { background-color: rgb(50 50 50) !important; }
+  .bg-gray-300 { background-color: rgb(64 64 64) !important; }
+  .bg-gray-800 { background-color: rgb(30 30 32) !important; }
+  .bg-gray-900 { background-color: rgb(20 20 22) !important; }
+  .bg-gray-950 { background-color: rgb(10 10 12) !important; }
+  .text-gray-600 { color: rgb(163 163 163) !important; }
+  .text-gray-700 { color: rgb(180 180 180) !important; }
+  .text-gray-800 { color: rgb(200 200 200) !important; }
+  .text-gray-900 { color: rgb(220 220 220) !important; }
+  .border-gray-200 { border-color: rgb(50 50 50) !important; }
+  .border-gray-300 { border-color: rgb(64 64 64) !important; }
+  .border-gray-700 { border-color: rgb(50 50 50) !important; }
+  .ring-gray-100 { --tw-ring-color: rgb(50 50 50) !important; }
+  
+  /* Slate colors */
+  .bg-slate-50 { background-color: rgb(30 30 32) !important; }
+  .bg-slate-900 { background-color: rgb(15 23 42) !important; }
+  .text-slate-400 { color: rgb(148 163 184) !important; }
+  .border-slate-100 { border-color: rgb(40 40 45) !important; }
+  .border-slate-200 { border-color: rgb(51 65 85) !important; }
+  .border-slate-300 { border-color: rgb(71 85 105) !important; }
+  .border-slate-700 { border-color: rgb(51 65 85) !important; }
+  .border-slate-800 { border-color: rgb(30 41 59) !important; }
+  .hover\:bg-slate-100:hover { background-color: rgb(45 45 50) !important; }
+  
+  /* White/Black background overrides */
+  .bg-white { background-color: #1a1816 !important; }
+  .bg-black { background-color: #1a1816 !important; }
+  .text-black { color: #e8e3dc !important; }
+  .text-white { color: #e8e3dc !important; }
+  
+  /* Hardcoded hex colors in inline styles - catch common ones */
+  [style*="background: #fff"], [style*="background:#fff"],
+  [style*="background-color: #fff"], [style*="background-color:#fff"],
+  [style*="background: #ffffff"], [style*="background:#ffffff"],
+  [style*="background-color: #ffffff"], [style*="background-color:#ffffff"] {
+    background-color: #1a1816 !important;
+  }
+  
+  [style*="background: #000"], [style*="background:#000"],
+  [style*="background-color: #000"], [style*="background-color:#000"],
+  [style*="background-color: #000000"], [style*="background-color:#000000"] {
+    background-color: #1a1816 !important;
+  }
+  
+  /* Gray backgrounds - common in cards and panels */
+  [style*="background: rgb(243"], [style*="background: rgb(249"],
+  [style*="background: rgb(250"], [style*="background: rgb(251"],
+  [style*="background-color: rgb(243"], [style*="background-color: rgb(249"],
+  [style*="background-color: rgb(250"], [style*="background-color: rgb(251"] {
+    background-color: #242220 !important;
+  }
+  
+  /* Black/dark hardcoded backgrounds in cards */
+  [style*="background: #1a1a1a"], [style*="background: #111"],
+  [style*="background: #222"], [style*="background: rgb(17"],
+  [style*="background: rgb(26"], [style*="background: rgb(34"] {
+    background-color: #1a1816 !important;
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════════
+     Inputs and form elements
+     ═══════════════════════════════════════════════════════════════════ */
+  input, textarea, select {
+    background-color: #242220 !important;
+    color: #e8e3dc !important;
+    border-color: #2a2622 !important;
+  }
+  
+  input::placeholder, textarea::placeholder {
+    color: #6a6056 !important;
+  }
+  
+  input:focus, textarea:focus, select:focus {
+    border-color: #d97757 !important;
+  }
+  
+  /* ═══════════════════════════════════════════════════════════════════
+     Modals, cards, and other UI elements
+     ═══════════════════════════════════════════════════════════════════ */
+  [role="dialog"] {
+    background-color: #1a1816 !important;
+  }
+  
+  .shadow, .shadow-sm, .shadow-md, .shadow-lg {
+    box-shadow: 0 0 0 1px rgba(42, 38, 34, 0.5) !important;
+  }
+  
+  /* Buttons with hardcoded backgrounds */
+  button[style*="background: rgb(0"], button[style*="background:#000"] {
+    background-color: #1a1816 !important;
+  }
+  
+  /* Scrollbars */
+  ::-webkit-scrollbar {
+    background-color: #1a1816;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background-color: #2a2622;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: #332f2a;
+  }
+}
+
+  /* Sky colors */
+  .bg-sky-400 { background-color: rgb(56 189 248) !important; }
+  .text-sky-400 { color: rgb(56 189 248) !important; }
