@@ -5,12 +5,11 @@ import { buildProductWritePayload } from "@/lib/productMapper";
 import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 
-type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_: Request, ctx: Ctx) {
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     await connectToDatabase();
     const product = await Product.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
@@ -22,10 +21,10 @@ export async function GET(_: Request, ctx: Ctx) {
   }
 }
 
-export async function PUT(req: Request, ctx: Ctx) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     const body = await req.json();
     await connectToDatabase();
@@ -45,10 +44,10 @@ export async function PUT(req: Request, ctx: Ctx) {
   }
 }
 
-export async function DELETE(_: Request, ctx: Ctx) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     await connectToDatabase();
     const result = await Product.findOneAndDelete({ _id: id, userId: (user as Record<string, unknown>)._id });

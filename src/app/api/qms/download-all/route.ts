@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import JSZip from "jszip";
 import { requireAuth } from "@/lib/auth";
+import fs from "fs";
+import path from "path";
+import PizZip from "pizzip";
+import Docxtemplater from "docxtemplater";
 import type { QmsSection } from "../disintegrate/route";
 
 export const runtime = "nodejs";
@@ -24,6 +28,18 @@ function wRun(text: string, bold = false, sz = 18): string {
 
 function wPara(content: string, after = 80): string {
   return `<w:p><w:pPr><w:spacing w:after="${after}"/></w:pPr>${content}</w:p>`;
+}
+
+function parseInline(text: string, forceBold = false, sz = 18): string {
+  if (!text.includes("**")) return wRun(text, forceBold, sz);
+  const chunks = text.split("**");
+  let out = "";
+  for (let i = 0; i < chunks.length; i++) {
+    if (!chunks[i]) continue;
+    const isBold = forceBold || (i % 2 !== 0);
+    out += wRun(chunks[i], isBold, sz);
+  }
+  return out;
 }
 
 
@@ -109,7 +125,7 @@ function textToWordXml(text: string): string {
               <w:shd w:val="clear" w:color="auto" w:fill="${headerFill}"/>
               <w:tcMar><w:top w:w="80" w:type="dxa"/><w:bottom w:w="80" w:type="dxa"/><w:left w:w="120" w:type="dxa"/><w:right w:w="120" w:type="dxa"/></w:tcMar>
             </w:tcPr>
-            <w:p><w:pPr><w:spacing w:after="0"/></w:pPr><w:r><w:rPr>${isHeader ? '<w:b/><w:bCs/>' : ''}<w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">${xmlEsc(cellText)}</w:t></w:r></w:p>
+            <w:p><w:pPr><w:spacing w:after="0"/></w:pPr>${parseInline(cellText, isHeader, 20)}</w:p>
           </w:tc>`;
         }).join("");
         return `<w:tr>${cells}</w:tr>`;
@@ -167,7 +183,7 @@ function textToWordXml(text: string): string {
           <w:numPr><w:ilvl w:val="0"/><w:numId w:val="1"/></w:numPr>
           <w:spacing w:after="40"/>
         </w:pPr>
-        ${wRun(content)}
+        ${parseInline(content)}
       </w:p>`);
       continue;
     }
@@ -180,12 +196,12 @@ function textToWordXml(text: string): string {
           <w:numPr><w:ilvl w:val="0"/><w:numId w:val="2"/></w:numPr>
           <w:spacing w:after="40"/>
         </w:pPr>
-        ${wRun(content)}
+        ${parseInline(content)}
       </w:p>`);
       continue;
     }
 
-    parts.push(wPara(wRun(trimmed)));
+    parts.push(wPara(parseInline(trimmed)));
   }
   
   flushTable();
@@ -383,7 +399,56 @@ export async function POST(req: NextRequest) {
 
     await Promise.all(
       sections.map(async (section) => {
-        const docxBuf = await buildDocxForSection(section);
+        let docxBuf: Buffer;
+
+        const TEMPLATE_MAP: Record<string, string> = {
+          "organization chart": "3 2 Part 2 Organization Chart Arrangement for Key Personnels.docx",
+          "qualification and responsibilities": "3 3 Part 3 Qualification Exp Responsibilities of Key Personnels.docx",
+          "list of equipments and instruments": "3 4 Part 4 List of Equipmets and Instruments Used in ELISA.docx",
+          "preventive action procedure": "4 8 a Preventive Action Procedure.docx",
+          "corrective action procedure": "4 8 b Corective Action Procedure.docx",
+          "procedure for identifying training needs": "4 9 Part 9a  Procedure For Identifying Training Needs.docx",
+          "training procedure for quality control": "4 9 Part 9b Training Procedure for Quality Control.docx",
+          "training of personnels": "4 9 Part 9c Training  of Personnels.docx",
+          "environmental req for ivd as per annexure a": "4 10 Part 10 Environmental Req for IVD as Per Annexure A.docx",
+          "undertaking by manufacturer for fifth schedule mdr 2017": "5 Undertaking by Manufacturer for Fifth Schedule MDR 2017.docx"
+        };
+        const templateFile = TEMPLATE_MAP[section.title.trim().toLowerCase()];
+
+        if (templateFile) {
+          try {
+            const jsonStart = section.content.indexOf("{");
+            const jsonEnd = section.content.lastIndexOf("}");
+            if (jsonStart >= 0 && jsonEnd > jsonStart) {
+              const jsonStr = section.content.substring(jsonStart, jsonEnd + 1);
+              const data = JSON.parse(jsonStr);
+
+              const templatePath = path.join(process.cwd(), "format", "qms", templateFile);
+              const templateContent = fs.readFileSync(templatePath, "binary");
+              
+              const zipTemplate = new PizZip(templateContent);
+              const doc = new Docxtemplater(zipTemplate, {
+                paragraphLoop: true,
+                linebreaks: true,
+              });
+              
+              doc.render(data);
+              
+              docxBuf = doc.getZip().generate({
+                type: "nodebuffer",
+                compression: "DEFLATE",
+              });
+            } else {
+              docxBuf = await buildDocxForSection(section);
+            }
+          } catch (err) {
+            console.error("Failed to render Org Chart template, falling back to default", err);
+            docxBuf = await buildDocxForSection(section);
+          }
+        } else {
+          docxBuf = await buildDocxForSection(section);
+        }
+
         const filename = safeFilename(section.number, section.title) + ".docx";
         outerZip.file(filename, docxBuf);
       })

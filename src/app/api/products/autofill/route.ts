@@ -241,7 +241,7 @@ async function runProductAutofill(userId: string, documentText: string, supplied
 Extract product registration fields from the provided IFU / brochure document excerpts.
 You MUST populate "intendedUse" and "description" when any indication, purpose, principle, or product summary appears in the document.
 intendedUse = clinical/indication statement (what the test detects, specimen, setting).
-description = your single best technical summary (kit type, method e.g. ELISA/CLIA/colorimetric, analyte).
+description = your single best technical summary (kit type  , method e.g. ELISA/CLIA/colorimetric, analyte).
 descriptionSuggestions = REQUIRED array of at least 4 distinct one- to three-sentence device descriptions from the document, each a complete regulatory-style statement. Use different angles when the document allows:
   (1) Analytical method — principle, reagent, measurement conditions (e.g. colorimetric at stated pH)
   (2) Product form — kit type, components, specimen/material

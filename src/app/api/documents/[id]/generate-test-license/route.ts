@@ -14,7 +14,6 @@ import { requireAuth } from "@/lib/auth";
 export const maxDuration = 120;
 export const runtime = "nodejs";
 
-type Ctx = { params: Promise<{ id: string }> };
 
 interface TestLicenseExtraction {
   productName: string;
@@ -383,10 +382,10 @@ async function injectLogoIntoDocx(docxBuffer: Buffer, logoBuffer: Buffer): Promi
   return zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 }
 
-export async function POST(req: NextRequest, ctx: Ctx) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ message: "Invalid id" }, { status: 400 });
 
     await connectToDatabase();

@@ -4,12 +4,11 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
 import { requireAuth } from "@/lib/auth";
 
-type Ctx = { params: Promise<{ id: string }> };
 
-export async function PUT(req: Request, ctx: Ctx) {
+export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
 
     const { sectionId, fields } = await req.json();
