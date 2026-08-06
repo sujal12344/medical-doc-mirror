@@ -3,10 +3,10 @@
 import Link from "next/link";
 
 const CLASS_COLORS: Record<string, string> = {
-  A: "bg-green-50 text-green-700 border-green-200",
-  B: "bg-yellow-50 text-yellow-700 border-yellow-200",
-  C: "bg-orange-50 text-orange-700 border-orange-200",
-  D: "bg-red-50 text-red-700 border-red-200",
+  A: "bg-[var(--class-a-bg)] text-[var(--class-a)] border-[var(--class-a-border)]",
+  B: "bg-[var(--class-b-bg)] text-[var(--class-b)] border-[var(--class-b-border)]",
+  C: "bg-[var(--class-c-bg)] text-[var(--class-c)] border-[var(--class-c-border)]",
+  D: "bg-[var(--class-d-bg)] text-[var(--class-d)] border-[var(--class-d-border)]",
 };
 
 export default function ClassificationWidget({ initialData }: { initialData: Record<string, unknown> }) {

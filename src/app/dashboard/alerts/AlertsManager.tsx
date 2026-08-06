@@ -97,20 +97,20 @@ export default function AlertsManager({ initialLicenses, companyId, mode = "vaul
 
     if (daysUntilExpiry < 0) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-red-500/10 text-red-600 border border-red-500/30 shadow-[0_0_15px_rgba(239,68,68,0.2)]">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-[var(--status-error-bg)] text-[var(--status-error)] border border-[var(--status-error-border)] shadow-[0_0_15px_rgba(239,68,68,0.2)]">
           <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-600"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--status-error)] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--status-error)]"></span>
           </span>
           Expired ({Math.abs(daysUntilExpiry)} days ago)
         </span>
       );
     } else if (daysUntilExpiry <= 90) {
       return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-yellow-500/10 text-yellow-600 border border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.15)]">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap bg-[var(--status-warning-bg)] text-[var(--status-warning)] border border-[var(--status-warning-border)] shadow-[0_0_15px_rgba(234,179,8,0.15)]">
           <span className="relative flex h-2 w-2 shrink-0">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-500"></span>
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--status-warning)] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--status-warning)]"></span>
           </span>
           Expiring Soon ({daysUntilExpiry} days)
         </span>

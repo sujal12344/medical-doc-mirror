@@ -21,10 +21,10 @@ type LockForm = {
 type Upd = (field: string, value: string | boolean) => void;
 
 const CLASS_META: Record<string, { color: string; badge: string; risk: string; desc: string }> = {
-  A: { color: "bg-green-100 border-green-300 text-green-900", badge: "bg-green-600", risk: "Low Risk", desc: "General-purpose lab instruments, specimen receptacles, specific IVD reagents" },
-  B: { color: "bg-blue-100 border-blue-300 text-blue-900",   badge: "bg-blue-600",  risk: "Low-Moderate Risk", desc: "Non-invasive devices, active diagnostic devices, short-term body-orifice devices" },
-  C: { color: "bg-orange-100 border-orange-300 text-orange-900", badge: "bg-orange-500", risk: "Moderate-High Risk", desc: "Implantables, blood grouping, infection diagnostic reagents, surgical invasive short-term" },
-  D: { color: "bg-red-100 border-red-300 text-red-900",     badge: "bg-red-600",   risk: "High Risk", desc: "Blood donor screening (HIV/HBV/HCV), life-supporting implants, CNS contact devices" },
+  A: { color: "bg-[var(--class-a-bg)] border-[var(--class-a-border)] text-[var(--class-a-text)]", badge: "bg-[var(--class-a)]", risk: "Low Risk", desc: "General-purpose lab instruments, specimen receptacles, specific IVD reagents" },
+  B: { color: "bg-[var(--class-b-bg)] border-[var(--class-b-border)] text-[var(--class-b-text)]", badge: "bg-[var(--class-b)]", risk: "Low-Moderate Risk", desc: "Non-invasive devices, active diagnostic devices, short-term body-orifice devices" },
+  C: { color: "bg-[var(--class-c-bg)] border-[var(--class-c-border)] text-[var(--class-c-text)]", badge: "bg-[var(--class-c)]", risk: "Moderate-High Risk", desc: "Implantables, blood grouping, infection diagnostic reagents, surgical invasive short-term" },
+  D: { color: "bg-[var(--class-d-bg)] border-[var(--class-d-border)] text-[var(--class-d-text)]", badge: "bg-[var(--class-d)]", risk: "High Risk", desc: "Blood donor screening (HIV/HBV/HCV), life-supporting implants, CNS contact devices" },
 };
 
 const FIELD = "w-full px-3 py-2 border border-border rounded-xl bg-surface2 text-xs focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 focus:border-[var(--accent)] transition";
@@ -50,7 +50,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
       {/* Step 1.6 — Confirm classification */}
       <div className="space-y-3">
         <div className="flex items-center gap-2">
-          <span className="w-5 h-5 rounded-sm bg-orange-100 text-orange-700 text-[9px] font-black flex items-center justify-center border border-orange-300 rotate-45 shrink-0" />
+          <span className="w-5 h-5 rounded-sm bg-[var(--status-info-bg)] text-[var(--status-info)] text-[9px] font-black flex items-center justify-center border border-[var(--status-info-border)] rotate-45 shrink-0" />
           <span className="text-xs font-bold text-foreground">1.6 · Is the AI-suggested classification correct?</span>
         </div>
 
@@ -110,7 +110,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
 
         {/* Confirm toggle */}
         <div className={`flex items-start justify-between gap-3 px-3 py-2.5 rounded-xl border transition ${
-          form.classificationConfirmed ? "bg-green-50 border-green-300" : "border-border hover:bg-surface2"
+          form.classificationConfirmed ? "bg-[var(--status-success-bg)] border-[var(--status-success-border)]" : "border-border hover:bg-surface2"
         }`}>
           <div>
             <div className="text-xs font-semibold text-foreground">Confirm classification as Class {finalClass}</div>
@@ -123,9 +123,9 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
           <button type="button" disabled={!form.classificationConfirmedBy}
             onClick={() => upd("classificationConfirmed", !form.classificationConfirmed)}
             className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${
-              form.classificationConfirmed ? "bg-green-600" : "bg-surface2 border border-border"
+              form.classificationConfirmed ? "bg-[var(--status-success)]" : "bg-surface2 border border-border"
             } disabled:opacity-40`}>
-            <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.classificationConfirmed ? "left-[18px]" : "left-0.5"}`} />
+            <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${form.classificationConfirmed ? "left-[18px]" : "left-0.5"}`} />
           </button>
         </div>
       </div>
@@ -138,7 +138,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
           {/* Step 1.6 — CDSCO list decision */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-sm bg-orange-100 text-orange-700 text-[9px] font-black flex items-center justify-center border border-orange-300 rotate-45 shrink-0" />
+              <span className="w-5 h-5 rounded-sm bg-[var(--status-info-bg)] text-[var(--status-info)] text-[9px] font-black flex items-center justify-center border border-[var(--status-info-border)] rotate-45 shrink-0" />
               <span className="text-xs font-bold text-foreground">1.6 · Class confirmed per CDSCO published list?</span>
             </div>
 
@@ -154,7 +154,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
                 }}
                 className={`px-3 py-2.5 rounded-xl border text-left transition ${
                   form.cdscoListStatus === "listed"
-                    ? "bg-green-50 border-green-300"
+                    ? "bg-[var(--status-success-bg)] border-[var(--status-success-border)]"
                     : "bg-surface2 border-border hover:bg-surface"
                 }`}
               >
@@ -172,7 +172,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
                 }}
                 className={`px-3 py-2.5 rounded-xl border text-left transition ${
                   form.cdscoListStatus === "ambiguous"
-                    ? "bg-yellow-50 border-yellow-300"
+                    ? "bg-[var(--status-warning-bg)] border-[var(--status-warning-border)]"
                     : "bg-surface2 border-border hover:bg-surface"
                 }`}
               >
@@ -196,13 +196,13 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
               <div className="border-t border-dashed border-border" />
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <span className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 text-[9px] font-black flex items-center justify-center border border-blue-300">1.7</span>
+                  <span className="w-5 h-5 rounded-full bg-[var(--ui-blue-bg)] text-[var(--ui-blue-text)] text-[9px] font-black flex items-center justify-center border border-[var(--ui-blue-border)]">1.7</span>
                   <span className="text-xs font-bold text-foreground">Classification clarification to CLA</span>
                 </div>
 
-                <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl px-3 py-2.5">
+                <div className="flex items-start gap-2 bg-[var(--ui-blue-bg)] border border-[var(--ui-blue-border)] rounded-xl px-3 py-2.5">
                   <span className="text-sm shrink-0">⏱</span>
-                  <div className="text-[11px] text-blue-800">
+                  <div className="text-[11px] text-[var(--ui-blue-text)]">
                     Track your clarification request to the Central Licensing Authority (CLA). Typical cycle time: <strong>30–60 days</strong>.
                   </div>
                 </div>
@@ -212,8 +212,8 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
                   <div className="flex flex-wrap gap-1.5">
                     {([
                       { v: "not-submitted", label: "Not submitted", cls: "bg-surface2 text-muted border-border" },
-                      { v: "submitted", label: "Submitted", cls: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-                      { v: "clarified", label: "Clarified", cls: "bg-green-100 text-green-700 border-green-200" },
+                      { v: "submitted", label: "Submitted", cls: "bg-[var(--status-submitted-bg)] text-[var(--status-submitted)] border-[var(--status-submitted-border)]" },
+                      { v: "clarified", label: "Clarified", cls: "bg-[var(--status-clarified-bg)] text-[var(--status-clarified)] border-[var(--status-clarified-border)]" },
                     ] as const).map((o) => (
                       <button
                         key={o.v}
@@ -280,14 +280,14 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
           {/* Step 1.8 — Lock classification */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-purple-100 text-purple-700 text-[9px] font-black flex items-center justify-center border border-purple-300">1.8</span>
+              <span className="w-5 h-5 rounded-full bg-[var(--ui-purple-bg)] text-[var(--ui-purple-text)] text-[9px] font-black flex items-center justify-center border border-[var(--ui-purple-border)]">1.8</span>
               <span className="text-xs font-bold text-foreground">Lock Classification</span>
             </div>
 
             {isHighRisk && !form.classificationLocked && (
-              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl px-3 py-2.5">
+              <div className="flex items-start gap-2 bg-[var(--status-error-bg)] border border-[var(--status-error-border)] rounded-xl px-3 py-2.5">
                 <span className="text-sm shrink-0">⚠️</span>
-                <div className="text-[11px] text-red-800">
+                <div className="text-[11px] text-[var(--status-error)]">
                   <strong>Class {finalClass}:</strong> Locking classification will trigger mandatory Phase 2 Technical Dossier requirements including clinical evaluation report (CER), risk management file (ISO 14971), and performance/safety data submission.
                 </div>
               </div>
@@ -301,9 +301,9 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
             </div>
 
             {!cdscoReady && (
-              <div className="flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-3 py-2.5">
+              <div className="flex items-start gap-2 bg-[var(--status-warning-bg)] border border-[var(--status-warning-border)] rounded-xl px-3 py-2.5">
                 <span className="text-sm shrink-0">⛔</span>
-                <div className="text-[11px] text-yellow-800">
+                <div className="text-[11px] text-[var(--status-warning)]">
                   Complete <strong>1.6</strong> (and <strong>1.7</strong> if ambiguous) before locking classification.
                 </div>
               </div>
@@ -314,7 +314,7 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
               className={`w-full py-2.5 rounded-xl text-xs font-bold border-2 transition ${
                 form.classificationLocked
                   ? "bg-accent border-accent text-white"
-                  : "border-purple-300 text-purple-700 hover:bg-purple-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                  : "border-[var(--ui-purple-border)] text-[var(--ui-purple)] hover:bg-[var(--ui-purple-bg)] disabled:opacity-40 disabled:cursor-not-allowed"
               }`}>
               {form.classificationLocked ? "🔒 Classification Locked" : "🔓 Lock Classification"}
             </button>
@@ -338,11 +338,11 @@ export default function ClassificationLock({ form, upd }: { form: LockForm; upd:
                     <div className="text-sm font-black text-foreground">Class {finalClass} — {meta.risk}</div>
                     <div className="text-[11px] text-muted mt-0.5">{meta.desc}</div>
                     <div className="flex flex-wrap gap-1.5 mt-2">
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/70 border border-current font-semibold">🔒 LOCKED</span>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/70 border border-current font-semibold">By: {form.classificationLockedBy}</span>
-                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/70 border border-current font-semibold">{form.deviceType === "ivd" ? "Part II" : "Part I"}</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-surface/70 border border-current font-semibold">🔒 LOCKED</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-surface/70 border border-current font-semibold">By: {form.classificationLockedBy}</span>
+                      <span className="text-[9px] px-2 py-0.5 rounded-full bg-surface/70 border border-current font-semibold">{form.deviceType === "ivd" ? "Part II" : "Part I"}</span>
                       {form.classificationOverride && (
-                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/70 border border-current font-semibold">⚠ Overridden from {form.deviceClass}</span>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full bg-surface/70 border border-current font-semibold">⚠ Overridden from {form.deviceClass}</span>
                       )}
                     </div>
                   </div>

@@ -446,7 +446,7 @@ export default function NewProductPage() {
         </div>
         <button type="button" onClick={() => upd(field, !val)}
           className={`relative shrink-0 w-10 h-5 rounded-full transition-colors ${val ? "bg-accent" : "bg-surface2 border border-border"}`}>
-          <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${val ? "left-5" : "left-0.5"}`} />
+          <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${val ? "left-5" : "left-0.5"}`} />
         </button>
       </div>
     );
@@ -519,7 +519,7 @@ export default function NewProductPage() {
               </div>
               <div className="shrink-0">
                 {autofillDone ? (
-                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
+                  <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[var(--status-success)] bg-[var(--status-success-bg)] border border-[var(--status-success-border)] rounded-xl">
                     ✅ {autofillDocName}
                     <button type="button" onClick={() => { setAutofillDone(false); setAutofillDocName(""); setExtractMeta(null); setDescriptionSuggestions([]); if (autofillInputRef.current) autofillInputRef.current.value = ""; }}
                       className="ml-1 text-muted hover:text-foreground">✕</button>
@@ -546,7 +546,7 @@ export default function NewProductPage() {
         {/* Form column */}
         <div className="flex-1 min-w-0">
         <form onSubmit={productId ? (e) => { e.preventDefault(); router.push(`/dashboard/products/${productId}`); } : handleCreateAndContinue} className="space-y-6">
-          {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">{error}</div>}
+          {error && <div className="bg-[var(--status-error-bg)] border border-[var(--status-error-border)] text-[var(--status-error)] text-sm rounded-lg px-4 py-3">{error}</div>}
 
 
 
@@ -650,7 +650,7 @@ export default function NewProductPage() {
               </div>
               <button type="button" onClick={() => upd("isSterile", !form.isSterile)}
                 className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${form.isSterile ? "bg-accent" : "bg-surface2 border border-border"}`}>
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.isSterile ? "left-[18px]" : "left-0.5"}`} />
+                <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${form.isSterile ? "left-[18px]" : "left-0.5"}`} />
               </button>
             </div>
             <div className="flex items-start justify-between gap-3 px-3 py-2.5 border border-border rounded-xl">
@@ -660,7 +660,7 @@ export default function NewProductPage() {
               </div>
               <button type="button" onClick={() => upd("hasSoftware", !form.hasSoftware)}
                 className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${form.hasSoftware ? "bg-accent" : "bg-surface2 border border-border"}`}>
-                <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.hasSoftware ? "left-[18px]" : "left-0.5"}`} />
+                <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${form.hasSoftware ? "left-[18px]" : "left-0.5"}`} />
               </button>
             </div>
           </div>
@@ -753,7 +753,7 @@ export default function NewProductPage() {
                   </div>
                   <p className="text-xs text-muted mt-0.5">CDSCO · Medical Devices Rules, 2017 (India)</p>
                   <div className="flex flex-wrap gap-1.5 mt-2">
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-green-50 text-green-800 border border-green-200">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[var(--status-success-bg)] text-[var(--status-success)] border border-[var(--status-success-border)]">
                       MDR 2017
                     </span>
                     {indiaMarket.frameworkCount > 0 && (
@@ -761,7 +761,7 @@ export default function NewProductPage() {
                         {indiaMarket.frameworkCount} dossier framework{indiaMarket.frameworkCount !== 1 ? "s" : ""}
                       </span>
                     )}
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[var(--ui-blue-bg)] text-[var(--ui-blue-text)] border border-[var(--ui-blue-border)]">
                       Selected
                     </span>
                   </div>

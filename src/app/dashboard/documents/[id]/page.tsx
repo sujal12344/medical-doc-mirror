@@ -760,7 +760,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                 finally { setPmfGenerating(false); }
               }}
               disabled={pmfGenerating || !doc}
-              className="w-full text-xs px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
+              className="w-full text-xs px-3 py-2 bg-[var(--status-success)] hover:opacity-90 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
             >
               {pmfGenerating ? (
                 <><span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating…</>
@@ -788,7 +788,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                 finally { setDmfGenerating(false); }
               }}
               disabled={dmfGenerating || !doc}
-              className="w-full text-xs px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
+              className="w-full text-xs px-3 py-2 bg-[var(--status-success)] hover:opacity-90 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
             >
               {dmfGenerating ? (
                 <><span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating…</>
@@ -882,7 +882,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                         </div>
                       ) : coaDocContext ? (
                         <div className="flex items-center gap-2">
-                          <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl">
+                          <div className="flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-[var(--status-success)] bg-[var(--status-success-bg)] border border-[var(--status-success-border)] rounded-xl">
                             ✅ Uploaded
                             <button type="button" onClick={() => setCoaDocContext("")}
                               className="ml-1 text-muted hover:text-foreground">✕</button>
@@ -985,9 +985,9 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               )}*/}
 
               {currentSection.id === "s3" && doc.frameworkId !== "IN_PMF" && (
-                <div className="rounded-xl border border-dashed border-amber-400/50 bg-amber-500/5 p-5">
+                <div className="rounded-xl border border-dashed border-[var(--status-warning-border)] bg-[var(--status-warning-bg)]/50 p-5">
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-400/30 flex items-center justify-center">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[var(--status-warning-bg)] border border-[var(--status-warning-border)] flex items-center justify-center">
                       <svg className="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>

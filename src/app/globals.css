@@ -9,6 +9,137 @@
   --muted: #746a5e;
   --surface: #ffffff;
   --surface2: #f5f2ee;
+  
+  /* Semantic status colors for light mode */
+  --status-success: #22c55e;
+  --status-success-bg: #f0fdf4;
+  --status-success-border: #bbf7d0;
+  --status-warning: #eab308;
+  --status-warning-bg: #fefce8;
+  --status-warning-border: #fef08a;
+  --status-info: #fb923c;
+  --status-info-bg: #fff7ed;
+  --status-info-border: #fed7aa;
+  --status-pending: #d1d5db;
+  --status-pending-bg: #f9fafb;
+  --status-pending-border: #e5e7eb;
+  --status-error: #ef4444;
+  --status-error-bg: #fef2f2;
+  --status-error-border: #fecaca;
+  
+  --class-a: #22c55e;
+  --class-a-bg: #f0fdf4;
+  --class-a-border: #bbf7d0;
+  --class-a-text: #166534;
+  --class-b: #3b82f6;
+  --class-b-bg: #eff6ff;
+  --class-b-border: #bfdbfe;
+  --class-b-text: #1e40af;
+  --class-c: #f97316;
+  --class-c-bg: #fff7ed;
+  --class-c-border: #fed7aa;
+  --class-c-text: #9a3412;
+  --class-d: #ef4444;
+  --class-d-bg: #fef2f2;
+  --class-d-border: #fecaca;
+  --class-d-text: #991b1b;
+  --status-error: #ef4444;
+  --status-error-bg: #fef2f2;
+  --status-error-border: #fecaca;
+  
+  /* Additional UI state colors */
+  --status-submitted: #eab308;
+  --status-submitted-bg: #fefce8;
+  --status-submitted-border: #fef08a;
+  --status-clarified: #22c55e;
+  --status-clarified-bg: #f0fdf4;
+  --status-clarified-border: #bbf7d0;
+  --ui-blue: #3b82f6;
+  --ui-blue-bg: #eff6ff;
+  --ui-blue-border: #bfdbfe;
+  --ui-blue-text: #1e3a8a;
+  --ui-purple: #a855f7;
+  --ui-purple-bg: #faf5ff;
+  --ui-purple-border: #e9d5ff;
+  --ui-purple-text: #581c87;
+  
+  /* Device classification colors (A/B/C/D) */
+  --class-a: #22c55e;
+  --class-a-bg: #f0fdf4;
+  --class-a-border: #bbf7d0;
+  --class-a-text: #166534;
+  --class-b: #3b82f6;
+  --class-b-bg: #eff6ff;
+  --class-b-border: #bfdbfe;
+  --class-b-text: #1e40af;
+  --class-c: #f97316;
+  --class-c-bg: #fff7ed;
+  --class-c-border: #fed7aa;
+  --class-c-text: #9a3412;
+  --class-d: #ef4444;
+  --class-d-bg: #fef2f2;
+  --class-d-border: #fecaca;
+  --class-d-text: #991b1b;
+}
+
+/* Light theme when explicitly set */
+[data-theme="light"] {
+  --background: #faf8f5;
+  --foreground: #1f1b16;
+  --accent: #d97757;
+  --accent-hover: #c86645;
+  --border: #e8e3dc;
+  --muted: #746a5e;
+  --surface: #ffffff;
+  --surface2: #f5f2ee;
+  
+  --status-success: #22c55e;
+  --status-success-bg: #f0fdf4;
+  --status-success-border: #bbf7d0;
+  --status-warning: #eab308;
+  --status-warning-bg: #fefce8;
+  --status-warning-border: #fef08a;
+  --status-info: #fb923c;
+  --status-info-bg: #fff7ed;
+  --status-info-border: #fed7aa;
+  --status-pending: #d1d5db;
+  --status-pending-bg: #f9fafb;
+  --status-pending-border: #e5e7eb;
+  --status-error: #ef4444;
+  --status-error-bg: #fef2f2;
+  --status-error-border: #fecaca;
+  
+  --status-submitted: #eab308;
+  --status-submitted-bg: #fefce8;
+  --status-submitted-border: #fef08a;
+  --status-clarified: #22c55e;
+  --status-clarified-bg: #f0fdf4;
+  --status-clarified-border: #bbf7d0;
+  --ui-blue: #3b82f6;
+  --ui-blue-bg: #eff6ff;
+  --ui-blue-border: #bfdbfe;
+  --ui-blue-text: #1e3a8a;
+  --ui-purple: #a855f7;
+  --ui-purple-bg: #faf5ff;
+  --ui-purple-border: #e9d5ff;
+  --ui-purple-text: #581c87;
+  
+  --class-a: #22c55e;
+  --class-a-bg: #f0fdf4;
+  --class-a-border: #bbf7d0;
+  --class-a-text: #166534;
+  --class-b: #3b82f6;
+  --class-b-bg: #eff6ff;
+  --class-b-border: #bfdbfe;
+  --class-b-text: #1e40af;
+  --class-c: #f97316;
+  --class-c-bg: #fff7ed;
+  --class-c-border: #fed7aa;
+  --class-c-text: #9a3412;
+  --class-d: #ef4444;
+  --class-d-bg: #fef2f2;
+  --class-d-border: #fecaca;
+  --class-d-text: #991b1b;
 }
 
 @theme inline {
@@ -20,6 +151,20 @@
   --color-muted: var(--muted);
   --color-surface: var(--surface);
   --color-surface2: var(--surface2);
+  
+  --color-status-success: var(--status-success);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning: var(--status-warning);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-info: var(--status-info);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-border: var(--status-info-border);
+  --color-status-pending: var(--status-pending);
+  --color-status-pending-bg: var(--status-pending-bg);
+  --color-status-pending-border: var(--status-pending-border);
+  
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

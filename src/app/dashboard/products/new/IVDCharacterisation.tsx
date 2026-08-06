@@ -57,10 +57,10 @@ function getIVDClass(f: IVDForm): { cls: string; rule: string } | null {
 }
 
 const CLASS_COLORS: Record<string, string> = {
-  A: "bg-green-100 text-green-800 border-green-300",
-  B: "bg-blue-100 text-blue-800 border-blue-300",
-  C: "bg-orange-100 text-orange-800 border-orange-300",
-  D: "bg-red-100 text-red-800 border-red-300",
+  A: "bg-[var(--class-a-bg)] text-[var(--class-a-text)] border-[var(--class-a-border)]",
+  B: "bg-[var(--class-b-bg)] text-[var(--class-b-text)] border-[var(--class-b-border)]",
+  C: "bg-[var(--class-c-bg)] text-[var(--class-c-text)] border-[var(--class-c-border)]",
+  D: "bg-[var(--class-d-bg)] text-[var(--class-d-text)] border-[var(--class-d-border)]",
 };
 
 function Toggle({ field, label, hint, badge, badgeColor, value, upd }: {
@@ -69,10 +69,10 @@ function Toggle({ field, label, hint, badge, badgeColor, value, upd }: {
   value: boolean; upd: Upd;
 }) {
   return (
-    <div className={`flex items-start gap-3 py-2.5 px-3 rounded-xl border transition ${value ? "bg-yellow-50 border-yellow-200" : "border-transparent hover:bg-surface2"}`}>
+    <div className={`flex items-start gap-3 py-2.5 px-3 rounded-xl border transition ${value ? "bg-[var(--status-warning-bg)] border-[var(--status-warning-border)]" : "border-transparent hover:bg-surface2"}`}>
       <button type="button" onClick={() => upd(field, !value)}
         className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${value ? "bg-accent" : "bg-surface2 border border-border"}`}>
-        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${value ? "left-[18px]" : "left-0.5"}`} />
+        <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${value ? "left-[18px]" : "left-0.5"}`} />
       </button>
       <div className="flex-1 min-w-0">
         <div className="text-xs font-semibold text-foreground">{label}</div>
@@ -87,10 +87,10 @@ function Toggle({ field, label, hint, badge, badgeColor, value, upd }: {
   );
 }
 
-const D_TAG = "bg-red-50 text-red-700 border-red-200";
-const C_TAG = "bg-orange-50 text-orange-700 border-orange-200";
-const B_TAG = "bg-blue-50 text-blue-700 border-blue-200";
-const A_TAG = "bg-green-50 text-green-700 border-green-200";
+const D_TAG = "bg-[var(--class-d-bg)] text-[var(--class-d)] border-[var(--class-d-border)]";
+const C_TAG = "bg-[var(--class-c-bg)] text-[var(--class-c)] border-[var(--class-c-border)]";
+const B_TAG = "bg-[var(--class-b-bg)] text-[var(--class-b)] border-[var(--class-b-border)]";
+const A_TAG = "bg-[var(--class-a-bg)] text-[var(--class-a)] border-[var(--class-a-border)]";
 
 export default function IVDCharacterisation({ form, upd }: { form: IVDForm; upd: Upd }) {
   const preview = getIVDClass(form);

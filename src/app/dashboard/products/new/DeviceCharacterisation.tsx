@@ -60,17 +60,17 @@ function getPreviewClass(f: FormState): { cls: string; rule: string } | null {
 }
 
 const CLASS_COLORS: Record<string, string> = {
-  A: "bg-green-100 text-green-800 border-green-300",
-  B: "bg-blue-100 text-blue-800 border-blue-300",
-  C: "bg-orange-100 text-orange-800 border-orange-300",
-  D: "bg-red-100 text-red-800 border-red-300",
+  A: "bg-[var(--class-a-bg)] text-[var(--class-a-text)] border-[var(--class-a-border)]",
+  B: "bg-[var(--class-b-bg)] text-[var(--class-b-text)] border-[var(--class-b-border)]",
+  C: "bg-[var(--class-c-bg)] text-[var(--class-c-text)] border-[var(--class-c-border)]",
+  D: "bg-[var(--class-d-bg)] text-[var(--class-d-text)] border-[var(--class-d-border)]",
 };
 const TAG_COLORS: Record<string, string> = {
-  "→ Class D": "bg-red-50 text-red-700 border-red-200",
-  "→ Class C": "bg-orange-50 text-orange-700 border-orange-200",
-  "→ Class A": "bg-green-50 text-green-700 border-green-200",
-  "→ May downgrade": "bg-green-50 text-green-700 border-green-200",
-  "→ Upgrades": "bg-orange-50 text-orange-700 border-orange-200",
+  "→ Class D": "bg-[var(--class-d-bg)] text-[var(--class-d)] border-[var(--class-d-border)]",
+  "→ Class C": "bg-[var(--class-c-bg)] text-[var(--class-c)] border-[var(--class-c-border)]",
+  "→ Class A": "bg-[var(--class-a-bg)] text-[var(--class-a)] border-[var(--class-a-border)]",
+  "→ May downgrade": "bg-[var(--class-a-bg)] text-[var(--class-a)] border-[var(--class-a-border)]",
+  "→ Upgrades": "bg-[var(--class-c-bg)] text-[var(--class-c)] border-[var(--class-c-border)]",
 };
 
 function tagColor(tag: string) {
@@ -112,10 +112,10 @@ function FlagRow({ field, label, hint, tag, value, upd }: {
   value: boolean; upd: Upd;
 }) {
   return (
-    <div className={`flex items-start gap-3 py-2.5 border-b border-border last:border-0 ${value ? "bg-yellow-50/50" : ""} -mx-3 px-3 rounded-lg`}>
+    <div className={`flex items-start gap-3 py-2.5 border-b border-border last:border-0 ${value ? "bg-[var(--status-warning-bg)]/50" : ""} -mx-3 px-3 rounded-lg`}>
       <button type="button" onClick={() => upd(field, !value)}
         className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${value ? "bg-accent" : "bg-surface2 border border-border"}`}>
-        <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${value ? "left-[18px]" : "left-0.5"}`} />
+        <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${value ? "left-[18px]" : "left-0.5"}`} />
       </button>
       <div className="flex-1 min-w-0">
         <div className="text-xs font-semibold text-foreground">{label}</div>
@@ -158,7 +158,7 @@ export default function DeviceCharacterisation({ form, upd, specialOpen, setSpec
             </div>
             <button type="button" onClick={() => upd("isActive", !form.isActive)}
               className={`relative shrink-0 w-10 h-5 rounded-full transition-colors ${form.isActive ? "bg-accent" : "bg-surface2 border border-border"}`}>
-              <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.isActive ? "left-5" : "left-0.5"}`} />
+              <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${form.isActive ? "left-5" : "left-0.5"}`} />
             </button>
           </div>
 

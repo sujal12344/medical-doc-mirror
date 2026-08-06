@@ -291,11 +291,11 @@ Answer the user's questions accurately and concisely. If asked about something o
                 <div className="space-y-2">
                   {country.requiredForms.map((form, i) => (
                     <div key={i} className="bg-surface border border-border rounded-xl p-4 flex items-start gap-3">
-                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${form.mandatory ? "bg-red-500" : "bg-yellow-500"}`} />
+                      <div className={`w-2 h-2 rounded-full mt-1.5 shrink-0 ${form.mandatory ? "bg-[var(--status-error)]" : "bg-[var(--status-warning)]"}`} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-semibold text-foreground">{form.name}</p>
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${form.mandatory ? "bg-red-50 text-red-600" : "bg-yellow-50 text-yellow-600"}`}>
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${form.mandatory ? "bg-[var(--status-error-bg)] text-[var(--status-error)]" : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"}`}>
                             {form.mandatory ? "Mandatory" : "Conditional"}
                           </span>
                         </div>

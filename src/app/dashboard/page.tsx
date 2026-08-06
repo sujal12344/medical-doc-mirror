@@ -151,8 +151,8 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/dashboard/products" className="bg-surface border border-border rounded-xl p-4 hover:border-blue-300 hover:shadow-sm transition group flex items-start gap-3">
-            <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 shrink-0 group-hover:bg-blue-100 transition">
+          <Link href="/dashboard/products" className="bg-surface border border-border rounded-xl p-4 hover:border-[var(--class-b-border)] hover:shadow-sm transition group flex items-start gap-3">
+            <div className="w-10 h-10 bg-[var(--class-b-bg)] rounded-lg flex items-center justify-center text-[var(--class-b)] shrink-0 group-hover:bg-[var(--class-b-bg)] transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
             <div>
@@ -161,8 +161,8 @@ export default async function DashboardPage() {
             </div>
           </Link>
 
-          <Link href="/dashboard/vault" className="bg-surface border border-border rounded-xl p-4 hover:border-green-300 hover:shadow-sm transition group flex items-start gap-3">
-            <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center text-green-600 shrink-0 group-hover:bg-green-100 transition">
+          <Link href="/dashboard/vault" className="bg-surface border border-border rounded-xl p-4 hover:border-[var(--status-success-border)] hover:shadow-sm transition group flex items-start gap-3">
+            <div className="w-10 h-10 bg-[var(--status-success-bg)] rounded-lg flex items-center justify-center text-[var(--status-success)] shrink-0 group-hover:bg-[var(--status-success-bg)] transition">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </div>
             <div>
@@ -223,10 +223,10 @@ export default async function DashboardPage() {
                       <p className="text-xs text-muted">{d.countryCode} &middot; v{d.version}</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${d.status === "submitted" ? "bg-green-50 text-green-700"
-                          : d.status === "approved" ? "bg-blue-50 text-blue-700"
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold ${d.status === "submitted" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]"
+                          : d.status === "approved" ? "bg-[var(--class-b-bg)] text-[var(--class-b)]"
                             : d.status === "in-review" ? "bg-purple-50 text-purple-700"
-                              : "bg-yellow-50 text-yellow-700"
+                              : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"
                         }`}>{d.status}</span>
                       <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round" /></svg>
                     </div>

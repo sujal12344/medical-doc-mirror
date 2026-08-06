@@ -36,9 +36,9 @@ const FIELD = "w-full px-3 py-2 border border-border rounded-xl bg-surface2 text
 const LABEL = "block text-xs font-medium text-foreground mb-1";
 
 const STATUS_OPTS = [
-  { value: "not-filed", label: "Not yet filed", color: "bg-gray-100 text-gray-600 border-gray-200" },
-  { value: "filed", label: "Filed / pending", color: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  { value: "approved", label: "Approved", color: "bg-green-100 text-green-700 border-green-200" },
+  { value: "not-filed", label: "Not yet filed", color: "bg-[var(--status-pending-bg)] text-[var(--status-pending)] border-[var(--status-pending-border)]" },
+  { value: "filed", label: "Filed / pending", color: "bg-[var(--status-warning-bg)] text-[var(--status-warning)] border-[var(--status-warning-border)]" },
+  { value: "approved", label: "Approved", color: "bg-[var(--status-success-bg)] text-[var(--status-success)] border-[var(--status-success-border)]" },
 ];
 
 function StatusSelect({ field, value, upd }: { field: string; value: string; upd: Upd }) {
@@ -182,7 +182,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
             }`}
           >
             <span
-              className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${
+              className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${
                 searchImportList ? "left-[22px]" : "left-0.5"
               }`}
             />
@@ -193,7 +193,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
           type="button"
           onClick={handleAutoFindPredicate}
           disabled={predicateLoading}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface2 text-gray-500 text-xs font-semibold hover:bg-white border border-gray-400 transition disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-surface2"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-surface2 text-muted text-xs font-semibold hover:bg-surface border border-border transition disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:bg-surface2"
         >
           {predicateLoading ? (
             <>
@@ -212,9 +212,9 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
         )}
 
         {predicateSuggestions.length > 0 && !predicateLoading && (
-          <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-green-200 bg-green-50/30 p-3 space-y-2">
+          <div className="min-w-0 max-w-full overflow-hidden rounded-xl border border-[var(--status-success-border)] bg-[var(--status-success-bg)]/30 p-3 space-y-2">
             <div className="min-w-0 space-y-1">
-              <p className="text-[11px] font-semibold text-green-800 break-words">
+              <p className="text-[11px] font-semibold text-[var(--status-success)] break-words">
                 Top {predicateSuggestions.length} CDSCO predicate suggestion{predicateSuggestions.length !== 1 ? "s" : ""}
               </p>
               {predicateSearchMeta && (
@@ -230,7 +230,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
                 </p>
               )}
             </div>
-            <p className="text-[10px] text-green-700/90 break-words">
+            <p className="text-[10px] text-[var(--status-success)] break-words">
               Select the best predicate for substantial equivalence. Rank #1 is pre-applied to the form below.
             </p>
             <div className="grid gap-2 min-w-0 max-w-full">
@@ -245,14 +245,14 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
                     onClick={() => applyPredicateSuggestion(s)}
                     className={`block w-full min-w-0 max-w-full overflow-hidden text-left p-3 rounded-xl border transition ${
                       selected
-                        ? "border-green-500 bg-green-50 ring-1 ring-green-400/30"
-                        : "border-border bg-surface hover:border-green-300 hover:bg-green-50/50"
+                        ? "border-[var(--status-success)] bg-[var(--status-success-bg)] ring-1 ring-[var(--status-success)]/30"
+                        : "border-border bg-surface hover:border-[var(--status-success)] hover:bg-[var(--status-success-bg)]/50"
                     }`}
                   >
                     <div className="flex gap-2.5 min-w-0">
                       <span
                         className={`shrink-0 w-6 h-6 rounded-full text-[10px] font-black flex items-center justify-center ${
-                          selected ? "bg-green-600 text-white" : "bg-surface2 text-muted border border-border"
+                          selected ? "bg-[var(--status-success)] text-white" : "bg-surface2 text-muted border border-border"
                         }`}
                       >
                         {s.rank}
@@ -268,7 +268,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
                             <span className="text-[10px] font-mono text-muted break-all">{s.regNo}</span>
                           )}
                           {selected && (
-                            <span className="text-[9px] font-semibold text-green-700">Applied</span>
+                            <span className="text-[9px] font-semibold text-[var(--status-success)]">Applied</span>
                           )}
                         </div>
                         {s.reason && (
@@ -295,8 +295,8 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
         </p>
         <div className="grid grid-cols-2 gap-2">
           {[
-            { value: true, label: "✅ Yes — predicate exists", hint: "Predicate pathway → submit substantial equivalence", color: "border-green-300 bg-green-50 text-green-800" },
-            { value: false, label: "⚠️ No — novel device", hint: "Novel pathway → MD-26 clinical investigation required", color: "border-orange-300 bg-orange-50 text-orange-800" },
+            { value: true, label: "✅ Yes — predicate exists", hint: "Predicate pathway → submit substantial equivalence", color: "border-[var(--status-success-border)] bg-[var(--status-success-bg)] text-[var(--status-success)]" },
+            { value: false, label: "⚠️ No — novel device", hint: "Novel pathway → MD-26 clinical investigation required", color: "border-[var(--status-info-border)] bg-[var(--status-info-bg)] text-[var(--status-info)]" },
           ].map((opt) => (
             <button key={String(opt.value)} type="button"
               onClick={() => upd("predicateExists", predicateExists === opt.value ? null : opt.value)}
@@ -311,12 +311,12 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
 
       {/* ── Branch A: Predicate EXISTS ───────────────────────────────────── */}
       {predicateExists === true && (
-        <div className="border border-green-200 bg-green-50/40 rounded-xl p-4 space-y-3">
+        <div className="border border-[var(--status-success-border)] bg-[var(--status-success-bg)]/40 rounded-xl p-4 space-y-3">
           <div className="flex items-center gap-2">
-            <span className="w-5 h-5 rounded-full bg-green-600 text-white text-[9px] font-black flex items-center justify-center">A</span>
-            <div className="text-xs font-bold text-green-800">Predicate Device Details</div>
+            <span className="w-5 h-5 rounded-full bg-[var(--status-success)] text-white text-[9px] font-black flex items-center justify-center">A</span>
+            <div className="text-xs font-bold text-[var(--status-success)]">Predicate Device Details</div>
           </div>
-          <p className="text-[11px] text-green-700">
+          <p className="text-[11px] text-[var(--status-success)]">
             Enter the CDSCO-registered predicate device. This will be used to establish substantial equivalence
             during Phase 2 Technical Dossier generation (Form MD-7 / MD-9).
           </p>
@@ -363,7 +363,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
           </div>
 
           {form.predicateName && (
-            <div className="flex items-center gap-2 bg-green-100 border border-green-300 rounded-lg px-3 py-2 text-[11px] text-green-800">
+            <div className="flex items-center gap-2 bg-[var(--status-success-bg)] border border-[var(--status-success-border)] rounded-lg px-3 py-2 text-[11px] text-[var(--status-success)]">
               <span>✓</span>
               <span>Predicate device recorded. AI will verify substantial equivalence during Phase 2 dossier generation.</span>
             </div>
@@ -374,7 +374,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
 
       {/* ── Branch B: Novel device — NO predicate ───────────────────────── */}
       {predicateExists === false && (
-        <div className="border border-orange-200 bg-orange-50/40 rounded-xl p-4 space-y-4">
+        <div className="border border-[var(--status-info-border)] bg-[var(--status-info-bg)]/40 rounded-xl p-4 space-y-4">
           <div className="flex items-center gap-2">
             <span className="w-5 h-5 rounded-full bg-accent text-white text-[9px] font-black flex items-center justify-center">B</span>
             <div className="text-xs font-bold text-orange-800">Novel Device Pathway — MDR 2017</div>
@@ -382,9 +382,9 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
 
           {/* Warning for high-risk */}
           {isHighRisk && (
-            <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2.5">
+            <div className="flex items-start gap-2 bg-[var(--status-error-bg)] border border-[var(--status-error-border)] rounded-lg px-3 py-2.5">
               <span className="text-sm shrink-0">🔴</span>
-              <div className="text-[11px] text-red-800">
+              <div className="text-[11px] text-[var(--status-error)]">
                 <strong>Class {form.deviceClass} novel device:</strong> Mandatory clinical investigation required before CDSCO grant of import/manufacture licence.
                 Both MD-26 (Clinical Investigation Application) and MD-27 (Ethics Committee approval) must be completed.
               </div>
@@ -395,7 +395,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
           <div className="space-y-3">
 
             {/* Step B1: Acknowledge */}
-            <div className={`rounded-xl border px-3 py-2.5 ${form.novelPathwayAcknowledged ? "bg-green-50 border-green-200" : "bg-surface border-border"}`}>
+            <div className={`rounded-xl border px-3 py-2.5 ${form.novelPathwayAcknowledged ? "bg-[var(--status-success-bg)] border-[var(--status-success-border)]" : "bg-surface border-border"}`}>
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <div className="text-xs font-semibold text-foreground">Acknowledge novel device pathway</div>
@@ -405,7 +405,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
                 </div>
                 <button type="button" onClick={() => upd("novelPathwayAcknowledged", !form.novelPathwayAcknowledged)}
                   className={`relative shrink-0 mt-0.5 w-9 h-5 rounded-full transition-colors ${form.novelPathwayAcknowledged ? "bg-accent" : "bg-surface2 border border-border"}`}>
-                  <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow transition-all ${form.novelPathwayAcknowledged ? "left-[18px]" : "left-0.5"}`} />
+                  <span className={`absolute top-0.5 w-4 h-4 bg-surface rounded-full shadow transition-all ${form.novelPathwayAcknowledged ? "left-[18px]" : "left-0.5"}`} />
                 </button>
               </div>
             </div>
@@ -413,7 +413,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
             {/* Step B2: MD-27 — Ethics Committee */}
             <div className="rounded-xl border border-border px-3 py-3 space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-black flex items-center justify-center border border-orange-300">1</span>
+                <span className="w-5 h-5 rounded-full bg-[var(--status-info-bg)] text-[var(--status-info)] text-[9px] font-black flex items-center justify-center border border-[var(--status-info-border)]">1</span>
                 <div>
                   <div className="text-xs font-semibold text-foreground">MD-27 — Ethics Committee (IEC) Approval</div>
                   <div className="text-[10px] text-muted">Independent Ethics Committee registration &amp; approval before clinical investigation begins</div>
@@ -430,7 +430,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
             {/* Step B3: MD-26 — Clinical Investigation Application */}
             <div className="rounded-xl border border-border px-3 py-3 space-y-2">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-orange-100 text-orange-700 text-[9px] font-black flex items-center justify-center border border-orange-300">2</span>
+                <span className="w-5 h-5 rounded-full bg-[var(--status-info-bg)] text-[var(--status-info)] text-[9px] font-black flex items-center justify-center border border-[var(--status-info-border)]">2</span>
                 <div>
                   <div className="text-xs font-semibold text-foreground">MD-26 — Clinical Investigation Application (CDSCO)</div>
                   <div className="text-[10px] text-muted">Application to CDSCO for permission to conduct clinical investigation (MDR 2017 Rule 59 &amp; Schedule Y)</div>
@@ -452,7 +452,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
             {/* Step B4: MD-27 approval → Clinical investigation → MD-6/9 submission */}
             <div className="rounded-xl border border-dashed border-border px-3 py-2.5 space-y-1 opacity-60">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 text-[9px] font-black flex items-center justify-center border border-gray-300">3</span>
+                <span className="w-5 h-5 rounded-full bg-[var(--status-pending-bg)] text-[var(--status-pending)] text-[9px] font-black flex items-center justify-center border border-[var(--status-pending-border)]">3</span>
                 <div className="text-xs font-semibold text-muted">Conduct Clinical Investigation</div>
               </div>
               <p className="text-[10px] text-muted pl-7">After MD-26 approval — conduct investigation per approved protocol, collect safety &amp; performance data</p>
@@ -460,7 +460,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
 
             <div className="rounded-xl border border-dashed border-border px-3 py-2.5 space-y-1 opacity-60">
               <div className="flex items-center gap-2">
-                <span className="w-5 h-5 rounded-full bg-gray-100 text-gray-500 text-[9px] font-black flex items-center justify-center border border-gray-300">4</span>
+                <span className="w-5 h-5 rounded-full bg-[var(--status-pending-bg)] text-[var(--status-pending)] text-[9px] font-black flex items-center justify-center border border-[var(--status-pending-border)]">4</span>
                 <div className="text-xs font-semibold text-muted">Submit Clinical Data → MD-6 / MD-9 licence application</div>
               </div>
               <p className="text-[10px] text-muted pl-7">Submit completed clinical investigation report with import/manufacture licence application to CDSCO</p>
@@ -469,12 +469,12 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
             {/* Summary status chip */}
             <div className="pt-1">
               {form.md26Status === "approved" && form.md27Status === "approved" ? (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-[11px] text-green-800">
+                <div className="flex items-center gap-2 bg-[var(--status-success-bg)] border border-[var(--status-success-border)] rounded-lg px-3 py-2 text-[11px] text-[var(--status-success)]">
                   <span>✓</span> Both MD-26 and MD-27 approved — clinical investigation can begin.
                 </div>
               ) : form.md26Status === "filed" || form.md27Status === "filed" ? (
-                <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2 text-[11px] text-yellow-800">
-                  <span className="w-3 h-3 border border-yellow-500 border-t-transparent rounded-full animate-spin shrink-0" />
+                <div className="flex items-center gap-2 bg-[var(--status-warning-bg)] border border-[var(--status-warning-border)] rounded-lg px-3 py-2 text-[11px] text-[var(--status-warning)]">
+                  <span className="w-3 h-3 border border-[var(--status-warning)] border-t-transparent rounded-full animate-spin shrink-0" />
                   Applications pending — awaiting CDSCO / IEC decisions.
                 </div>
               ) : (

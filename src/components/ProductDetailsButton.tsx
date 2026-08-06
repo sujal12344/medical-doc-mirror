@@ -42,14 +42,14 @@ export default function ProductDetailsButton({
         <>
             <button
                 onClick={() => setOpen(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-violet-500 text-violet-600 hover:bg-violet-50 transition"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold rounded-xl border border-[var(--ui-purple)] text-[var(--ui-purple)] hover:bg-[var(--ui-purple-bg)] transition"
             >
                 👁 View Details
             </button>
 
             {open && (
                 <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-                    <div className="bg-white w-full max-w-6xl rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+                    <div className="bg-surface w-full max-w-6xl rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
 
                         {/* Header */}
                         <div className="flex justify-between items-center border-b border-border p-5">

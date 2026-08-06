@@ -89,7 +89,7 @@ export default function Sidebar({ userName }: { userName?: string }) {
           </div>
           <span className="text-[13px] font-medium text-foreground truncate flex-1">{userName || "User"}</span>
         </div>
-        <button onClick={handleLogout} className="w-full text-left px-3 py-1.5 text-[11px] font-medium text-muted hover:text-red-600 hover:bg-red-50 rounded-md transition">
+        <button onClick={handleLogout} className="w-full text-left px-3 py-1.5 text-[11px] font-medium text-muted hover:text-[var(--status-error)] hover:bg-[var(--status-error-bg)] rounded-md transition">
           Sign out
         </button>
       </div>

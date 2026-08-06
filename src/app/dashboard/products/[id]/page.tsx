@@ -66,8 +66,8 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
       product.status === "active"
         ? "bg-green-50 text-green-600"
         : product.status === "archived"
-        ? "bg-gray-100 text-gray-500"
-        : "bg-yellow-50 text-yellow-600"
+        ? "bg-[var(--status-pending-bg)] text-[var(--status-pending)]"
+        : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"
     }`}
   >
     {product.status}
@@ -167,7 +167,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                   <p className="text-sm font-semibold text-foreground">{d.title}</p>
                   <p className="text-xs text-muted mt-0.5">{d.countryCode} &middot; {d.frameworkId} &middot; v{d.version}</p>
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${d.status === "submitted" ? "bg-green-50 text-green-600" : d.status === "approved" ? "bg-blue-50 text-blue-600" : d.status === "in-review" ? "bg-purple-50 text-purple-600" : "bg-yellow-50 text-yellow-600"}`}>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${d.status === "submitted" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" : d.status === "approved" ? "bg-[var(--class-b-bg)] text-[var(--class-b)]" : d.status === "in-review" ? "bg-purple-50 text-purple-600" : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"}`}>
                   {d.status}
                 </span>
               </Link>

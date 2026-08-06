@@ -38,7 +38,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         {alertCount > 0 && (
           <Link 
             href="/dashboard/alerts" 
-            className="w-full shrink-0 bg-red-500/10 border-b border-red-500/20 px-6 py-3 flex items-center gap-3 hover:bg-red-500/20 transition-colors cursor-pointer group z-10"
+            className="w-full shrink-0 bg-[var(--status-error-bg)] border-b border-[var(--status-error-border)] px-6 py-3 flex items-center gap-3 hover:opacity-90 transition-colors cursor-pointer group z-10"
           >
             <span className="relative flex h-2.5 w-2.5 shrink-0">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75"></span>

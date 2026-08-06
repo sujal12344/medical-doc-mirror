@@ -150,7 +150,7 @@ export default function TestLicensePage() {
     return (
       <div className="p-6 max-w-4xl mx-auto">
         <p className="text-muted text-sm">No document ID found. Go back and click Test License again.</p>
-        <button onClick={() => router.back()} className="mt-4 text-sm text-violet-500 hover:underline">&larr; Back</button>
+        <button onClick={() => router.back()} className="mt-4 text-sm text-[var(--ui-purple)] hover:underline">&larr; Back</button>
       </div>
     );
   }
@@ -186,7 +186,7 @@ export default function TestLicensePage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="text-sm px-4 py-2 bg-violet-600 hover:bg-violet-700 text-white rounded-lg font-medium transition disabled:opacity-50"
+            className="text-sm px-4 py-2 bg-[var(--ui-purple)] hover:opacity-90 text-white rounded-lg font-medium transition disabled:opacity-50"
           >
             {uploading ? "Uploading..." : "+ Upload File"}
           </button>
@@ -203,7 +203,7 @@ export default function TestLicensePage() {
         {/* Clickable drop zone */}
         <div
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-violet-400 hover:bg-violet-500/5 transition mb-4"
+          className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-[var(--ui-purple)] hover:bg-[var(--ui-purple-bg)] transition mb-4"
         >
           <svg className="w-8 h-8 mx-auto mb-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -228,7 +228,7 @@ export default function TestLicensePage() {
                 </div>
                 <button
                   onClick={() => handleDelete(d.fileName)}
-                  className="text-xs text-red-500 hover:text-red-400 transition shrink-0 ml-4"
+                  className="text-xs text-[var(--status-error)] hover:opacity-80 transition shrink-0 ml-4"
                 >
                   Remove
                 </button>
@@ -307,9 +307,9 @@ export default function TestLicensePage() {
         {/* Status message */}
         {statusMsg && (
           <div className={`mt-4 flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg ${
-            statusType === "success" ? "bg-green-500/10 text-green-600" :
-            statusType === "error"   ? "bg-red-500/10 text-red-500" :
-                                       "bg-violet-500/10 text-violet-500"
+            statusType === "success" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" :
+            statusType === "error"   ? "bg-[var(--status-error-bg)] text-[var(--status-error)]" :
+                                       "bg-[var(--ui-purple-bg)] text-[var(--ui-purple)]"
           }`}>
             {statusType === "success" && (
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

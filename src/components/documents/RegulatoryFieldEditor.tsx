@@ -280,7 +280,7 @@ function EditablePMFTable({
                 <button
                   type="button"
                   onClick={() => deleteColumn(colIdx)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 text-red-500 opacity-0 group-hover:opacity-100 hover:text-red-700 text-[10pt] font-bold px-1 transition"
+                  className="absolute right-1 top-1/2 -translate-y-1/2 text-[var(--status-error)] opacity-0 group-hover:opacity-100 hover:opacity-80 text-[10pt] font-bold px-1 transition"
                   title="Delete Column"
                 >
                   ✕
@@ -317,7 +317,7 @@ function EditablePMFTable({
                 <button
                   type="button"
                   onClick={() => deleteRow(rowIdx)}
-                  className="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 text-[11pt] font-bold px-1.5 transition"
+                  className="text-[var(--status-error)] hover:opacity-80 opacity-0 group-hover:opacity-100 text-[11pt] font-bold px-1.5 transition"
                   title="Delete Row"
                 >
                   ✕
@@ -347,41 +347,41 @@ function HardcodedOrgChart() {
       <div className="inline-block p-4 bg-surface rounded-xl border border-border/60 shadow-sm min-w-[700px]">
         {/* Director */}
         <div className="flex justify-center">
-          <div className="w-36 py-2.5 bg-amber-500 text-white font-bold text-xs rounded-lg shadow border border-amber-400">
+          <div className="w-36 py-2.5 bg-[var(--status-warning)] text-white font-bold text-xs rounded-lg shadow border border-[var(--status-warning-border)]">
             Director
           </div>
         </div>
         
         {/* Vertical line from Director */}
         <div className="flex justify-center">
-          <div className="w-0.5 h-4 bg-green-600/50"></div>
+          <div className="w-0.5 h-4 bg-[var(--status-success)]/50"></div>
         </div>
 
         {/* Horizontal line connecting top row */}
         <div className="flex justify-center">
-          <div className="w-[83.33%] h-0.5 bg-green-600/50"></div>
+          <div className="w-[83.33%] h-0.5 bg-[var(--status-success)]/50"></div>
         </div>
 
         {/* Vertical drops to Level 2 */}
         <div className="grid grid-cols-6 justify-items-center">
-          <div className="w-0.5 h-3 bg-green-600/50"></div>
-          <div className="w-0.5 h-3 bg-green-600/50"></div>
-          <div className="w-0.5 h-3 bg-green-600/50"></div>
-          <div className="w-0.5 h-3 bg-green-600/50"></div>
-          <div className="w-0.5 h-3 bg-green-600/50"></div>
-          <div className="w-0.5 h-3 bg-green-600/50"></div>
+          <div className="w-0.5 h-3 bg-[var(--status-success)]/50"></div>
+          <div className="w-0.5 h-3 bg-[var(--status-success)]/50"></div>
+          <div className="w-0.5 h-3 bg-[var(--status-success)]/50"></div>
+          <div className="w-0.5 h-3 bg-[var(--status-success)]/50"></div>
+          <div className="w-0.5 h-3 bg-[var(--status-success)]/50"></div>
+          <div className="w-0.5 h-3 bg-[var(--status-success)]/50"></div>
         </div>
 
         {/* Level 2 row */}
         <div className="grid grid-cols-6 gap-4 items-stretch">
           <div className="flex flex-col items-center">
-            <div className="w-full py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+            <div className="w-full py-2 bg-[var(--status-success)] text-white font-semibold text-xs rounded-lg shadow-sm border border-[var(--status-success-border)] flex items-center justify-center min-h-[40px]">
               FM
             </div>
             {/* Connection line going down to sub-departments */}
-            <div className="w-0.5 h-4 bg-blue-500/50"></div>
+            <div className="w-0.5 h-4 bg-[var(--ui-blue)]/50"></div>
           </div>
-          <div className="py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
+          <div className="py-2 bg-[var(--status-success)] text-white font-semibold text-xs rounded-lg shadow-sm border border-[var(--status-success-border)] flex items-center justify-center min-h-[40px]">
             Sales & Marketing
           </div>
           <div className="py-2 bg-emerald-600 text-white font-semibold text-xs rounded-lg shadow-sm border border-emerald-500 flex items-center justify-center min-h-[40px]">
@@ -811,7 +811,7 @@ export function RegulatoryFieldEditor({
           ) : showStructured ? (
             isLabellingUploadField ? (
               <div
-                className="rounded-lg overflow-auto bg-white p-4"
+                className="rounded-lg overflow-auto bg-surface p-4"
                 style={{ fontFamily: 'Arial, sans-serif' }}
                 dangerouslySetInnerHTML={{ __html: buildLabelCardHtml(value, allFields || {}, fieldId, documentTitle || "") }}
               />

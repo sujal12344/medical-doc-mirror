@@ -10,23 +10,23 @@ import {
 type Status = "done" | "active" | "pending";
 
 const DOT: Record<Status, string> = {
-  done: "bg-green-500 ring-green-200",
-  active: "bg-yellow-400 ring-yellow-200 animate-pulse",
-  pending: "bg-gray-300 ring-gray-100",
+  done: "bg-[var(--status-success)] ring-[var(--status-success-border)]",
+  active: "bg-[var(--status-warning)] ring-[var(--status-warning-border)] animate-pulse",
+  pending: "bg-[var(--status-pending)] ring-[var(--status-pending-border)]",
 };
 const STEP_BG: Record<Status, string> = {
-  done: "bg-green-50 border-green-200",
-  active: "bg-yellow-50 border-yellow-300",
+  done: "bg-[var(--status-success-bg)] border-[var(--status-success-border)]",
+  active: "bg-[var(--status-warning-bg)] border-[var(--status-warning-border)]",
   pending: "bg-surface2 border-border",
 };
 const DECISION_BG: Record<Status, string> = {
-  done: "bg-orange-50 border-orange-300",
-  active: "bg-orange-50 border-orange-400",
+  done: "bg-[var(--status-info-bg)] border-[var(--status-info-border)]",
+  active: "bg-[var(--status-info-bg)] border-[var(--status-info-border)]",
   pending: "bg-surface2 border-border",
 };
 const ARROW_COLOR: Record<Status, string> = {
-  done: "bg-green-400",
-  active: "bg-yellow-400",
+  done: "bg-[var(--status-success)]",
+  active: "bg-[var(--status-warning)]",
   pending: "bg-border",
 };
 
@@ -35,7 +35,7 @@ function Arrow({ from }: { from: Status }) {
     <div className="flex flex-col items-center py-0.5">
       <div className={`w-px h-3 ${ARROW_COLOR[from]}`} />
       <div
-        className={`w-1.5 h-1.5 rotate-45 border-b border-r ${from === "done" ? "border-green-500" : from === "active" ? "border-yellow-500" : "border-border"}`}
+        className={`w-1.5 h-1.5 rotate-45 border-b border-r ${from === "done" ? "border-[var(--status-success)]" : from === "active" ? "border-[var(--status-warning)]" : "border-border"}`}
       />
     </div>
   );
@@ -57,8 +57,8 @@ function MiniStep({
       <div className="flex items-center gap-1.5 mb-0.5">
         <span className={`w-1.5 h-1.5 rounded-full ring-2 shrink-0 ${DOT[status]}`} />
         <span className="font-bold text-[9px] text-muted uppercase tracking-wide">{id}</span>
-        {status === "done" && <span className="ml-auto text-[9px] text-green-700 font-bold">✓</span>}
-        {status === "active" && <span className="ml-auto text-[9px] text-yellow-700 font-bold">…</span>}
+        {status === "done" && <span className="ml-auto text-[9px] text-[var(--status-success)] font-bold">✓</span>}
+        {status === "active" && <span className="ml-auto text-[9px] text-[var(--status-warning)] font-bold">…</span>}
       </div>
       <div
         className={`font-semibold text-[11px] leading-tight ${status === "pending" ? "text-muted" : "text-foreground"}`}
@@ -69,7 +69,7 @@ function MiniStep({
         <div className="mt-1 space-y-0.5">
           {ticks.map((t, i) => (
             <div key={i} className="flex items-center gap-1">
-              <span className={`text-[9px] font-bold ${t.done ? "text-green-600" : "text-muted"}`}>
+              <span className={`text-[9px] font-bold ${t.done ? "text-[var(--status-success)]" : "text-muted"}`}>
                 {t.done ? "✓" : "·"}
               </span>
               <span className={`text-[9px] ${t.done ? "text-foreground" : "text-muted"}`}>{t.label}</span>
@@ -103,7 +103,7 @@ function MiniDecision({
       <div className={`font-semibold text-[11px] ${status === "pending" ? "text-muted" : "text-foreground"}`}>
         {label}
       </div>
-      {badge && <span className="inline-block mt-0.5 text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-bold border border-orange-200">{badge}</span>}
+      {badge && <span className="inline-block mt-0.5 text-[9px] px-1.5 py-0.5 rounded bg-[var(--status-info-bg)] text-[var(--status-info)] font-bold border border-[var(--status-info-border)]">{badge}</span>}
     </div>
   );
 }
@@ -189,11 +189,11 @@ export default function Phase0MiniFlowchart({
         </div>
 
         <div className="w-full bg-surface2 rounded-full h-1 mb-2">
-          <div className="h-1 rounded-full bg-green-700 border-black transition-all duration-700" style={{ width: `${pct}%` }} />
+          <div className="h-1 rounded-full bg-[var(--status-success)] transition-all duration-700" style={{ width: `${pct}%` }} />
         </div>
 
         <div className="text-center">
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-800 text-white text-[9px] font-bold">
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[var(--status-success)] text-white text-[9px] font-bold">
             Device Idea
           </span>
         </div>
@@ -301,7 +301,7 @@ export default function Phase0MiniFlowchart({
 
         <div className="text-center">
           <span
-            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${complete ? "bg-green-700 text-white" : "bg-surface2 text-muted border border-border"}`}
+            className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold ${complete ? "bg-[var(--status-success)] text-white" : "bg-surface2 text-muted border border-border"}`}
           >
             {complete ? "✅ Phase 0 Complete" : "In-progress"}
           </span>

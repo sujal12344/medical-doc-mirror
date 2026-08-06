@@ -36,8 +36,8 @@ export default function ProductDetailsModal({
         label: string;
         value: any;
     }) => (
-        <div className="border rounded-xl p-4 bg-gray-50">
-            <p className="text-sm text-gray-500 mb-1">{label}</p>
+        <div className="border rounded-xl p-4 bg-surface2">
+            <p className="text-sm text-muted mb-1">{label}</p>
             <div className="font-medium break-words">
                 {value || "-"}
             </div>
@@ -46,7 +46,7 @@ export default function ProductDetailsModal({
 
     return (
         <div className="fixed inset-0 z-50 bg-black/50 flex justify-center items-center p-4">
-            <div className="bg-white w-full max-w-6xl rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
+            <div className="bg-surface w-full max-w-6xl rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto">
 
                 {/* Header */}
                 <div className="flex justify-between items-center border-b p-5">
@@ -55,7 +55,7 @@ export default function ProductDetailsModal({
                             {product.name}
                         </h2>
 
-                        <p className="text-gray-500">
+                        <p className="text-muted">
                             {product.manufacturer}
                         </p>
                     </div>

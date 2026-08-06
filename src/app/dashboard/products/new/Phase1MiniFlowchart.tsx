@@ -36,26 +36,26 @@ type FormState = {
 type Status = "done" | "active" | "pending";
 
 const DOT: Record<Status, string> = {
-  done:    "bg-green-500 ring-green-200",
-  active:  "bg-yellow-400 ring-yellow-200 animate-pulse",
-  pending: "bg-gray-300 ring-gray-100",
+  done:    "bg-[var(--status-success)] ring-[var(--status-success-border)]",
+  active:  "bg-[var(--status-warning)] ring-[var(--status-warning-border)] animate-pulse",
+  pending: "bg-[var(--status-pending)] ring-[var(--status-pending-border)]",
 };
 
 const STEP_BG: Record<Status, string> = {
-  done:    "bg-green-50 border-green-200 text-green-800",
-  active:  "bg-yellow-50 border-yellow-300 text-yellow-800",
+  done:    "bg-[var(--status-success-bg)] border-[var(--status-success-border)] text-[var(--status-success)]",
+  active:  "bg-[var(--status-warning-bg)] border-[var(--status-warning-border)] text-[var(--status-warning)]",
   pending: "bg-surface2 border-border text-muted",
 };
 
 const DECISION_BG: Record<Status, string> = {
-  done:    "bg-orange-50 border-orange-300 text-orange-800",
-  active:  "bg-orange-50 border-orange-400 text-orange-800",
+  done:    "bg-[var(--status-info-bg)] border-[var(--status-info-border)] text-[var(--status-info)]",
+  active:  "bg-[var(--status-info-bg)] border-[var(--status-info-border)] text-[var(--status-info)]",
   pending: "bg-surface2 border-border text-muted",
 };
 
 const ARROW: Record<Status, string> = {
-  done:    "bg-green-400",
-  active:  "bg-yellow-400",
+  done:    "bg-[var(--status-success)]",
+  active:  "bg-[var(--status-warning)]",
   pending: "bg-border",
 };
 
@@ -102,7 +102,7 @@ function DecisionBox({ id, label, status, options }: { id: string; label: string
       {options && status === "done" && (
         <div className="flex gap-1 mt-1 flex-wrap">
           {options.map((o) => (
-            <span key={o} className="text-[9px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-800 font-semibold border border-orange-200">{o}</span>
+            <span key={o} className="text-[9px] px-1.5 py-0.5 rounded bg-[var(--status-info-bg)] text-[var(--status-info)] font-semibold border border-[var(--status-info-border)]">{o}</span>
           ))}
         </div>
       )}
@@ -122,12 +122,12 @@ function Branch({ left, right, leftLabel, rightLabel, arrowStatus }: {
       </div>
       <div className="grid grid-cols-2 gap-1.5 mt-1">
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[9px] font-bold text-green-700 bg-green-100 px-1.5 rounded-full border border-green-200">{leftLabel}</span>
+          <span className="text-[9px] font-bold text-[var(--status-success)] bg-[var(--status-success-bg)] px-1.5 rounded-full border border-[var(--status-success-border)]">{leftLabel}</span>
           <div className="w-px h-2 bg-border" />
           {left}
         </div>
         <div className="flex flex-col items-center gap-0.5">
-          <span className="text-[9px] font-bold text-blue-700 bg-blue-100 px-1.5 rounded-full border border-blue-200">{rightLabel}</span>
+          <span className="text-[9px] font-bold text-[var(--ui-blue-text)] bg-[var(--ui-blue-bg)] px-1.5 rounded-full border border-[var(--ui-blue-border)]">{rightLabel}</span>
           <div className="w-px h-2 bg-border" />
           {right}
         </div>
@@ -229,7 +229,7 @@ export default function Phase1MiniFlowchart({ form }: { form: FormState }) {
 
         {/* Start */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-700 text-white text-[10px] font-bold">
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[var(--status-success)] text-white text-[10px] font-bold">
             📦 Device Concept Ready
           </span>
         </div>
@@ -311,10 +311,10 @@ export default function Phase1MiniFlowchart({ form }: { form: FormState }) {
         {/* Novel pathway sub-status */}
         {predicateExists === false && (
           <div className="pl-2 border-l-2 border-orange-300 ml-2 space-y-1">
-            <div className={`text-[10px] px-2 py-1 rounded-lg border ${md27Status === "approved" ? "bg-green-50 border-green-200 text-green-700" : md27Status === "filed" ? "bg-yellow-50 border-yellow-200 text-yellow-700" : "bg-surface2 border-border text-muted"}`}>
+            <div className={`text-[10px] px-2 py-1 rounded-lg border ${md27Status === "approved" ? "bg-[var(--status-success-bg)] border-[var(--status-success-border)] text-[var(--status-success)]" : md27Status === "filed" ? "bg-[var(--status-warning-bg)] border-[var(--status-warning-border)] text-[var(--status-warning)]" : "bg-surface2 border-border text-muted"}`}>
               MD-27 (IEC): {md27Status === "approved" ? "✓ Approved" : md27Status === "filed" ? "⏳ Filed" : "Not filed"}
             </div>
-            <div className={`text-[10px] px-2 py-1 rounded-lg border ${md26Status === "approved" ? "bg-green-50 border-green-200 text-green-700" : md26Status === "filed" ? "bg-yellow-50 border-yellow-200 text-yellow-700" : "bg-surface2 border-border text-muted"}`}>
+            <div className={`text-[10px] px-2 py-1 rounded-lg border ${md26Status === "approved" ? "bg-[var(--status-success-bg)] border-[var(--status-success-border)] text-[var(--status-success)]" : md26Status === "filed" ? "bg-[var(--status-warning-bg)] border-[var(--status-warning-border)] text-[var(--status-warning)]" : "bg-surface2 border-border text-muted"}`}>
               MD-26 (CDSCO): {md26Status === "approved" ? "✓ Approved" : md26Status === "filed" ? "⏳ Filed" : "Not filed"}
             </div>
           </div>
@@ -353,7 +353,7 @@ export default function Phase1MiniFlowchart({ form }: { form: FormState }) {
 
         {/* End */}
         <div className="text-center">
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-gray-200 text-gray-500 text-[10px] font-bold">
+          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[var(--status-pending-bg)] text-[var(--status-pending)] text-[10px] font-bold">
             ○ Phase 1 Complete
           </span>
         </div>

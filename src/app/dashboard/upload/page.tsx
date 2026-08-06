@@ -174,10 +174,10 @@ export default function UploadPage() {
 
   // ── Log colours ──────────────────────────────────────────────────────────────
   const levelStyle: Record<LogLevel, string> = {
-    info:    "text-slate-400",
-    step:    "text-sky-400",
-    warn:    "text-amber-400",
-    success: "text-emerald-400",
+    info:    "text-muted",
+    step:    "text-[var(--ui-blue)]",
+    warn:    "text-[var(--status-warning)]",
+    success: "text-[var(--status-success)]",
   };
 
   const levelPrefix: Record<LogLevel, string> = {
@@ -189,16 +189,16 @@ export default function UploadPage() {
 
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <h1 className="text-3xl font-extrabold text-slate-900 mb-2">Upload PDFs</h1>
-      <p className="text-slate-600 mb-8">
+      <h1 className="text-3xl font-extrabold text-foreground mb-2">Upload PDFs</h1>
+      <p className="text-muted mb-8">
         Upload one or more medical regulatory PDFs. We will generate the filled
         DOCX documents and return them as a ZIP.
       </p>
 
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-sm p-6 space-y-4">
+      <div className="bg-surface border border-border rounded-2xl shadow-sm p-6 space-y-4">
         {/* File input */}
         <div>
-          <label className="block text-sm font-semibold text-slate-700 mb-2">
+          <label className="block text-sm font-semibold text-foreground mb-2">
             Upload PDF files
           </label>
           <div className="relative group">
@@ -212,21 +212,21 @@ export default function UploadPage() {
             />
             <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 flex flex-col items-center justify-center gap-3 ${
               isBusy 
-                ? "bg-slate-50 border-slate-200 opacity-60" 
+                ? "bg-surface2 border-border opacity-60" 
                 : files.length > 0 
                   ? "bg-[var(--accent)]/5 border-[var(--accent)]/30" 
-                  : "bg-slate-50 hover:bg-slate-100 border-slate-300 hover:border-[var(--accent)]/50"
+                  : "bg-surface2 hover:bg-surface border-border hover:border-[var(--accent)]/50"
             }`}>
-              <div className={`p-3 rounded-full transition-colors ${files.length > 0 ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-white shadow-sm text-slate-400 group-hover:text-[var(--accent)]"}`}>
+              <div className={`p-3 rounded-full transition-colors ${files.length > 0 ? "bg-[var(--accent)]/10 text-[var(--accent)]" : "bg-surface shadow-sm text-muted group-hover:text-[var(--accent)]"}`}>
                 <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
                 </svg>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-700">
+                <p className="text-sm font-medium text-foreground">
                   {files.length > 0 ? `${files.length} file(s) selected` : "Click or drag PDFs here"}
                 </p>
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted mt-1">
                   {files.length > 0 ? "Click to change selection" : "Up to 100MB total"}
                 </p>
               </div>
@@ -237,16 +237,16 @@ export default function UploadPage() {
           {files.length > 0 && (
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
               {files.map((f, i) => (
-                <div key={i} className="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                  <div className="w-8 h-8 rounded bg-red-100 flex items-center justify-center shrink-0">
-                    <svg className="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 24 24">
+                <div key={i} className="flex items-center gap-3 p-3 bg-surface2 border border-border rounded-lg">
+                  <div className="w-8 h-8 rounded bg-[var(--status-error-bg)] flex items-center justify-center shrink-0">
+                    <svg className="w-4 h-4 text-[var(--status-error)]" fill="currentColor" viewBox="0 0 24 24">
                       <path d="M8.25 10.875a2.625 2.625 0 115.25 0 2.625 2.625 0 01-5.25 0z" />
                       <path fillRule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zm-1.125 4.5a4.125 4.125 0 102.338 7.524l2.007 2.006a.75.75 0 101.06-1.06l-2.006-2.007a4.125 4.125 0 00-3.399-6.463z" clipRule="evenodd" />
                     </svg>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-700 truncate">{f.name}</p>
-                    <p className="text-[11px] text-slate-500">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
+                    <p className="text-sm font-medium text-foreground truncate">{f.name}</p>
+                    <p className="text-[11px] text-muted">{(f.size / 1024 / 1024).toFixed(2)} MB</p>
                   </div>
                 </div>
               ))}
@@ -272,13 +272,13 @@ export default function UploadPage() {
 
         {/* ── Terminal-style progress log ─────────────────────────────────── */}
         {logs.length > 0 && (
-          <div className="rounded-xl overflow-hidden border border-slate-800 shadow-lg">
+          <div className="rounded-xl overflow-hidden border border-border shadow-lg">
             {/* Title bar */}
-            <div className="flex items-center gap-2 px-4 py-2 bg-slate-900 border-b border-slate-700">
-              <span className="w-3 h-3 rounded-full bg-red-500" />
-              <span className="w-3 h-3 rounded-full bg-yellow-400" />
-              <span className="w-3 h-3 rounded-full bg-green-500" />
-              <span className="ml-3 text-xs text-slate-400 font-mono tracking-wide">
+            <div className="flex items-center gap-2 px-4 py-2 bg-surface2 border-b border-border">
+              <span className="w-3 h-3 rounded-full bg-[var(--status-error)]" />
+              <span className="w-3 h-3 rounded-full bg-[var(--status-warning)]" />
+              <span className="w-3 h-3 rounded-full bg-[var(--status-success)]" />
+              <span className="ml-3 text-xs text-muted font-mono tracking-wide">
                 pipeline — MedDocs AI
               </span>
               {isBusy && (
@@ -324,7 +324,7 @@ export default function UploadPage() {
           <a
             href={downloadUrl}
             download={downloadFilename}
-            className="block w-full text-center px-8 py-3 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-semibold rounded-xl shadow-sm transition-all"
+            className="block w-full text-center px-8 py-3 bg-surface border border-border hover:border-muted text-foreground font-semibold rounded-xl shadow-sm transition-all"
           >
             ⬇ Download ZIP
           </a>

@@ -45,7 +45,7 @@ export default async function ProductsPage() {
                 <div className="w-9 h-9 bg-accent/10 rounded-lg flex items-center justify-center text-accent text-xs font-bold group-hover:bg-accent/20 transition">
                   {p.deviceClass}
                 </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${p.status === "active" ? "bg-green-50 text-green-600" : p.status === "archived" ? "bg-gray-100 text-gray-500" : "bg-yellow-50 text-yellow-600"}`}>
+                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${p.status === "active" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" : p.status === "archived" ? "bg-[var(--status-pending-bg)] text-[var(--status-pending)]" : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"}`}>
                   {p.status}
                 </span>
               </div>

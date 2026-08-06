@@ -33,10 +33,10 @@ const REGULATION_OPTIONS = [
 ];
 
 const CLASS_INFO: Record<string, { color: string; bg: string; risk: string; examples: string }> = {
-  A: { color: "text-green-700", bg: "bg-green-50 border-green-200", risk: "Low Risk", examples: "Tongue depressors, bandages, stethoscopes" },
-  B: { color: "text-yellow-700", bg: "bg-yellow-50 border-yellow-200", risk: "Low-Moderate Risk", examples: "Syringes, blood glucose meters, hearing aids" },
-  C: { color: "text-orange-700", bg: "bg-orange-50 border-orange-200", risk: "Moderate-High Risk", examples: "Ventilators, bone fixation plates, dialysis machines" },
-  D: { color: "text-red-700", bg: "bg-red-50 border-red-200", risk: "Highest Risk", examples: "Heart valves, implantable defibrillators, HIV test kits" },
+  A: { color: "text-[var(--class-a)]", bg: "bg-[var(--class-a-bg)] border-[var(--class-a-border)]", risk: "Low Risk", examples: "Tongue depressors, bandages, stethoscopes" },
+  B: { color: "text-[var(--class-b)]", bg: "bg-[var(--class-b-bg)] border-[var(--class-b-border)]", risk: "Low-Moderate Risk", examples: "Syringes, blood glucose meters, hearing aids" },
+  C: { color: "text-[var(--class-c)]", bg: "bg-[var(--class-c-bg)] border-[var(--class-c-border)]", risk: "Moderate-High Risk", examples: "Ventilators, bone fixation plates, dialysis machines" },
+  D: { color: "text-[var(--class-d)]", bg: "bg-[var(--class-d-bg)] border-[var(--class-d-border)]", risk: "Highest Risk", examples: "Heart valves, implantable defibrillators, HIV test kits" },
 };
 
 export default function ClassificationWizard({ initialData }: { initialData: any }) {
@@ -131,10 +131,10 @@ export default function ClassificationWizard({ initialData }: { initialData: any
     <div>
       {/* Locked banner */}
       {data.classificationLocked && (
-        <div className="mb-6 flex items-center gap-3 p-4 bg-green-50 border border-green-200 rounded-xl text-sm text-green-700">
+        <div className="mb-6 flex items-center gap-3 p-4 bg-[var(--status-success-bg)] border border-[var(--status-success-border)] rounded-xl text-sm text-[var(--status-success)]">
           <svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" strokeLinecap="round" strokeLinejoin="round"/></svg>
           <span><strong>Classification Locked.</strong> This classification has been frozen and will be used across all regulatory submissions.</span>
-          <button onClick={() => setData((p) => ({ ...p, classificationLocked: false }))} className="ml-auto text-xs underline text-green-600 hover:text-green-800">Unlock to Edit</button>
+          <button onClick={() => setData((p) => ({ ...p, classificationLocked: false }))} className="ml-auto text-xs underline text-[var(--status-success)] hover:opacity-80">Unlock to Edit</button>
         </div>
       )}
 
@@ -168,7 +168,7 @@ export default function ClassificationWizard({ initialData }: { initialData: any
       {step === 1 && (
         <div className="space-y-6">
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Device Name <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Device Name <span className="text-[var(--status-error)]">*</span></label>
             <input
               type="text"
               value={data.deviceName}
@@ -180,7 +180,7 @@ export default function ClassificationWizard({ initialData }: { initialData: any
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">Intended Use <span className="text-red-500">*</span></label>
+            <label className="block text-sm font-semibold text-foreground mb-1.5">Intended Use <span className="text-[var(--status-error)]">*</span></label>
             <textarea
               value={data.intendedUse}
               onChange={(e) => set("intendedUse", e.target.value)}
@@ -396,7 +396,7 @@ export default function ClassificationWizard({ initialData }: { initialData: any
             </button>
           )}
           {data.classificationLocked && (
-            <div className="text-center text-xs text-green-600 font-semibold">✅ Classification locked and ready for regulatory submission.</div>
+            <div className="text-center text-xs text-[var(--status-success)] font-semibold">✅ Classification locked and ready for regulatory submission.</div>
           )}
         </div>
       )}
