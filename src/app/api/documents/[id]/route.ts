@@ -4,12 +4,11 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
 import { requireAuth } from "@/lib/auth";
 
-type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_: Request, ctx: Ctx) {
+export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     await connectToDatabase();
     const doc = await RegulatoryDocument.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
@@ -21,10 +20,10 @@ export async function GET(_: Request, ctx: Ctx) {
   }
 }
 
-export async function DELETE(_: Request, ctx: Ctx) {
+export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     await connectToDatabase();
     const result = await RegulatoryDocument.findOneAndDelete({ _id: id, userId: (user as Record<string, unknown>)._id });

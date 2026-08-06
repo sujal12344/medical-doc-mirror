@@ -17,12 +17,11 @@ const pdfParse = require("pdf-parse/lib/pdf-parse.js") as (
 export const maxDuration = 120;
 export const runtime = "nodejs";
 
-type Ctx = { params: Promise<{ id: string }> };
 
-export async function POST(req: NextRequest, ctx: Ctx) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ message: "Invalid company id" }, { status: 400 });
 
     const formData = await req.formData();
@@ -145,7 +144,7 @@ calculate it based on that. If you absolutely cannot determine an issue date, le
     };
 
     // Note: Assuming the user is a company user and can only update their own company
-    // If user._id is the company id, or if we just rely on ctx.params.id (which is safer if admin is updating)
+    // If user._id is the company id, or if we just rely on params.id (which is safer if admin is updating)
     const company = await Company.findByIdAndUpdate(
       id,
       { $push: { regulatoryLicenses: newLicense } },
@@ -171,10 +170,10 @@ calculate it based on that. If you absolutely cannot determine an issue date, le
 }
 
 // DELETE — remove a license from regulatoryLicenses by _id
-export async function DELETE(req: NextRequest, ctx: Ctx) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ message: "Invalid company id" }, { status: 400 });
 
     const body = await req.json() as { licenseId: string };

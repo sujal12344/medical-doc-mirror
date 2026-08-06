@@ -4,13 +4,12 @@ import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
 import { requireAuth } from "@/lib/auth";
 
-type Ctx = { params: Promise<{ id: string }> };
 
 // POST — add a file to uploadedDocs
-export async function POST(req: NextRequest, ctx: Ctx) {
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ message: "Invalid id" }, { status: 400 });
 
     const body = await req.json() as { fileName: string; mimeType: string; base64: string };
@@ -44,10 +43,10 @@ export async function POST(req: NextRequest, ctx: Ctx) {
 }
 
 // DELETE — remove a file from uploadedDocs by fileName
-export async function DELETE(req: NextRequest, ctx: Ctx) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const user = await requireAuth();
-    const { id } = await ctx.params;
+    const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ message: "Invalid id" }, { status: 400 });
 
     const body = await req.json() as { fileName: string };

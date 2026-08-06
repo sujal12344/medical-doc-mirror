@@ -706,6 +706,427 @@ STRICT RULES
 
 Return ONLY the completed procedure in Markdown.
 `
+  },
+  {
+    title: "Organization Chart",
+    query: `
+Organization Chart
+Key Personnel
+Director
+Factory Manager
+QC Head
+QA Head
+R & D Head
+Production
+Stores, Dispatch Purchase
+HR
+Sales & Marketing
+Regulatory
+`,
+    specific: `
+Extract the key personnel names and company details from the retrieved Quality Manual to fill in the organization chart placeholders.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+- "directorName"
+- "factoryManagerName"
+- "marketingName" (Sales & Marketing)
+- "hrName"
+- "regulatoryName"
+- "dispatchName" (Stores, Dispatch Purchase)
+- "rndHeadName" (R & D Head)
+- "qcqaName" (QC & QA Head)
+- "productionInchargeName"
+- "qcTeam" (List of QC Team members)
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St",
+  "directorName": "John Doe",
+  "factoryManagerName": "Jane Smith",
+  "marketingName": "Bob Johnson",
+  "hrName": "Alice Brown",
+  "regulatoryName": "Charlie Davis",
+  "dispatchName": "Eve White",
+  "rndHeadName": "Dr. Frank Green",
+  "qcqaName": "Dr. Grace Lee",
+  "productionInchargeName": "Henry Black",
+  "qcTeam": "Tom, Dick, Harry"
+}
+`
+  },
+  {
+    title: "Qualification and Responsibilities",
+    query: `
+Qualification
+Experience
+Responsibilities
+Key Personnel
+Factory Manager
+Quality Control Staff
+Production Staff
+Assistant Manager
+Assistant Senior Manager
+QC Chemist
+Production Executive
+QC Executive
+Store Incharge
+Production Supervisor
+`,
+    specific: `
+Extract the qualification, experience, and responsibilities details from the retrieved Quality Manual to fill in the personnel placeholders.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "qualification"
+- "experience"
+- "responsibilities"
+- "factoryManager"
+- "qualityControlStaff"
+- "productionStaff"
+- "assistantManager"
+- "assistantSeniorManager"
+- "qcChemist"
+- "productionExecutive"
+- "qcExecutive"
+- "storeIncharge"
+- "productionSupervisor"
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "qualification": "B.Sc / M.Sc / B.Pharm",
+  "experience": "Minimum 5 Years",
+  "responsibilities": "Ensure quality standards are met...",
+  "factoryManager": "John Doe",
+  "qualityControlStaff": "Jane Smith",
+  "productionStaff": "Mike Johnson",
+  "assistantManager": "Alice Brown",
+  "assistantSeniorManager": "",
+  "qcChemist": "Bob White",
+  "productionExecutive": "",
+  "qcExecutive": "",
+  "storeIncharge": "Charlie Black",
+  "productionSupervisor": ""
+}
+`
+  },
+  {
+    title: "List of Equipments and Instruments",
+    query: `
+Equipment
+Instrument
+List of Equipments
+Quantity
+Machinery
+ELISA
+Manufacturing
+Laboratory
+`,
+    specific: `
+Extract the list of equipments, instruments, and their quantities from the retrieved Quality Manual to fill in the placeholders.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+- "directorName"
+- "equipment" (List of all equipments/instruments as a single string)
+- "quantity" (List of corresponding quantities as a single string, or leave empty if not specified)
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St",
+  "directorName": "John Doe",
+  "equipment": "Incubator, Centrifuge, ELISA Reader",
+  "quantity": "2, 1, 1"
+}
+`
+  },
+  {
+    title: "Preventive Action Procedure",
+    query: `
+Preventive Action
+Preventive Action Procedure
+CAPA
+Corrective and Preventive Action
+Potential Nonconformity
+Root Cause Analysis
+Preventive Measures
+ISO 13485 Clause 8.5.3
+`,
+    specific: `
+Extract the Preventive Action Procedure details from the retrieved Quality Manual to fill in the placeholders.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+- "purpose"
+- "scope"
+- "responsibilityAuthority"
+- "procedureSteps" (Summary of procedure steps as a single string)
+- "actions" (Provide a detailed and comprehensive list of specific actions, formatted clearly in brief but detailed points, as a single string)
+- "responsibility" (List of responsibilities corresponding to actions as a single string)
+- "procedures" (Cross-referred procedures)
+- "documents" (Referenced documents and records)
+- "abbreviations" (List of abbreviations used)
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St",
+  "purpose": "To establish a procedure for preventive action.",
+  "scope": "Applies to all potential nonconformities.",
+  "responsibilityAuthority": "QA Manager",
+  "procedureSteps": "1. Identify potential nonconformity. 2. Determine root cause.",
+  "actions": "1. Review data for potential non-conformities. 2. Implement CAPA measures.",
+  "responsibility": "QA Team, Department Heads",
+  "procedures": "QSP-01 Corrective Action",
+  "documents": "Preventive Action Form (FMT-01)",
+  "abbreviations": "QA - Quality Assurance, PA - Preventive Action"
+}
+`
+  },
+  {
+    title: "Corrective Action Procedure",
+    query: `
+Corrective Action
+Corrective Action Procedure
+CAPA
+Corrective and Preventive Action
+Nonconformity
+Root Cause Analysis
+Corrective Measures
+ISO 13485 Clause 8.5.2
+`,
+    specific: `
+Extract the Corrective Action Procedure details from the retrieved Quality Manual to fill in the placeholders.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+- "purpose"
+- "scope"
+- "responsibility" (List of responsibilities corresponding to actions as a single string)
+- "procedures" (Summary of procedure steps and cross-referred procedures)
+- "action" (Provide a detailed and comprehensive list of specific corrective actions, formatted clearly in brief but detailed points, as a single string)
+- "documents" (Referenced documents and records)
+- "abbreviation" (List of abbreviations used)
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St",
+  "purpose": "To establish a procedure for corrective action.",
+  "scope": "Applies to all nonconformities.",
+  "responsibility": "QA Team, Department Heads",
+  "procedures": "1. Identify nonconformity. 2. QSP-02 Preventive Action.",
+  "action": "1. Review data for non-conformities. 2. Implement CAPA measures.",
+  "documents": "Corrective Action Form (FMT-02)",
+  "abbreviation": "QA - Quality Assurance, CA - Corrective Action"
+}
+`
+  },
+  {
+    title: "Procedure For Identifying Training Needs",
+    query: `
+Training
+Procedure For Identifying Training Needs
+Training Needs
+Competence
+Awareness
+ISO 13485 Clause 6.2
+Human Resources
+Employee Training
+`,
+    specific: `
+Extract the Procedure For Identifying Training Needs details from the retrieved Quality Manual to fill in the placeholders.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+- "purpose"
+- "scope"
+- "authority" (Details about who has authority)
+- "responsibility" (List of responsibilities as a single string)
+- "procedures" (Summary of procedure steps and cross-referred procedures)
+- "documents" (Referenced documents and records)
+- "abbreviation" (List of abbreviations used)
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St",
+  "purpose": "To establish a procedure for identifying training needs.",
+  "scope": "Applies to all personnel whose work affects product quality.",
+  "authority": "HR Manager",
+  "responsibility": "Department Heads, HR Team",
+  "procedures": "1. Identify competence needs. 2. Provide training.",
+  "documents": "Training Record Form (FMT-03)",
+  "abbreviation": "HR - Human Resources, TR - Training Record"
+}
+`
+  },
+  {
+    title: "Training Procedure for Quality Control",
+    query: `
+Training Procedure
+Quality Control
+QC Training
+Competence
+ISO 13485 Clause 6.2
+Quality Control Staff
+`,
+    specific: `
+Extract the company details from the retrieved Quality Manual to fill in the placeholders for the Training Procedure for Quality Control.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St"
+}
+`
+  },
+  {
+    title: "Training of Personnels",
+    query: `
+Training of Personnel
+Personnel Training
+Employee Training
+Competence
+ISO 13485 Clause 6.2
+`,
+    specific: `
+Extract the company details from the retrieved Quality Manual to fill in the placeholders for the Training of Personnels procedure.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St"
+}
+`
+  },
+  {
+    title: "Environmental Req for IVD as Per Annexure A",
+    query: `
+Environmental Requirements
+Annexure A
+Work Environment
+Infrastructure
+Clean Room
+ISO 13485 Clause 6.4
+IVD Environmental Requirements
+`,
+    specific: `
+Extract the company details from the retrieved Quality Manual to fill in the placeholders for the Environmental Requirements as per Annexure A.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St"
+}
+`
+  },
+  {
+    title: "Undertaking by Manufacturer for Fifth Schedule MDR 2017",
+    query: `
+Undertaking
+Manufacturer Undertaking
+Fifth Schedule
+MDR 2017
+Medical Device Rules
+Director Undertaking
+Legal Manufacturer
+`,
+    specific: `
+Extract the company details and director name from the retrieved Quality Manual to fill in the placeholders for the Undertaking by Manufacturer.
+
+Use ONLY information found in the retrieved Quality Manual sections.
+
+Return ONLY a valid JSON object with the exact keys listed below. Do not include markdown formatting, code blocks, or explanations. If a value is not found, leave it as an empty string "".
+
+Required JSON Keys:
+- "companyLogo" (leave empty)
+- "companyName"
+- "companyAddress"
+- "directorName"
+
+Example Output:
+{
+  "companyLogo": "",
+  "companyName": "Acme Medical Devices",
+  "companyAddress": "123 Main St",
+  "directorName": "John Doe"
+}
+`
   }
 ];
 
@@ -968,6 +1389,8 @@ Telephone: ${user.telephoneNumber || "N/A"}`.trim();
       );
 
       const generatedContent = llmResponse.choices?.[0]?.message?.content || "";
+
+      console.log(`\n[qms/disintegrate] === Generated Content for "${docDef.title}" ===\n${generatedContent}\n=======================================================\n`);
 
       generatedDocs.push({
         id: `gen-${i + 1}`,
