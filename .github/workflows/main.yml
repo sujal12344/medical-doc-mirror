@@ -1,0 +1,189 @@
+name: CI/CD Pipeline - Build & Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: production-deploy
+  cancel-in-progress: true
+
+jobs:
+  # ===================================================================
+  # STAGE 1: BUILD & CACHE (Runs on GitHub-Hosted Runner)
+  # ===================================================================
+  build:
+    name: Build & Cache
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Setup Turborepo & Next.js Build Caches
+        uses: actions/cache@v4
+        with:
+          path: |
+            .turbo
+            apps/portal/.next/cache
+            node_modules/.cache
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Spin up Ephemeral Redis Container
+        run: |
+          docker run -d \
+            --name "ci-redis-${{ github.run_id }}" \
+            -p 63799:6379 \
+            redis:7-alpine
+          sleep 2
+
+      - name: Build Turbo Monorepo (Incremental)
+        run: |
+          npx turbo build --cache-dir=".turbo"
+        env:
+          MONGODB_URI: "mongodb://127.0.0.1:27017/placeholder"
+          AGENT_MODEL: "mock-model"
+          BETTER_AUTH_SECRET: "mock-secret-at-least-32-chars-long-security"
+          BETTER_AUTH_URL: "http://localhost:3000"
+          PINECONE_API_KEY: "mock-key"
+          REDIS_URL: "redis://127.0.0.1:63799"
+          SKIP_ENV_VALIDATION: "1"
+          NEXT_DISABLE_SOURCEMAPS: "1"
+
+      - name: Cleanup Ephemeral Redis
+        if: always()
+        run: |
+          docker rm -f "ci-redis-${{ github.run_id }}" 2>/dev/null || true
+
+      - name: Archive Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifact-${{ github.sha }}
+          path: |
+            apps/
+            packages/
+            package.json
+            package-lock.json
+            ecosystem.config.js
+            client requirement/
+          retention-days: 1
+
+  # ===================================================================
+  # STAGE 2: DEPLOY & FAIL-SAFE ROLLBACK (EC2 Deployment via SSH)
+  # ===================================================================
+  deploy:
+    name: Deploy to EC2
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifact-${{ github.sha }}
+          path: ./
+
+      - name: Configure SSH Key
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.EC2_SSH_KEY }}
+
+      - name: Add EC2 to Known Hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+
+      - name: Sync Workspace Files to EC2 Server
+        run: |
+          rsync -avz --delete \
+            --exclude='.git' \
+            --exclude='node_modules' \
+            --exclude='.env' \
+            --exclude='google-bucket.json' \
+            ./ ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }}:/home/${{ secrets.REMOTE_USER }}/karyaos/
+
+      - name: Execute Server Deployment & Health Check
+        run: |
+          ssh ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }} "bash -s" << 'EOF'
+            set -e
+
+            # Environment setup
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
+            export PATH="$HOME/.nvm/versions/node/$(ls ~/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:/usr/local/bin:/usr/bin:$PATH"
+
+            cd ~/karyaos
+
+            echo "=== Creating Safety Backup of Current Standalone Deployment ==="
+            if [ -d "apps/portal/.next/standalone" ]; then
+              rm -rf apps/portal/.next/standalone_backup
+              cp -r apps/portal/.next/standalone apps/portal/.next/standalone_backup
+            fi
+
+            echo "=== Installing Production Dependencies ==="
+            npm ci --omit=dev
+
+            echo "=== Populating Next.js Standalone Assets ==="
+            mkdir -p apps/portal/.next/standalone/apps/portal/public
+            mkdir -p apps/portal/.next/standalone/apps/portal/.next/static
+
+            # Copy Environment definitions
+            cp packages/env/.env apps/portal/.next/standalone/ 2>/dev/null || true
+            cp packages/env/.env apps/portal/.next/standalone/apps/portal/ 2>/dev/null || true
+
+            # Copy static and public assets
+            cp -r apps/portal/public/. apps/portal/.next/standalone/apps/portal/public/ 2>/dev/null || true
+            cp -r apps/portal/.next/static/. apps/portal/.next/standalone/apps/portal/.next/static/ 2>/dev/null || true
+
+            if [ -d "client requirement" ]; then
+              mkdir -p "apps/portal/.next/standalone/apps/portal/client requirement"
+              cp -r "client requirement/"* "apps/portal/.next/standalone/apps/portal/client requirement/" 2>/dev/null || true
+            fi
+
+            echo "=== Reloading Application via PM2 ==="
+            pm2 startOrReload ecosystem.config.js --update-env
+
+            echo "=== Executing Health Check & Automatic Rollback Safeguard ==="
+            sleep 4
+
+            # Verify PM2 status AND perform an HTTP ping check
+            HEALTH_PASSED=false
+            if pm2 status | grep -q 'online'; then
+              # Attempt HTTP ping on local app port (Defaulting to 3000; update if using another port)
+              if curl -s -f http://localhost:3000/ > /dev/null || curl -s -f http://localhost:3005/ > /dev/null; then
+                HEALTH_PASSED=true
+              fi
+            fi
+
+            if [ "$HEALTH_PASSED" = true ]; then
+              echo "✅ DEPLOYMENT SUCCESSFUL: Service is healthy. Cleaning backup..."
+              rm -rf apps/portal/.next/standalone_backup
+              pm2 save
+            else
+              echo "❌ CRITICAL: Process crashed or failed health check! Triggering rollback..."
+              if [ -d "apps/portal/.next/standalone_backup" ]; then
+                rm -rf apps/portal/.next/standalone
+                mv apps/portal/.next/standalone_backup apps/portal/.next/standalone
+                pm2 restart ecosystem.config.js
+                echo "⚠️ Rollback successfully executed. Server restored to previous working build."
+              else
+                echo "❌ CRITICAL: No backup available to roll back to!"
+              fi
+              exit 1
+            fi
+
+            # Clean dangling docker build layers to preserve disk space
+            docker system prune -f 2>/dev/null || true
+          EOF
