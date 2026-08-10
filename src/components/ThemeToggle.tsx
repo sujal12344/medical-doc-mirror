@@ -3,18 +3,20 @@
 import { useEffect, useState } from "react";
 
 export default function ThemeToggle() {
-  // Initialize with lazy initializer to avoid setState in useEffect
-  const [theme, setTheme] = useState<"dark" | "light">(() => {
-    if (typeof window === "undefined") return "dark";
-    const stored = localStorage.getItem("theme") as "dark" | "light" | null;
-    return stored || "dark";
-  });
+  const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   useEffect(() => {
-    // Sync theme to DOM on mount and changes
-    document.documentElement.setAttribute("data-theme", theme);
-    localStorage.setItem("theme", theme);
-  }, [theme]);
+    setMounted(true);
+    const stored = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (stored) {
+      setTheme(stored);
+      document.documentElement.setAttribute("data-theme", stored);
+    } else {
+      document.documentElement.setAttribute("data-theme", "dark");
+      localStorage.setItem("theme", "dark");
+    }
+  }, []);
 
   const toggleTheme = () => {
     const newTheme = theme === "dark" ? "light" : "dark";
@@ -22,6 +24,15 @@ export default function ThemeToggle() {
     document.documentElement.setAttribute("data-theme", newTheme);
     localStorage.setItem("theme", newTheme);
   };
+
+  if (!mounted) {
+    // Render a placeholder button that matches the styling on server to prevent layout shift
+    return (
+      <button className="fixed bottom-6 right-6 z-50 p-3 rounded-full bg-surface border-2 border-border shadow-lg opacity-0 pointer-events-none">
+        <div className="w-5 h-5" />
+      </button>
+    );
+  }
 
   return (
     <button

@@ -252,6 +252,8 @@ Return ONLY valid raw JSON with exactly these keys (use empty string or false if
 {
   "name": string,
   "manufacturer": string,  // CRITICAL: extract from brand prefix in product name (e.g. "Q-Line® Molecular Dengue RT-PCR" → manufacturer = "Q-Line"), OR from company address block, OR from header/footer. If no explicit manufacturer field, extract from the brand name embedded in the product name.
+  "manufacturerAddress": string, // Extract the registered manufacturer address. Join all lines with commas.
+  "shelfLife": string, // Extract shelf life or stability info (e.g. "24 Months", "12 months at 2-8°C").
   "description": string,
   "descriptionSuggestions": string[],
   "intendedUse": string,
@@ -309,6 +311,14 @@ FIELD EXTRACTION RULES:
     Example: "Q-Line\u00ae Molecular Dengue RT-PCR assay" → manufacturer = "Q-Line" (or "Q-Line Biotech" if found elsewhere).
   - Do NOT leave this empty if a company or brand prefix appears in the product name.
   - Return full company name if found (e.g. "Q-Line Biotech Private Limited") or short brand name if not.
+
+"manufacturerAddress": The registered address of the manufacturer.
+  - Look in the manufacturer information block, usually at the end of the document or cover page.
+  - Join multiple lines with commas.
+
+"shelfLife": The shelf life, expiry period, or stability information.
+  - Look for "Shelf Life", "Stability", "Store at".
+  - Examples: "24 months", "12 months when stored at 2-8°C".
 
 REGULATORY DEFINITIONS — apply these precisely:
 
@@ -426,6 +436,8 @@ IVD PART II FIELDS (First Schedule Part II, MDR 2017 — only set for deviceType
     console.log(`\n[autofill] ── EXTRACTED FIELDS ──`);
     console.log(`[autofill]   name              : ${parsed.name || "(not found)"}`);
     console.log(`[autofill]   manufacturer      : ${parsed.manufacturer || "(not found)"}`);
+    console.log(`[autofill]   mfgAddress        : ${(parsed.manufacturerAddress || "(not found)").slice(0, 80)}…`);
+    console.log(`[autofill]   shelfLife         : ${parsed.shelfLife || "(not found)"}`);
     console.log(`[autofill]   deviceType        : ${parsed.deviceType || "(not found)"}`);
     console.log(`[autofill]   deviceClass        : ${parsed.deviceClass || "(not found)"}`);
     console.log(`[autofill]   patientPopulation  : ${parsed.patientPopulation || "(not found)"}`);

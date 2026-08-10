@@ -127,6 +127,8 @@ export function flatToNestedProduct(flat: AnyDoc, existing?: Partial<ProductDocu
   const base: Partial<ProductDocument> = {
     name: (flat.name as string) ?? existing?.name,
     manufacturer: (flat.manufacturer as string) ?? existing?.manufacturer,
+    manufacturerAddress: (flat.manufacturerAddress as string) ?? existing?.manufacturerAddress ?? "",
+    shelfLife: (flat.shelfLife as string) ?? existing?.shelfLife ?? "",
     description: (flat.description as string) ?? existing?.description ?? "",
     intendedUse: (flat.intendedUse as string) ?? existing?.intendedUse ?? "",
     patientPopulation: (flat.patientPopulation as string) ?? existing?.patientPopulation ?? "",
