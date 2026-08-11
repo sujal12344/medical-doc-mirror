@@ -10,8 +10,11 @@ import type { FrameworkDeviceType } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
 import CreateTestLicenseButton from "./CreateTestLicenseButton";
 import CreateMD11Button from "./CreateMD11Button";
+import CreateMD18Button from "./CreateMD18Button";
+import CreateMD20Button from "./CreateMD20Button";
 import ProductDetailsButton from "../../../../components/ProductDetailsButton";
 
+// Touched to trigger recompilation
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   if (!isValidObjectId(id)) notFound();
@@ -60,20 +63,19 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
             </p>
           </div>
           <div className="flex items-center gap-2">
-  <ProductDetailsButton product={JSON.parse(JSON.stringify(product))} />
+            <ProductDetailsButton product={JSON.parse(JSON.stringify(product))} />
 
-  <span
-    className={`text-xs px-3 py-1 rounded-full font-semibold ${
-      product.status === "active"
-        ? "bg-green-50 text-green-600"
-        : product.status === "archived"
-        ? "bg-[var(--status-pending-bg)] text-[var(--status-pending)]"
-        : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"
-    }`}
-  >
-    {product.status}
-  </span>
-</div>
+            <span
+              className={`text-xs px-3 py-1 rounded-full font-semibold ${product.status === "active"
+                  ? "bg-green-50 text-green-600"
+                  : product.status === "archived"
+                    ? "bg-[var(--status-pending-bg)] text-[var(--status-pending)]"
+                    : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"
+                }`}
+            >
+              {product.status}
+            </span>
+          </div>
         </div>
         {product.description && <p className="text-sm text-muted mt-3 leading-relaxed">{product.description}</p>}
         <div className="flex gap-1.5 mt-3 flex-wrap">
@@ -147,9 +149,17 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                           productId={String(product._id)}
                           productName={product.name}
                         />
+                        <CreateMD18Button
+                          productId={String(product._id)}
+                          productName={product.name}
+                        />
+                        <CreateMD20Button
+                          productId={String(product._id)}
+                          productName={product.name}
+                        />
                       </>
                     )}
-                    
+
                   </div>
                 </div>
               );
