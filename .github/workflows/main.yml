@@ -110,7 +110,8 @@ jobs:
       - name: Add EC2 to Known Hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts || true
+          ssh-keyscan -t rsa,ed25519 -H "${{ secrets.SERVER_IP }}" >> ~/.ssh/known_hosts 2>/dev/null || true
 
       - name: Sync Workspace Files to EC2 Server
         run: |
