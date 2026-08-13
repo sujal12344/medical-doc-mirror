@@ -60,7 +60,11 @@ export default function NewProductPage() {
       : `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
   const [form, setForm] = useState({
-    name: "", manufacturer: "", description: "", intendedUse: "",
+    name: "",
+    manufacturer: "",
+    manufacturerAddress: "",
+    shelfLife: "",
+    description: "", intendedUse: "",
     deviceClass: "B" as "A" | "B" | "C" | "D",
     deviceType: "ivd" as "ivd" | "medical-device",
     countries: ["IN"] as string[],
@@ -303,6 +307,8 @@ export default function NewProductPage() {
         ...prev,
         name: data.name || prev.name,
         manufacturer: data.manufacturer || prev.manufacturer,
+        manufacturerAddress: data.manufacturerAddress || prev.manufacturerAddress,
+        shelfLife: data.shelfLife || prev.shelfLife,
         description: data.description || suggestions[0] || prev.description,
         intendedUse: data.intendedUse || prev.intendedUse,
         patientPopulation: data.patientPopulation || prev.patientPopulation,
@@ -568,6 +574,18 @@ export default function NewProductPage() {
               <label className={LABEL_CLASS}>Manufacturer *</label>
               <input type="text" required value={form.manufacturer} onChange={(e) => upd("manufacturer", e.target.value)}
                 className={FIELD_INPUT_CLASS} placeholder="e.g. MedTech Diagnostics Pvt Ltd" />
+            </div>
+            <div className="md:col-span-2 grid md:grid-cols-2 gap-4">
+              <div>
+                <label className={LABEL_CLASS}>Manufacturer Address</label>
+                <input type="text" value={form.manufacturerAddress} onChange={(e) => upd("manufacturerAddress", e.target.value)}
+                  className={FIELD_INPUT_CLASS} placeholder="e.g. 123 Industrial Park, City" />
+              </div>
+              <div>
+                <label className={LABEL_CLASS}>Shelf Life</label>
+                <input type="text" value={form.shelfLife} onChange={(e) => upd("shelfLife", e.target.value)}
+                  className={FIELD_INPUT_CLASS} placeholder="e.g. 24 Months" />
+              </div>
             </div>
           </div>
 

@@ -93,6 +93,8 @@ export type ProductDocument = {
   userId: Types.ObjectId;
   name: string;
   manufacturer: string;
+  manufacturerAddress?: string;
+  shelfLife?: string;
   description: string;
   intendedUse: string;
   patientPopulation: string;
@@ -209,6 +211,8 @@ const productSchema = new Schema<ProductDocument>(
     userId: { type: Schema.Types.ObjectId, ref: "Company", required: true, index: true },
     name: { type: String, required: true, trim: true, minlength: 2, maxlength: 300 },
     manufacturer: { type: String, required: true, trim: true, maxlength: 300 },
+    manufacturerAddress: { type: String, trim: true, maxlength: 1000, default: "" },
+    shelfLife: { type: String, trim: true, maxlength: 300, default: "" },
     description: { type: String, trim: true, maxlength: 5000, default: "" },
     intendedUse: { type: String, trim: true, maxlength: 3000, default: "" },
     patientPopulation: { type: String, trim: true, maxlength: 500, default: "" },

@@ -11,6 +11,10 @@ const productSchema = z
 
     manufacturer: z.string().trim().min(2).max(300),
 
+    manufacturerAddress: z.string().trim().max(1000).optional(),
+
+    shelfLife: z.string().trim().max(300).optional(),
+
     description: z.string().trim().max(5000).optional(),
 
     deviceClass: z.enum(["A", "B", "C", "D"]),
