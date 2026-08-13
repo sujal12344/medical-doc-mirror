@@ -64,15 +64,12 @@ jobs:
       - name: Verify Standalone Output Build Exists
         run: |
           echo "=== Debug: Verifying Next.js Standalone Output ==="
-          if [ -d ".next/standalone" ]; then
-            echo "✅ Root standalone directory found."
-          elif [ -d "apps/portal/.next/standalone" ]; then
-            echo "✅ Sub-folder standalone directory found."
-          else
+          if [ ! -d ".next/standalone" ]; then
             echo "❌ ERROR: Standalone output directory missing!"
-            echo "Ensure 'output: \"standalone\"' is set in next.config.ts / next.config.js."
+            echo "Ensure 'output: \"standalone\"' is set in next.config.ts."
             exit 1
           fi
+          echo "✅ Root standalone directory found."
 
       - name: Cleanup Ephemeral Redis
         if: always()
@@ -83,8 +80,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact-${{ github.sha }}
-          path: |
-            ./
+          path: ./
           retention-days: 1
 
   # ===================================================================
@@ -120,7 +116,7 @@ jobs:
             --exclude='node_modules' \
             --exclude='.env' \
             --exclude='google-bucket.json' \
-            ./ ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }}:/home/${{ secrets.REMOTE_USER }}/karyaos/
+            ./ ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }}:/home/${{ secrets.REMOTE_USER }}/medical-doc-generator/
 
       - name: Execute Server Deployment & Health Check
         run: |
@@ -132,47 +128,43 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && source "$NVM_DIR/nvm.sh"
             export PATH="$HOME/.nvm/versions/node/$(ls ~/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:/usr/local/bin:/usr/bin:$PATH"
 
-            cd ~/karyaos
+            cd ~/medical-doc-generator
 
             echo "=== Diagnostic Check: Server Environment ==="
             echo "Current User: $(whoami)"
             echo "Working Dir: $(pwd)"
             echo "Node Version: $(node -v)"
-            echo "NPM Version: $(npm -v)"
 
-            echo "=== Creating Safety Backup of Current Deployment ==="
-            STANDALONE_DIR=".next/standalone"
-            if [ -d "apps/portal/.next/standalone" ]; then
-              STANDALONE_DIR="apps/portal/.next/standalone"
-            fi
-
-            if [ -d "$STANDALONE_DIR" ]; then
-              rm -rf "${STANDALONE_DIR}_backup"
-              cp -r "$STANDALONE_DIR" "${STANDALONE_DIR}_backup"
-              echo "Backup created at ${STANDALONE_DIR}_backup"
-            else
-              echo "No previous standalone directory found to back up."
+            echo "=== Creating Safety Backup ==="
+            if [ -d ".next/standalone" ]; then
+              rm -rf .next/standalone_backup
+              cp -r .next/standalone .next/standalone_backup
+              echo "Backup created at .next/standalone_backup"
             fi
 
             echo "=== Installing Production Dependencies ==="
             npm ci --omit=dev
 
-            echo "=== Populating Next.js Standalone Assets ==="
-            mkdir -p "$STANDALONE_DIR/public"
-            mkdir -p "$STANDALONE_DIR/.next/static"
+            echo "=== Populating Standalone Assets ==="
+            mkdir -p .next/standalone/public
+            mkdir -p .next/standalone/.next/static
 
             if [ -d "public" ]; then
-              cp -r public/. "$STANDALONE_DIR/public/" 2>/dev/null || true
+              cp -r public/. .next/standalone/public/ 2>/dev/null || true
             fi
 
             if [ -d ".next/static" ]; then
-              cp -r .next/static/. "$STANDALONE_DIR/.next/static/" 2>/dev/null || true
+              cp -r .next/static/. .next/standalone/.next/static/ 2>/dev/null || true
             fi
 
             echo "=== Reloading Application via PM2 ==="
-            pm2 startOrReload ecosystem.config.js --update-env
+            if pm2 describe medical-doc-generator > /dev/null 2>&1; then
+              pm2 reload medical-doc-generator --update-env
+            else
+              pm2 start ecosystem.config.js || pm2 start .next/standalone/server.js --name "medical-doc-generator"
+            fi
 
-            echo "=== Executing Health Check & Automatic Rollback Safeguard ==="
+            echo "=== Executing Health Check ==="
             sleep 5
 
             HEALTH_PASSED=false
@@ -184,22 +176,18 @@ jobs:
 
             if [ "$HEALTH_PASSED" = true ]; then
               echo "✅ DEPLOYMENT SUCCESSFUL: Service is healthy."
-              rm -rf "${STANDALONE_DIR}_backup"
+              rm -rf .next/standalone_backup
               pm2 save
             else
               echo "❌ CRITICAL: Health check failed! Initiating rollback..."
-              if [ -d "${STANDALONE_DIR}_backup" ]; then
-                rm -rf "$STANDALONE_DIR"
-                mv "${STANDALONE_DIR}_backup" "$STANDALONE_DIR"
-                pm2 restart ecosystem.config.js
-                echo "⚠️ Rollback executed. Restored previous deployment."
-              else
-                echo "❌ CRITICAL: No backup available to restore!"
+              if [ -d ".next/standalone_backup" ]; then
+                rm -rf .next/standalone
+                mv .next/standalone_backup .next/standalone
+                pm2 restart medical-doc-generator
+                echo "⚠️ Rollback executed."
               fi
-              echo "=== Dumping PM2 Logs ==="
-              pm2 logs --lines 50 --nostream || true
+              echo "=== PM2 Error Logs ==="
+              pm2 logs medical-doc-generator --lines 50 --err --nostream || true
               exit 1
             fi
-
-            docker system prune -f 2>/dev/null || true
           EOF
