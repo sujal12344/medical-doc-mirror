@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     for (const template of templates) {
       try {
         console.log("[generate-md28] Processing template:", template.name);
-        const content = await fs.readFile(template.path);
+        const content = await fs.readFile(/*turbopackIgnore: true*/ template.path);
         console.log("[generate-md28] File loaded, size:", content.length);
         
         // Copy templates as-is without processing
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const zipBuffer = await zipArchive.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
     console.log("[generate-md28] ZIP buffer size:", zipBuffer.length);
 
-    return new NextResponse(zipBuffer, {
+    return new NextResponse(zipBuffer as unknown as BodyInit, {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="MD-28_Documents.zip"`,

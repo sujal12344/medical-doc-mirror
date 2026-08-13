@@ -35,7 +35,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     for (const template of templates) {
       try {
-        const content = await fs.readFile(template.path);
+        const content = await fs.readFile(/*turbopackIgnore: true*/ template.path);
         const pizZip = new PizZip(content);
         const docxtemplater = new Docxtemplater(pizZip, {
           paragraphLoop: true,
