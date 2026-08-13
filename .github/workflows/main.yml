@@ -145,7 +145,7 @@ jobs:
             fi
 
             echo "=== Installing Production Dependencies ==="
-            npm ci --omit=dev
+            npm ci --omit=dev --engine-strict=false
 
             echo "=== Populating Standalone Assets ==="
             mkdir -p .next/standalone/public
@@ -160,11 +160,9 @@ jobs:
             fi
 
             echo "=== Reloading Application via PM2 ==="
-            if pm2 describe medical-doc-generator > /dev/null 2>&1; then
-              pm2 reload medical-doc-generator --update-env
-            else
-              pm2 start ecosystem.config.js || pm2 start .next/standalone/server.js --name "medical-doc-generator"
-            fi
+            # Delete old non-standalone PM2 process if it exists, then start standalone server
+            pm2 delete medical-doc-generator 2>/dev/null || true
+            pm2 start .next/standalone/server.js --name "medical-doc-generator" --update-env
 
             echo "=== Executing Health Check ==="
             sleep 5
