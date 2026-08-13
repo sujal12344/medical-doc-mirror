@@ -112,10 +112,12 @@ jobs:
       - name: Sync Workspace Files to EC2 Server
         run: |
           rsync -avz --delete \
+            --rsync-path="/usr/bin/rsync" \
             --exclude='.git' \
             --exclude='node_modules' \
             --exclude='.env' \
             --exclude='google-bucket.json' \
+            -e "ssh -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=3" \
             ./ ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }}:/home/${{ secrets.REMOTE_USER }}/medical-doc-generator/
 
       - name: Execute Server Deployment & Health Check
