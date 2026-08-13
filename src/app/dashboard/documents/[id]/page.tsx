@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { RegulatoryFieldEditor } from "@/components/documents/RegulatoryFieldEditor";
+import DynamicUploadButton from "@/components/documents/DynamicUploadButton";
 import { FRAMEWORKS } from "@/lib/frameworks";
 import type { FrameworkSection } from "@/lib/frameworks";
 import { countDocumentFieldCompletion, normalizeDocumentSections } from "@/lib/normalizeDocument";
@@ -131,6 +132,7 @@ export default function DocumentEditorPage() {
   const [shippingMsg, setShippingMsg] = useState("");
   const [dmfGenerating, setDmfGenerating] = useState(false);
   const [pmfGenerating, setPmfGenerating] = useState(false);
+  const [documentGenerating, setDocumentGenerating] = useState(false);
 
   useEffect(() => {
     fetch(`/api/documents/${id}`).then((r) => r.json()).then((data) => {
@@ -281,9 +283,14 @@ export default function DocumentEditorPage() {
   const runAutofill = useCallback(async (opts?: { isInitial?: boolean }) => {
     if (!doc || autofilling) return;
     setAutofilling(true);
+    const frameworkName = doc.frameworkId === "IN_PMF" 
+      ? "PMF" 
+      : doc.frameworkId === "IN_MD_1" 
+      ? "MD-1"
+      : "DMF";
     const startMsg = opts?.isInitial
       ? "Opening document — auto-filling from your registered product and uploaded IFU…"
-      : `Indexing product knowledge to Pinecone, then running ${doc.frameworkId === "IN_PMF" ? "PMF" : "DMF"} auto-fill…`;
+      : `Indexing product knowledge to Pinecone, then running ${frameworkName} auto-fill…`;
     setChatMessages((prev) => [...prev, { role: "bot", text: startMsg }]);
     try {
       if (!opts?.isInitial && doc.productId) {
@@ -306,7 +313,11 @@ export default function DocumentEditorPage() {
         }
       }
 
-      const endpoint = doc.frameworkId === "IN_PMF" ? "pmf-autofill" : "autofill";
+      const endpoint = doc.frameworkId === "IN_PMF" 
+        ? "pmf-autofill" 
+        : doc.frameworkId === "IN_MD_1" 
+        ? "md1-autofill"
+        : "autofill";
       const r = await fetch(`/api/documents/${id}/${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -341,6 +352,12 @@ export default function DocumentEditorPage() {
 
   useEffect(() => {
     if (!doc || !framework || initialAutofillStarted.current) return;
+
+    // Skip initial autofill for MD-1 - users must upload documents first
+    if (doc.frameworkId === "IN_MD_1") {
+      setInitialAutofillDone(true);
+      return;
+    }
 
     const totalFields = framework.sections.reduce((n, s) => n + s.fields.length, 0);
     const { filled, pct } = countDocumentFieldCompletion(doc.sections, totalFields);
@@ -703,6 +720,8 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
           <p className="text-sm font-medium text-foreground">Loading document…</p>
           <p className="text-xs text-muted mt-1">Preparing regulatory sections</p>
         </div>
+
+        <p onClick={()=>{router.push('/')}}>go to home</p>
       </div>
     );
   }
@@ -740,63 +759,54 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
           >
             {saving ? "Saving…" : "Save Document"}
           </button>
-          {doc.frameworkId === "IN_PMF" ? (
-            <button
-              onClick={async () => {
-                if (!doc || pmfGenerating) return;
-                setPmfGenerating(true);
-                try {
-                  const r = await fetch(`/api/documents/${id}/generate-pmf`, { method: "POST" });
-                  if (!r.ok) { const d = await r.json(); alert(d.error || "Failed to generate PMF"); return; }
-                  const blob = await r.blob();
-                  const contentDisposition = r.headers.get("Content-Disposition") || "";
-                  const match = contentDisposition.match(/filename="?([^"]+)"?/);
-                  const filename = match ? match[1] : `PMF_${id}.docx`;
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url; a.download = filename; a.click();
-                  URL.revokeObjectURL(url);
-                } catch { alert("Network error generating PMF."); }
-                finally { setPmfGenerating(false); }
-              }}
-              disabled={pmfGenerating || !doc}
-              className="w-full text-xs px-3 py-2 bg-[var(--status-success)] hover:opacity-90 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
-            >
-              {pmfGenerating ? (
-                <><span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating…</>
-              ) : (
-                <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg> Generate PMF (.docx)</>
-              )}
-            </button>
-          ) : (
-            <button
-              onClick={async () => {
-                if (!doc || dmfGenerating) return;
-                setDmfGenerating(true);
-                try {
-                  const r = await fetch(`/api/documents/${id}/generate-dmf`, { method: "POST" });
-                  if (!r.ok) { const d = await r.json(); alert(d.error || "Failed to generate DMF"); return; }
-                  const blob = await r.blob();
-                  const contentDisposition = r.headers.get("Content-Disposition") || "";
-                  const match = contentDisposition.match(/filename="?([^"]+)"?/);
-                  const filename = match ? match[1] : `DMF_${id}.docx`;
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url; a.download = filename; a.click();
-                  URL.revokeObjectURL(url);
-                } catch { alert("Network error generating DMF."); }
-                finally { setDmfGenerating(false); }
-              }}
-              disabled={dmfGenerating || !doc}
-              className="w-full text-xs px-3 py-2 bg-[var(--status-success)] hover:opacity-90 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
-            >
-              {dmfGenerating ? (
-                <><span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> Generating…</>
-              ) : (
-                <><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" /></svg> Generate DMF (.docx)</>
-              )}
-            </button>
-          )}
+          <button
+            onClick={async () => {
+              if (!doc || documentGenerating) return;
+              setDocumentGenerating(true);
+              try {
+                const r = await fetch(`/api/documents/${id}/generate`, { method: "POST" });
+                if (!r.ok) { 
+                  const d = await r.json(); 
+                  alert(d.error || "Failed to generate document"); 
+                  return; 
+                }
+                const blob = await r.blob();
+                const contentDisposition = r.headers.get("Content-Disposition") || "";
+                const match = contentDisposition.match(/filename="?([^"]+)"?/);
+                const filename = match ? match[1] : `Document_${id}.${doc.frameworkId === "IN_MD_1" ? "zip" : "docx"}`;
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; 
+                a.download = filename; 
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch { 
+                alert("Network error generating document."); 
+              } finally { 
+                setDocumentGenerating(false); 
+              }
+            }}
+            disabled={documentGenerating || !doc}
+            className="w-full text-xs px-3 py-2 bg-[var(--status-success)] hover:opacity-90 text-white rounded-lg font-semibold transition disabled:opacity-50 shadow-sm flex items-center justify-center gap-1.5"
+          >
+            {documentGenerating ? (
+              <>
+                <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> 
+                Generating…
+              </>
+            ) : (
+              <>
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                </svg> 
+                {doc.frameworkId === "IN_MD_1" 
+                  ? "Download MD-1 Package (.zip)" 
+                  : doc.frameworkId === "IN_PMF"
+                  ? "Generate PMF (.docx)"
+                  : "Generate DMF (.docx)"}
+              </>
+            )}
+          </button>
         </div>
       </div>
 
@@ -907,25 +917,44 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
               )}
             </div>
 
+            
+
             <div className="mb-6 rounded-xl border border-border bg-surface2/60 p-4">
-              <div className="flex flex-wrap items-end justify-between gap-3">
-                <div>
+              <div className="flex items-start justify-between gap-4 mb-3">
+                <div className="flex-1 min-w-0">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted mb-1">
                     {framework.documentType}
                   </p>
                   <h2 className="text-xl font-bold text-foreground">{currentSection.title}</h2>
                   {currentSection.description ? (
-                    <p className="text-sm text-muted mt-1 max-w-2xl">{currentSection.description}</p>
+                    <p className="text-sm text-muted mt-1">{currentSection.description}</p>
                   ) : null}
                 </div>
-                <div className="text-right">
-                  <p className="text-2xl font-bold text-foreground">{sectionPct}%</p>
-                  <p className="text-[10px] text-muted">
-                    {sectionFilled} of {currentSection.fields.length} fields
-                  </p>
+                <div className="flex flex-col items-end gap-2 shrink-0">
+                  <div className="text-right">
+                    <p className="text-2xl font-bold text-foreground">{sectionPct}%</p>
+                    <p className="text-[10px] text-muted whitespace-nowrap">
+                      {sectionFilled} of {currentSection.fields.length} fields
+                    </p>
+                  </div>
+                  {doc.frameworkId && currentSection.from && (
+                    <DynamicUploadButton
+                      frameworkId={doc.frameworkId}
+                      sectionId={currentSection.id}
+                      documentId={doc._id}
+                      generatedDocName={currentSection.title}
+                      uploadDocName={currentSection.from}
+                      onSuccess={() => {
+                        refetchDocument();
+                      }}
+                      onError={(error) => {
+                        console.error(error);
+                      }}
+                    />
+                  )}
                 </div>
               </div>
-              <div className="mt-3 h-1.5 rounded-full bg-surface overflow-hidden">
+              <div className="h-1.5 rounded-full bg-surface overflow-hidden">
                 <div
                   className="h-full rounded-full bg-accent transition-all duration-300"
                   style={{ width: `${sectionPct}%` }}

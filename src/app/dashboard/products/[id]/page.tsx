@@ -9,6 +9,7 @@ import { FRAMEWORKS, REGION_GROUPS, filterFrameworksByDeviceType } from "@/lib/f
 import type { FrameworkDeviceType } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
 import CreateTestLicenseButton from "./CreateTestLicenseButton";
+import CreateMD1Button from "./CreateMD1Button";
 import ProductDetailsButton from "../../../../components/ProductDetailsButton";
 
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -137,10 +138,16 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                     })}
 
                     {code === "IN" && (
-                      <CreateTestLicenseButton
-                        productId={String(product._id)}
-                        productName={product.name}
-                      />
+                      <>
+                        <CreateTestLicenseButton
+                          productId={String(product._id)}
+                          productName={product.name}
+                        />
+                        <CreateMD1Button
+                          productId={String(product._id)}
+                          productName={product.name}
+                        />
+                      </>
                     )}
                     
                   </div>

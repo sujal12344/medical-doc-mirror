@@ -5,7 +5,11 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
     id: "IN_DMF", countryCode: "IN", countryName: "India", flag: "🇮🇳", authority: "CDSCO", documentType: "Device Master File (IVD)", deviceType: "ivd",
     sections: [
       {
-        id: "s1", title: "1.0 Executive Summary", description: "Product overview, regulatory status, marketing history", fields: [
+        id: "s1", 
+        title: "1.0 Executive Summary", 
+        description: "Product overview, regulatory status, marketing history",
+        from: "Product Brochure/IFU/Regulatory Approvals",
+        fields: [
           { id: "1.1a", label: "Product Name", hint: "Full commercial name of the IVD medical device" },
           { id: "1.1a1", label: "Brand", hint: "Brand name of the device" },
           { id: "1.1a2", label: "Model", hint: "Model name or number" },
@@ -25,7 +29,11 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s2", title: "2.0 Description and specification", description: "Technical details, components, specimen requirements", fields: [
+        id: "s2", 
+        title: "2.0 Description and specification", 
+        description: "Technical details, components, specimen requirements",
+        from: "IFU/Technical Specifications/Component List",
+        fields: [
           { id: "2.0", label: "Intended Use / Indications for Use", hint: "Full intended use and claims statement (CDSCO DMF §2; from Phase 1 registration)", textarea: true },
           { id: "2.1a", label: "What is Detected", hint: "Specific analyte, pathogen, antibody detected" },
           { id: "2.1b", label: "Device Function", hint: "Screening / Diagnostics / Monitoring" },
@@ -52,21 +60,33 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
       {
-        id: "s3", title: "3.0 Essential Principles Checklist", description: "Safety and performance compliance", fields: [
+        id: "s3", 
+        title: "3.0 Essential Principles Checklist", 
+        description: "Safety and performance compliance",
+        from: "Essential Principles Checklist/Compliance Document",
+        fields: [
           { id: "3", label: "Essential Principles Checklist", hint: "Complete the Essential Principles (EP) checklist indicating relevance, conformity methods, and evidence reference locations.", textarea: true }
         ]
       },
       {
-        id: "s4", title: "4.0 Risk Analysis and Control Summary.", description: "Risk management per ISO 14971", fields: [
+        id: "s4", 
+        title: "4.0 Risk Analysis and Control Summary.", 
+        description: "Risk management per ISO 14971",
+        from: "Risk Management Report/ISO 14971",
+        fields: [
           { id: "4.upload", label: "Risk Management Report", hint: "Upload IFU file of device here to generate Risk Management Report table", textarea: true, allowUpload: true },
           { id: "4.summary", label: "Risk Management Summary", hint: "Narrative summary and explanation of the risk management activities and conclusions", textarea: true }
         ]
       },
       {
-        id: "s5", title: "5.0 Design and Manufacturing Information", description: "Design, process, and manufacturing site information", fields: [
+        id: "s5", 
+        title: "5.0 Design and Manufacturing Information", 
+        description: "Design, process, and manufacturing site information",
+        from: "Manufacturing License/Site Certificate/Process Flow",
+        fields: [
           { id: "5.0", label: "Upload Manufacturing Details", hint: "Upload documentation to auto-generate manufacturing sections below", textarea: false, allowUpload: false },
-          { id: "5.1", label: "5.1 Device Design", hint: "Description with Kit contents table", textarea: true },
-          { id: "5.2", label: "5.2 Manufacturing Process", hint: "Description with a flow sheet diagram", textarea: true },
+          { id: "4.1", label: "4.1 Device Design", hint: "Description with Kit contents table", textarea: true },
+          { id: "4.2", label: "4.2 Manufacturing Process", hint: "Description with a flow sheet diagram", textarea: true },
           { id: "5.3", label: "QC Flow Chart", hint: "QC flow chart", textarea: true },
           { id: "5.4", label: "5.3 Manufacturing Site", hint: "Manufacturing Site", textarea: true }
         ]
@@ -323,8 +343,8 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
       },
       {
         id: "s5", title: "Design & Manufacturing", description: "Design history, manufacturing process, and site information", fields: [
-          { id: "5.1", label: "Design Description", hint: "Detailed device design including engineering drawings and specifications", textarea: true },
-          { id: "5.2", label: "Design History", hint: "Design and development planning, inputs, outputs, reviews, and transfers", textarea: true },
+          { id: "4.1", label: "Design Description", hint: "Detailed device design including engineering drawings and specifications", textarea: true },
+          { id: "4.2", label: "Design History", hint: "Design and development planning, inputs, outputs, reviews, and transfers", textarea: true },
           { id: "5.3", label: "Manufacturing Process", hint: "Complete process flow: raw materials, assembly, testing, packaging, sterilization", textarea: true },
           { id: "5.4", label: "Manufacturing Sites", hint: "Name, address, and scope of each manufacturing and sterilization site", textarea: true },
           { id: "5.5", label: "Special Processes", hint: "Processes that cannot be fully verified by inspection (welding, sealing, sterilization)", textarea: true },
@@ -459,5 +479,203 @@ export const IN_FRAMEWORKS: RegulatoryFramework[] = [
         ]
       },
     ],
+  },
+  {
+    id: "IN_MD_1",
+    countryCode: "IN",
+    countryName: "India",
+    flag: "🇮🇳",
+    authority: "CDSCO",
+    documentType: "MD-1 — Notified Body Registration",
+    deviceType: "medical-device",
+    sections: [
+  {
+    id: "s1",
+    title: "1.0 Applicant & Constitution Details",
+    from: "Certificate Of Incorporation",
+    description: "Applicant identity, legal constitution, registered office and contact details",
+    fields: [
+      {
+        id: "applicantName",
+        label: "Name of Applicant",
+        hint: "Exact registered legal name of the proposed Notified Body"
+      },
+      {
+        id: "bodyConstitution",
+        label: "Nature and Constitution",
+        hint: "Company / LLP / Society / Trust / Partnership / Other"
+      },
+      {
+        id: "incorporationOrRegistrationNumber",
+        label: "Incorporation / Registration Number",
+        hint: "Number mentioned in the Certificate of Incorporation or registration document"
+      },
+      {
+        id: "incorporationOrRegistrationDate",
+        label: "Date of Incorporation / Registration",
+        hint: "Date mentioned in the Certificate of Incorporation or registration document"
+      },
+      {
+        id: "registeringAuthority",
+        label: "Registering Authority / Jurisdiction",
+        hint: "Authority with which the organisation is incorporated or registered"
+      },
+      {
+        id: "registeredOfficeAddress",
+        label: "Registered Office Address",
+        hint: "Complete registered office address including PIN code",
+        textarea: true
+      },
+      {
+        id: "mobileNumber",
+        label: "Mobile Number",
+        hint: "Official contact mobile number"
+      },
+      {
+        id: "emailAddress",
+        label: "Email Address",
+        hint: "Official email address of the applicant organisation"
+      }
+    ]
+  },
+
+  {
+    id: "s2",
+    title: "2.0 Accreditation & Standards",
+    from: "Accreditation Certificate",
+    description: "Accreditation certificate details, scope and applicable standards",
+    fields: [
+      {
+        id: "accreditationBody",
+        label: "National Accreditation Body",
+        hint: "Name of the National Accreditation Body that issued the certificate"
+      },
+      {
+        id: "accreditationCertificateNumber",
+        label: "Accreditation Certificate Number",
+        hint: "Exact certificate or accreditation number"
+      },
+      {
+        id: "accreditationIssueDate",
+        label: "Certificate Issue Date",
+        hint: "Issue date mentioned on the accreditation certificate"
+      },
+      {
+        id: "accreditationExpiryDate",
+        label: "Certificate Expiry Date",
+        hint: "Expiry or validity end date mentioned on the certificate"
+      },
+      {
+        id: "accreditationScopeSummary",
+        label: "Accreditation Scope",
+        hint: "Complete scope relevant to medical-device manufacturing-site audits",
+        textarea: true
+      },
+      {
+        id: "applicableAccreditationStandards",
+        label: "Accredited Standards",
+        hint: "Applicable BIS / ISO / IEC or other standards covered by the accreditation",
+        textarea: true
+      }
+    ]
+  },
+
+  {
+    id: "s3",
+    title: "3.0 Fee Payment Details",
+    from: "Fee Receipt or Challan",
+    description: "Government fee details extracted from challan or fee receipt",
+    fields: [
+      {
+        id: "feePaidDate",
+        label: "Date of Fee Payment",
+        hint: "Payment date mentioned on the challan or fee receipt"
+      },
+      {
+        id: "feeAmount",
+        label: "Fee Amount",
+        hint: "Total government fee paid in INR"
+      },
+      {
+        id: "feeReceiptOrChallanNumber",
+        label: "Receipt / Challan Number",
+        hint: "Receipt number or challan reference number"
+      },
+      {
+        id: "feeTransactionId",
+        label: "Transaction ID",
+        hint: "Online payment transaction ID, if available"
+      }
+    ]
+  },
+
+  {
+    id: "s4",
+    title: "4.0 Business Profile, Quality Manual, SOP & Personnel Documents",
+    from: "Company/Audit Records, Quality or QMS Documents, SOP Files/Register and Personnel/Outside Expert CVs",
+    description: "Details required to generate supporting documents 4.1.1 to 4.1.5",
+    fields: [
+    {
+      id: "organizationOverview",
+      label: "COMPANY BUSINESS PROFILE & OVERVIEW",
+      hint: "Brief history, legal identity, organisation structure and principal services",
+      textarea: true
+    },
+    {
+      id: "medicalDeviceAuditExperience",
+      label: "Type Medical-Device Audit Capability and Experience",
+      hint: "Audit experience, auditors, technical resources, completed assignments and available infrastructure",
+      textarea: true
+    },
+    {
+      id: "qualityManual",
+      label: "Type Quality Manual Summary",
+      hint: "Summary of key quality policies, objectives, scope and management review procedures",
+      textarea: true
+    },
+    {
+      id: "sops",
+      label: "Type SOP Master List",
+      hint: "One row per line: SOP Number | SOP Title | Revision | Effective Date | Status",
+      textarea: true
+    },
+    {
+      id: "personnel",
+      label: "Type Technical Personnel and Outside Experts",
+      hint: "One row per line: Name | Employee/Outside Expert | Role | Qualification | Experience | Responsibilities",
+      textarea: true
+    }
+
+    ]
+  },
+
+  // {
+  //   id: "s5",
+  //   title: "5.0 Authorisation & Independence Undertaking",
+  //   description: "Common execution details for document signing and the fixed 4.2.1 Independence Undertaking",
+  //   fields: [
+  //     {
+  //       id: "designatedPersonName",
+  //       label: "Authorised Signatory Name",
+  //       hint: "Full name of the person authorised to sign on behalf of the applicant"
+  //     },
+  //     {
+  //       id: "designatedPersonDesignation",
+  //       label: "Authorised Signatory Designation",
+  //       hint: "Official designation of the authorised signatory"
+  //     },
+  //     {
+  //       id: "applicationPlace",
+  //       label: "Place",
+  //       hint: "Place at which the application and supporting documents are signed"
+  //     },
+  //     {
+  //       id: "applicationDate",
+  //       label: "Application Date",
+  //       hint: "Date used across the application and generated documents"
+  //     }
+  //   ]
+  // }
+],
   },
 ];

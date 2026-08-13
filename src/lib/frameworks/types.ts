@@ -14,6 +14,7 @@ export type FrameworkSection = {
   id: string;
   title: string;
   description: string;
+  from?: string; // Documents to upload (e.g., "IOC/AOA/MOA", "Accreditation Certificate")
   fields: FrameworkField[];
 };
 
