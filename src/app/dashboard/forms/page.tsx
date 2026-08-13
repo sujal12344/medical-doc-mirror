@@ -67,8 +67,16 @@ const FORMS: FormSpec[] = [
     frameworkId: "IN_MD_26",
     title: "MD-26",
     name: "MD-26 Form",
-    description: "Grant of permission to sale of an in vitro diagnostic medical device",
+    description: "Grant of permission to sale of an in vitro diagnostic medical device(Manufacturing License)",
     path: "/dashboard/forms/md-26",
+  },
+  {
+    id: "md-28",
+    frameworkId: "IN_MD_28",
+    title: "MD-28",
+    name: "MD-28 Form",
+    description: "Grant of permission for sale of an in vitro diagnostic medical device(Import License)",
+    path: "/dashboard/forms/md-28",
   },
   {
     id: "test-license",
