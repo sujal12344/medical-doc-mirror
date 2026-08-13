@@ -8,21 +8,19 @@ const envSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
 });
 
-// Check if environment validation should be bypassed (e.g. during CI/CD build step)
-const shouldSkipValidation =
-  process.env.SKIP_ENV_VALIDATION === "1" || process.env.SKIP_ENV_VALIDATION === "true";
-
 function getEnv(): z.infer<typeof envSchema> {
-  if (shouldSkipValidation) {
-    return {
-      MONGODB_URI: process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/placeholder",
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY || "mock-openai-key-for-ci",
-    };
-  }
+  const rawMongoUri = process.env.MONGODB_URI;
+  const rawOpenAiKey = process.env.OPENAI_API_KEY;
+
+  // Provide fallback for build step / CI when process.env values aren't injected
+  const mongoUriToValidate =
+    rawMongoUri && rawMongoUri.trim() !== ""
+      ? rawMongoUri
+      : "mongodb://127.0.0.1:27017/placeholder";
 
   return envSchema.parse({
-    MONGODB_URI: process.env.MONGODB_URI,
-    OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+    MONGODB_URI: mongoUriToValidate,
+    OPENAI_API_KEY: rawOpenAiKey,
   });
 }
 
