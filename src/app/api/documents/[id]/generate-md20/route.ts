@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { isValidObjectId } from "mongoose";
+import JSZip from "jszip";
 import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import path from "path";
@@ -16,51 +17,40 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const { id } = await params;
     if (!isValidObjectId(id)) return NextResponse.json({ error: "Invalid document id" }, { status: 400 });
 
-    const body = await req.json().catch(() => ({}));
-    const { docType } = body;
-    
-    if (!["form", "declaration", "prescription"].includes(docType)) {
-      return NextResponse.json({ error: "Invalid document type" }, { status: 400 });
+    const templates = [
+      { name: "MD-20.docx", path: path.join(process.cwd(), "format", "md-20", "MD-20.docx") },
+      { name: "MD-20_Supporting_01_Bona_Fide_Personal_Use_Declaration.docx", path: path.join(process.cwd(), "format", "md-20", "MD-20_Supporting_01_Bona_Fide_Personal_Use_Declaration.docx") },
+      { name: "MD-20_Supporting_02_Registered_Medical_Practitioner_Prescription.docx", path: path.join(process.cwd(), "format", "md-20", "MD-20_Supporting_02_Registered_Medical_Practitioner_Prescription.docx") }
+    ];
+
+    const zipArchive = new JSZip();
+
+    for (const template of templates) {
+      try {
+        const content = await fs.readFile(template.path);
+        const pizZip = new PizZip(content);
+        const docxtemplater = new Docxtemplater(pizZip, {
+          paragraphLoop: true,
+          linebreaks: true,
+        });
+
+        // Pass an empty object for now as requested (no placeholders)
+        docxtemplater.render({});
+        const buf = docxtemplater.getZip().generate({ type: "nodebuffer", compression: "DEFLATE" });
+        
+        zipArchive.file(template.name, buf);
+      } catch (err) {
+        console.error("[generate-md20] Template not found at", template.path);
+        // Continue if one is missing, to return whatever is available
+      }
     }
 
-    await connectToDatabase();
-    const doc = await RegulatoryDocument.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
-    if (!doc) return NextResponse.json({ error: "Document not found" }, { status: 404 });
+    const zipBuffer = await zipArchive.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
 
-    // Determine the template filename
-    let templateFilename = "";
-    if (docType === "form") {
-      templateFilename = "MD-20.docx";
-    } else if (docType === "declaration") {
-      templateFilename = "MD-20_Supporting_01_Bona_Fide_Personal_Use_Declaration.docx";
-    } else if (docType === "prescription") {
-      templateFilename = "MD-20_Supporting_02_Registered_Medical_Practitioner_Prescription.docx";
-    }
-
-    const templatePath = path.join(process.cwd(), "format", "md-20", templateFilename);
-    
-    let content: Buffer;
-    try {
-      content = await fs.readFile(templatePath);
-    } catch (err) {
-      console.error("[generate-md20] Template not found at", templatePath);
-      return NextResponse.json({ error: "Template file not found on server" }, { status: 500 });
-    }
-
-    const zip = new PizZip(content);
-    const docxtemplater = new Docxtemplater(zip, {
-      paragraphLoop: true,
-      linebreaks: true,
-    });
-
-    // Pass an empty object for now as requested (no placeholders)
-    docxtemplater.render({});
-    const buf = docxtemplater.getZip().generate({ type: "nodebuffer", compression: "DEFLATE" });
-
-    return new NextResponse(new Uint8Array(buf), {
+    return new NextResponse(zipBuffer as unknown as BodyInit, {
       headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-        "Content-Disposition": `attachment; filename="MD-20_${docType}.docx"`,
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="MD-20_Documents.zip"`,
       },
     });
   } catch (error) {

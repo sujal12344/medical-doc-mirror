@@ -7,6 +7,7 @@ import { signOut } from "next-auth/react";
 const navItems = [
   { href: "/dashboard", label: "Home", icon: "home" },
   { href: "/dashboard/products", label: "Products", icon: "box" },
+  { href: "/dashboard/forms", label: "Forms", icon: "file" },
   { href: "/dashboard/compliance", label: "Compliance Guide", icon: "globe" },
   { href: "/dashboard/licenses", label: "License Vault", icon: "shield" },
   { href: "/dashboard/alerts", label: "Alerts", icon: "bell" },
@@ -14,6 +15,7 @@ const navItems = [
 ];
 
 const icons: Record<string, string> = {
+  file: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
   home: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-4 0a1 1 0 01-1-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 01-1 1",
   box: "M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4",
   shield: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",

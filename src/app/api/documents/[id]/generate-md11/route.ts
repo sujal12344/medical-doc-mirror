@@ -6,7 +6,6 @@ import path from "path";
 import fs from "fs/promises";
 import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
-import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -21,25 +20,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const doc = await RegulatoryDocument.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
     if (!doc) return NextResponse.json({ error: "Document not found" }, { status: 404 });
 
-    const product = await Product.findById((doc as Record<string, unknown>).productId).lean();
-    if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
-
     const md11Fields = (doc as Record<string, any>).sections?.["md-11"]?.fields || {};
 
     // ── Build merged values ─────────────────────────────────────────────
     const mergedValues = {
-      manufacturerName: (product as Record<string, any>).manufacturer || "",
-      productName: (product as Record<string, any>).name || "",
-      intendedUse: (product as Record<string, any>).intendedUse || "",
-      productClass: (product as Record<string, any>).deviceClass || "",
+      manufacturerName: md11Fields.manufacturerName || "",
+      productName: md11Fields.productName || "",
+      intendedUse: md11Fields.intendedUse || "",
+      productClass: md11Fields.productClass || "",
       
-      manufacturerAddress: md11Fields.manufacturerAddress || (product as Record<string, any>).manufacturerAddress || "",
+      manufacturerAddress: md11Fields.manufacturerAddress || "",
       applicationNumber: md11Fields.applicationNumber || "",
       applicationDate: md11Fields.applicationDate || "",
       videNumber: md11Fields.videNumber || "",
       videDate: md11Fields.videDate || "",
       inspectionDate: md11Fields.inspectionDate || "",
-      shelfLife: md11Fields.shelfLife || (product as Record<string, any>).shelfLife || "",
+      shelfLife: md11Fields.shelfLife || "",
     };
 
     console.log("[generate-md11] Rendering template with values:", mergedValues);

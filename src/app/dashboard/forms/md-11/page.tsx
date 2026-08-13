@@ -1,7 +1,9 @@
 "use client";
 
-import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { FileText } from "lucide-react";
 
 type MD11Doc = {
   _id: string;
@@ -18,14 +20,11 @@ type ProductDetails = {
 };
 
 export default function MD11Page() {
-  const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const productId = params.id as string;
   const docId = searchParams.get("docId");
 
   const [doc, setDoc] = useState<MD11Doc | null>(null);
-  const [product, setProduct] = useState<ProductDetails | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
@@ -35,6 +34,10 @@ export default function MD11Page() {
 
   // Form Fields
   const [formData, setFormData] = useState({
+    manufacturerName: "",
+    productName: "",
+    intendedUse: "",
+    productClass: "",
     manufacturerAddress: "",
     shelfLife: "",
     applicationNumber: "",
@@ -44,29 +47,24 @@ export default function MD11Page() {
     inspectionDate: "",
   });
 
-  // Load document & product from DB
+  // Load document from DB
   useEffect(() => {
     if (!docId) { setLoading(false); return; }
 
-    Promise.all([
-      fetch(`/api/documents/${docId}`).then((r) => r.json()),
-      fetch(`/api/products/${productId}`).then((r) => r.json())
-    ])
-      .then(([docData, prodData]) => {
+    fetch(`/api/documents/${docId}`)
+      .then((r) => r.json())
+      .then((docData) => {
         setDoc(docData.document || null);
-        setProduct(prodData.product || null);
 
-        // Pre-fill form from product data first, then override with any saved section fields
+        // Pre-fill form from saved section fields if they exist
         const savedFields = docData.document?.sections?.["md-11"]?.fields || {};
         setFormData((prev) => ({ 
           ...prev, 
-          manufacturerAddress: prodData.product?.manufacturerAddress || prev.manufacturerAddress,
-          shelfLife: prodData.product?.shelfLife || prev.shelfLife,
           ...savedFields 
         }));
       })
       .finally(() => setLoading(false));
-  }, [docId, productId]);
+  }, [docId]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -128,7 +126,7 @@ export default function MD11Page() {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${product?.name || 'product'}_MD-11_Inspection_Book.docx`;
+      a.download = `${formData?.productName || 'product'}_MD-11_Inspection_Book.docx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -149,7 +147,7 @@ export default function MD11Page() {
     return (
       <div className="p-6 max-w-4xl mx-auto">
         <p className="text-muted text-sm">No document ID found. Go back and click MD-11 Form again.</p>
-        <button onClick={() => router.back()} className="mt-4 text-sm text-[var(--ui-purple)] hover:underline">&larr; Back</button>
+        <button onClick={() => router.back()} className="mt-4 text-sm text-[var(--accent)] hover:underline">&larr; Back</button>
       </div>
     );
   }
@@ -167,9 +165,9 @@ export default function MD11Page() {
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <button onClick={() => router.back()} className="text-sm text-muted hover:text-foreground mb-4 inline-block">
-            &larr; Back to Product
-          </button>
+          <Link href="/dashboard/forms" className="text-sm text-muted hover:text-foreground mb-4 inline-block">
+            &larr; Back to Forms
+          </Link>
           <h1 className="text-2xl font-bold text-foreground">MD-11 Application Details</h1>
           <p className="text-muted text-sm mt-1">{doc?.title}</p>
         </div>
@@ -186,7 +184,7 @@ export default function MD11Page() {
             disabled={saving || generating}
             className="text-sm px-6 py-2 bg-foreground text-background hover:opacity-80 rounded-lg font-semibold transition disabled:opacity-50"
           >
-            {generating ? "Generating..." : "Generate Document"}
+            {generating ? "Generating..." : "Generate ZIP Archive"}
           </button>
         </div>
       </div>
@@ -195,11 +193,30 @@ export default function MD11Page() {
         <div className={`mb-6 flex items-center gap-2 text-xs font-medium px-4 py-3 rounded-lg ${
           statusType === "success" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" :
           statusType === "error"   ? "bg-[var(--status-error-bg)] text-[var(--status-error)]" :
-                                     "bg-[var(--ui-purple-bg)] text-[var(--ui-purple)]"
+                                     "bg-[var(--accent)]/10 text-[var(--accent)]"
         }`}>
           {statusMsg}
         </div>
       )}
+
+      {/* Included Documents */}
+      <div className="bg-surface border border-border rounded-xl p-6 mb-6">
+        <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">Included Documents</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {[
+            "MD-11_Inspection_Book.docx",
+          ].map((filename, i) => (
+            <div key={i} className="flex items-center gap-3 p-3 bg-surface2 border border-border rounded-xl">
+              <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-medium text-foreground truncate" title={filename}>
+                {filename}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Product & Manufacturer Details (Auto-filled from Product) */}
       <div className="bg-surface border border-border rounded-xl p-6 mb-6">
@@ -207,9 +224,14 @@ export default function MD11Page() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-xs font-semibold text-muted mb-1">Manufacturer Name</label>
-            <div className="p-2.5 bg-surface2 rounded-lg text-sm text-foreground border border-border">
-              {product?.manufacturer || "N/A"}
-            </div>
+            <input
+              type="text"
+              name="manufacturerName"
+              value={formData.manufacturerName}
+              onChange={handleInputChange}
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
+              placeholder="Enter Manufacturer Name"
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted mb-1">Manufacturer Address</label>
@@ -218,27 +240,45 @@ export default function MD11Page() {
               name="manufacturerAddress"
               value={formData.manufacturerAddress}
               onChange={handleInputChange}
-              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--ui-purple)] focus:ring-1 focus:ring-[var(--ui-purple)] outline-none transition"
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
               placeholder="e.g. 123 Industrial Park, City"
             />
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-muted mb-1">Product Name</label>
-            <div className="p-2.5 bg-surface2 rounded-lg text-sm text-foreground border border-border">
-              {product?.name || "N/A"}
-            </div>
+            <input
+              type="text"
+              name="productName"
+              value={formData.productName}
+              onChange={handleInputChange}
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
+              placeholder="Enter Product Name"
+            />
           </div>
           <div className="md:col-span-2">
             <label className="block text-xs font-semibold text-muted mb-1">Intended Use</label>
-            <div className="p-2.5 bg-surface2 rounded-lg text-sm text-foreground border border-border min-h-[80px]">
-              {product?.intendedUse || "N/A"}
-            </div>
+            <textarea
+              name="intendedUse"
+              value={formData.intendedUse}
+              onChange={(e: any) => handleInputChange(e)}
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition min-h-[80px]"
+              placeholder="Enter Intended Use"
+            />
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted mb-1">Product Class</label>
-            <div className="p-2.5 bg-surface2 rounded-lg text-sm text-foreground border border-border uppercase">
-              Class {product?.deviceClass || "N/A"}
-            </div>
+            <select
+              name="productClass"
+              value={formData.productClass}
+              onChange={(e: any) => handleInputChange(e)}
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
+            >
+              <option value="">Select Class</option>
+              <option value="A">Class A</option>
+              <option value="B">Class B</option>
+              <option value="C">Class C</option>
+              <option value="D">Class D</option>
+            </select>
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted mb-1">Shelf Life (Months)</label>
@@ -247,7 +287,7 @@ export default function MD11Page() {
               name="shelfLife"
               value={formData.shelfLife}
               onChange={handleInputChange}
-              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--ui-purple)] focus:ring-1 focus:ring-[var(--ui-purple)] outline-none transition"
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
               placeholder="e.g. 24 Months"
             />
           </div>
@@ -265,7 +305,7 @@ export default function MD11Page() {
               name="applicationNumber"
               value={formData.applicationNumber}
               onChange={handleInputChange}
-              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--ui-purple)] focus:ring-1 focus:ring-[var(--ui-purple)] outline-none transition"
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
               placeholder="Enter Application Number"
             />
           </div>
@@ -276,7 +316,7 @@ export default function MD11Page() {
               name="applicationDate"
               value={formData.applicationDate}
               onChange={handleInputChange}
-              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--ui-purple)] focus:ring-1 focus:ring-[var(--ui-purple)] outline-none transition"
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
             />
           </div>
           <div>
@@ -286,7 +326,7 @@ export default function MD11Page() {
               name="videNumber"
               value={formData.videNumber}
               onChange={handleInputChange}
-              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--ui-purple)] focus:ring-1 focus:ring-[var(--ui-purple)] outline-none transition"
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
               placeholder="Enter Vide Number"
             />
           </div>
@@ -297,7 +337,7 @@ export default function MD11Page() {
               name="videDate"
               value={formData.videDate}
               onChange={handleInputChange}
-              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--ui-purple)] focus:ring-1 focus:ring-[var(--ui-purple)] outline-none transition"
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
             />
           </div>
           <div>
@@ -307,7 +347,7 @@ export default function MD11Page() {
               name="inspectionDate"
               value={formData.inspectionDate}
               onChange={handleInputChange}
-              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--ui-purple)] focus:ring-1 focus:ring-[var(--ui-purple)] outline-none transition"
+              className="w-full p-2.5 bg-background rounded-lg text-sm text-foreground border border-border focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] outline-none transition"
             />
           </div>
         </div>

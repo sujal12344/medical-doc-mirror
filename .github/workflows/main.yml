@@ -50,8 +50,7 @@ jobs:
           sleep 2
 
       - name: Build Turbo Monorepo (Incremental)
-        run: |
-          npx turbo build --cache-dir=".turbo"
+        run: npx --no-install turbo build --cache-dir=".turbo"
         env:
           MONGODB_URI: "mongodb://127.0.0.1:27017/placeholder"
           AGENT_MODEL: "mock-model"
@@ -61,6 +60,16 @@ jobs:
           REDIS_URL: "redis://127.0.0.1:63799"
           SKIP_ENV_VALIDATION: "1"
           NEXT_DISABLE_SOURCEMAPS: "1"
+
+      - name: Verify Standalone Output Build Exists
+        run: |
+          echo "=== Debug: Verifying Next.js Build Artifacts ==="
+          if [ ! -d "apps/portal/.next/standalone" ]; then
+            echo "❌ ERROR: 'apps/portal/.next/standalone' directory missing!"
+            echo "Ensure 'output: \"standalone\"' is set in apps/portal/next.config.js."
+            exit 1
+          fi
+          echo "✅ Next.js Standalone build directory verified."
 
       - name: Cleanup Ephemeral Redis
         if: always()
@@ -117,7 +126,7 @@ jobs:
       - name: Execute Server Deployment & Health Check
         run: |
           ssh ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }} "bash -s" << 'EOF'
-            set -e
+            set -euo pipefail
 
             # Environment setup
             export NVM_DIR="$HOME/.nvm"
@@ -126,10 +135,19 @@ jobs:
 
             cd ~/karyaos
 
+            echo "=== Diagnostic Check: Server Environment ==="
+            echo "Current User: $(whoami)"
+            echo "Working Dir: $(pwd)"
+            echo "Node Version: $(node -v)"
+            echo "NPM Version: $(npm -v)"
+
             echo "=== Creating Safety Backup of Current Standalone Deployment ==="
             if [ -d "apps/portal/.next/standalone" ]; then
               rm -rf apps/portal/.next/standalone_backup
               cp -r apps/portal/.next/standalone apps/portal/.next/standalone_backup
+              echo "Backup created successfully."
+            else
+              echo "No previous build found to back up. Proceeding with fresh deployment."
             fi
 
             echo "=== Installing Production Dependencies ==="
@@ -139,13 +157,18 @@ jobs:
             mkdir -p apps/portal/.next/standalone/apps/portal/public
             mkdir -p apps/portal/.next/standalone/apps/portal/.next/static
 
-            # Copy Environment definitions
+            # Copy Environment definitions if present
             cp packages/env/.env apps/portal/.next/standalone/ 2>/dev/null || true
             cp packages/env/.env apps/portal/.next/standalone/apps/portal/ 2>/dev/null || true
 
             # Copy static and public assets
-            cp -r apps/portal/public/. apps/portal/.next/standalone/apps/portal/public/ 2>/dev/null || true
-            cp -r apps/portal/.next/static/. apps/portal/.next/standalone/apps/portal/.next/static/ 2>/dev/null || true
+            if [ -d "apps/portal/public" ]; then
+              cp -r apps/portal/public/. apps/portal/.next/standalone/apps/portal/public/ 2>/dev/null || true
+            fi
+
+            if [ -d "apps/portal/.next/static" ]; then
+              cp -r apps/portal/.next/static/. apps/portal/.next/standalone/apps/portal/.next/static/ 2>/dev/null || true
+            fi
 
             if [ -d "client requirement" ]; then
               mkdir -p "apps/portal/.next/standalone/apps/portal/client requirement"
@@ -156,34 +179,34 @@ jobs:
             pm2 startOrReload ecosystem.config.js --update-env
 
             echo "=== Executing Health Check & Automatic Rollback Safeguard ==="
-            sleep 4
+            sleep 5
 
-            # Verify PM2 status AND perform an HTTP ping check
             HEALTH_PASSED=false
             if pm2 status | grep -q 'online'; then
-              # Attempt HTTP ping on local app port (Defaulting to 3000; update if using another port)
               if curl -s -f http://localhost:3000/ > /dev/null || curl -s -f http://localhost:3005/ > /dev/null; then
                 HEALTH_PASSED=true
               fi
             fi
 
             if [ "$HEALTH_PASSED" = true ]; then
-              echo "✅ DEPLOYMENT SUCCESSFUL: Service is healthy. Cleaning backup..."
+              echo "✅ DEPLOYMENT SUCCESSFUL: Service is healthy."
               rm -rf apps/portal/.next/standalone_backup
               pm2 save
             else
-              echo "❌ CRITICAL: Process crashed or failed health check! Triggering rollback..."
+              echo "❌ CRITICAL: Health check failed! Initiating rollback..."
               if [ -d "apps/portal/.next/standalone_backup" ]; then
                 rm -rf apps/portal/.next/standalone
                 mv apps/portal/.next/standalone_backup apps/portal/.next/standalone
                 pm2 restart ecosystem.config.js
-                echo "⚠️ Rollback successfully executed. Server restored to previous working build."
+                echo "⚠️ Rollback executed. Restored previous working deployment."
               else
-                echo "❌ CRITICAL: No backup available to roll back to!"
+                echo "❌ CRITICAL: No backup available to restore!"
               fi
+              echo "=== Dumping PM2 Logs for Debugging ==="
+              pm2 logs --lines 50 --nostream || true
               exit 1
             fi
 
-            # Clean dangling docker build layers to preserve disk space
+            # Clean unused docker layers to save disk space
             docker system prune -f 2>/dev/null || true
           EOF

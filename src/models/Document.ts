@@ -24,7 +24,7 @@ export type DocumentDocument = {
 
 const documentSchema = new Schema<DocumentDocument>(
   {
-    productId: { type: Schema.Types.ObjectId, ref: "Product", required: true, index: true },
+    productId: { type: Schema.Types.ObjectId, ref: "Product", index: true },
     userId: { type: Schema.Types.ObjectId, ref: "Company", required: true, index: true },
     countryCode: { type: String, required: true, maxlength: 10 },
     frameworkId: { type: String, required: true, maxlength: 50 },

@@ -8,11 +8,6 @@ import { RegulatoryDocument } from "@/models/Document";
 import { FRAMEWORKS, REGION_GROUPS, filterFrameworksByDeviceType } from "@/lib/frameworks";
 import type { FrameworkDeviceType } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
-import CreateTestLicenseButton from "./CreateTestLicenseButton";
-import CreateMD1Button from "./CreateMD1Button";
-import CreateMD11Button from "./CreateMD11Button";
-import CreateMD18Button from "./CreateMD18Button";
-import CreateMD20Button from "./CreateMD20Button";
 import ProductDetailsButton from "../../../../components/ProductDetailsButton";
 
 // Touched to trigger recompilation
@@ -139,31 +134,6 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
                         />
                       );
                     })}
-
-                    {code === "IN" && (
-                      <>
-                        <CreateTestLicenseButton
-                          productId={String(product._id)}
-                          productName={product.name}
-                        />
-                        <CreateMD1Button
-                          productId={String(product._id)}
-                          productName={product.name}
-                        />
-                        <CreateMD11Button
-                          productId={String(product._id)}
-                          productName={product.name}
-                        />
-                        <CreateMD18Button
-                          productId={String(product._id)}
-                          productName={product.name}
-                        />
-                        <CreateMD20Button
-                          productId={String(product._id)}
-                          productName={product.name}
-                        />
-                      </>
-                    )}
 
                   </div>
                 </div>

@@ -2,6 +2,7 @@
 
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { FileText, Download } from "lucide-react";
 
 type UploadedDoc = {
   fileName: string;
@@ -17,10 +18,8 @@ type TestLicenseDoc = {
 };
 
 export default function TestLicensePage() {
-  const params = useParams();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const productId = params.id as string;
   const docId = searchParams.get("docId");
 
   const [doc, setDoc] = useState<TestLicenseDoc | null>(null);
@@ -150,7 +149,7 @@ export default function TestLicensePage() {
     return (
       <div className="p-6 max-w-4xl mx-auto">
         <p className="text-muted text-sm">No document ID found. Go back and click Test License again.</p>
-        <button onClick={() => router.back()} className="mt-4 text-sm text-[var(--ui-purple)] hover:underline">&larr; Back</button>
+        <button onClick={() => router.back()} className="mt-4 text-sm text-[var(--accent)] hover:underline">&larr; Back</button>
       </div>
     );
   }
@@ -169,8 +168,8 @@ export default function TestLicensePage() {
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <button onClick={() => router.back()} className="text-sm text-muted hover:text-foreground mb-4 inline-block">
-          &larr; Back to Product
+        <button onClick={() => router.push("/dashboard/forms")} className="text-sm text-muted hover:text-foreground mb-4 inline-block">
+          &larr; Back to Forms
         </button>
         <h1 className="text-2xl font-bold text-foreground">Test License Application</h1>
         <p className="text-muted text-sm mt-1">{doc?.title}</p>
@@ -186,7 +185,7 @@ export default function TestLicensePage() {
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="text-sm px-4 py-2 bg-[var(--ui-purple)] hover:opacity-90 text-white rounded-lg font-medium transition disabled:opacity-50"
+            className="text-sm px-4 py-2 bg-[var(--accent)] hover:opacity-90 text-white rounded-lg font-medium transition disabled:opacity-50"
           >
             {uploading ? "Uploading..." : "+ Upload File"}
           </button>
@@ -203,7 +202,7 @@ export default function TestLicensePage() {
         {/* Clickable drop zone */}
         <div
           onClick={() => !uploading && fileInputRef.current?.click()}
-          className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-[var(--ui-purple)] hover:bg-[var(--ui-purple-bg)] transition mb-4"
+          className="border-2 border-dashed border-border rounded-lg p-6 text-center cursor-pointer hover:border-[var(--accent)] hover:bg-[var(--accent)]/10 transition mb-4"
         >
           <svg className="w-8 h-8 mx-auto mb-2 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -265,43 +264,70 @@ export default function TestLicensePage() {
 
       {/* Generate & Download Section */}
       <div className="bg-surface border border-border rounded-xl p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Generate Documents</h2>
-            <p className="text-xs text-muted mt-0.5">
-              Generates all 8 Test License forms as a downloadable ZIP by extracting data from your uploaded documents using AI.
-            </p>
-          </div>
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Download button — only shown after successful generation */}
-            {downloadUrl && (
-              <button
-                onClick={handleDownload}
-                className="flex items-center gap-2 text-sm px-5 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                </svg>
-                Download ZIP
-              </button>
-            )}
-            {/* Generate button */}
-            <button
-              onClick={handleGenerate}
-              disabled={generating || uploadedCount === 0}
-              className="text-sm px-5 py-2 bg-foreground text-background hover:opacity-80 rounded-lg font-medium transition disabled:opacity-30"
-            >
-              {generating ? (
-                <span className="flex items-center gap-2">
-                  <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                  </svg>
-                  Generating...
+        <h2 className="text-base font-semibold text-foreground mb-4">Generate Documents</h2>
+        <p className="text-xs text-muted mb-6">
+          This will extract data from your uploaded documents using AI and generate all Test License forms as a downloadable ZIP archive.
+        </p>
+
+        <div className="mb-8">
+          <h3 className="text-xs font-semibold text-foreground mb-3 uppercase tracking-wide">Included Documents ({licenseType === 'domestic' ? 'Domestic' : 'Import'})</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {(licenseType === 'domestic' ? [
+              "1_Covering Letter For Test License for  RT PCR Dengue.docx",
+              "2_Brief Description of Medical Device Including Intended Use.docx",
+              "3_Undertaking Stating Req Facility Equipment Inst Personnel for RT PCR.docx",
+              "4_List of Instruments Equipments Used in RT PCR.docx",
+              "5_List of Qualified Personnels Involved in RT PCR.docx",
+              "6_Justification of Quantity Proposed to be Manufactured.docx",
+              "13a_Certificate of Site with Detailed Raw Components.docx",
+              "14_Detailed Description of How the Raw Material will be Procured.docx"
+            ] : [
+              "Covering Letter.docx",
+              "Declaration Letter.docx",
+              "Fee Challan Declaration.docx",
+              "Medical Device Description.docx",
+              "Quantity Justification.docx",
+              "Test Protocol.docx",
+              "Undertaking.docx"
+            ]).map((filename, i) => (
+              <div key={i} className="flex items-center gap-3 p-3 bg-surface2 border border-border rounded-xl">
+                <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] shrink-0">
+                  <FileText className="w-4 h-4" />
+                </div>
+                <span className="text-xs font-medium text-foreground truncate" title={filename}>
+                  {filename}
                 </span>
-              ) : downloadUrl ? "Re-generate" : "Generate"}
-            </button>
+              </div>
+            ))}
           </div>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleGenerate}
+            disabled={generating || uploadedCount === 0}
+            className="flex items-center gap-2 px-6 py-2.5 bg-foreground text-background hover:opacity-80 text-sm font-semibold rounded-lg shadow-sm transition disabled:opacity-30"
+          >
+            {generating ? (
+              <>
+                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                </svg>
+                Generating...
+              </>
+            ) : downloadUrl ? "Re-generate Archive" : "Generate ZIP Archive"}
+          </button>
+          
+          {downloadUrl && (
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-6 py-2.5 bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white text-sm font-semibold rounded-lg shadow-sm transition animate-in fade-in"
+            >
+              <Download className="w-4 h-4" />
+              Download ZIP
+            </button>
+          )}
         </div>
 
         {/* Status message */}
@@ -309,7 +335,7 @@ export default function TestLicensePage() {
           <div className={`mt-4 flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg ${
             statusType === "success" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" :
             statusType === "error"   ? "bg-[var(--status-error-bg)] text-[var(--status-error)]" :
-                                       "bg-[var(--ui-purple-bg)] text-[var(--ui-purple)]"
+                                       "bg-[var(--accent)]/10 text-[var(--accent)]"
           }`}>
             {statusType === "success" && (
               <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
