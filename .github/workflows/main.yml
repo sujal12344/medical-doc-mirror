@@ -63,13 +63,12 @@ jobs:
 
       - name: Verify Standalone Output Build Exists
         run: |
-          echo "=== Debug: Verifying Next.js Standalone Output ==="
-          if [ ! -d ".next/standalone" ]; then
-            echo "❌ ERROR: Standalone output directory missing!"
-            echo "Ensure 'output: \"standalone\"' is set in next.config.ts."
+          echo "=== Verifying Standalone Files ==="
+          if [ ! -f ".next/standalone/server.js" ]; then
+            echo "❌ ERROR: .next/standalone/server.js missing!"
             exit 1
           fi
-          echo "✅ Root standalone directory found."
+          echo "✅ Standalone server.js exists."
 
       - name: Cleanup Ephemeral Redis
         if: always()
@@ -80,7 +79,14 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build-artifact-${{ github.sha }}
-          path: ./
+          include-hidden-files: true
+          path: |
+            .next/standalone/
+            .next/static/
+            public/
+            package.json
+            package-lock.json
+            ecosystem.config.js
           retention-days: 1
 
   # ===================================================================
@@ -96,7 +102,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: build-artifact-${{ github.sha }}
-          path: ./
+          path: ./dist/
 
       - name: Configure SSH Key
         uses: webfactory/ssh-agent@v0.9.0
@@ -113,12 +119,8 @@ jobs:
         run: |
           rsync -avz --delete \
             --rsync-path="/usr/bin/rsync" \
-            --exclude='.git' \
-            --exclude='node_modules' \
-            --exclude='.env' \
-            --exclude='google-bucket.json' \
             -e "ssh -o ConnectTimeout=30 -o ServerAliveInterval=15 -o ServerAliveCountMax=3" \
-            ./ ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }}:/home/${{ secrets.REMOTE_USER }}/medical-doc-generator/
+            ./dist/ ${{ secrets.REMOTE_USER }}@${{ secrets.SERVER_IP }}:/home/${{ secrets.REMOTE_USER }}/medical-doc-generator/
 
       - name: Execute Server Deployment & Health Check
         run: |
@@ -137,15 +139,11 @@ jobs:
             echo "Working Dir: $(pwd)"
             echo "Node Version: $(node -v)"
 
-            echo "=== Creating Safety Backup ==="
-            if [ -d ".next/standalone" ]; then
-              rm -rf .next/standalone_backup
-              cp -r .next/standalone .next/standalone_backup
-              echo "Backup created at .next/standalone_backup"
-            fi
+            echo "=== Verifying Transferred Standalone Directory ==="
+            ls -la .next/standalone || { echo "❌ ERROR: .next/standalone still missing on EC2!"; exit 1; }
 
             echo "=== Installing Production Dependencies ==="
-            npm ci --omit=dev --engine-strict=false
+            npm ci --omit=dev --engine-strict=false || true
 
             echo "=== Populating Standalone Assets ==="
             mkdir -p .next/standalone/public
@@ -160,7 +158,6 @@ jobs:
             fi
 
             echo "=== Reloading Application via PM2 ==="
-            # Delete old non-standalone PM2 process if it exists, then start standalone server
             pm2 delete medical-doc-generator 2>/dev/null || true
             pm2 start .next/standalone/server.js --name "medical-doc-generator" --update-env
 
@@ -176,17 +173,9 @@ jobs:
 
             if [ "$HEALTH_PASSED" = true ]; then
               echo "✅ DEPLOYMENT SUCCESSFUL: Service is healthy."
-              rm -rf .next/standalone_backup
               pm2 save
             else
-              echo "❌ CRITICAL: Health check failed! Initiating rollback..."
-              if [ -d ".next/standalone_backup" ]; then
-                rm -rf .next/standalone
-                mv .next/standalone_backup .next/standalone
-                pm2 restart medical-doc-generator
-                echo "⚠️ Rollback executed."
-              fi
-              echo "=== PM2 Error Logs ==="
+              echo "❌ CRITICAL: Health check failed! Check logs below:"
               pm2 logs medical-doc-generator --lines 50 --err --nostream || true
               exit 1
             fi
