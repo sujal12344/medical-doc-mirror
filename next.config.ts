@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Required for EC2 deployment via PM2 Standalone runner
+  output: "standalone",
+
   turbopack: {
     root: __dirname,
   },
-  serverExternalPackages: ["pdfjs-dist", "@napi-rs/canvas", "pdf-parse"],
+
+  // Retain only valid CommonJS/native binary server packages here
+  serverExternalPackages: ["@napi-rs/canvas", "pdf-parse"],
 };
 
 export default nextConfig;
