@@ -79,6 +79,14 @@ const FORMS: FormSpec[] = [
     path: "/dashboard/forms/md-28",
   },
   {
+    id: "md-30",
+    frameworkId: "IN_MD_30",
+    title: "MD-30",
+    name: "MD-30 Form",
+    description: "Court Sample Memorandum",
+    path: "/dashboard/forms/md-30",
+  },
+  {
     id: "test-license",
     frameworkId: "IN_TEST_LICENSE",
     title: "Test License",
