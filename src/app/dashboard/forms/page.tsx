@@ -87,6 +87,22 @@ const FORMS: FormSpec[] = [
     path: "/dashboard/forms/md-30",
   },
   {
+    id: "md-39",
+    frameworkId: "IN_MD_39",
+    title: "MD-39",
+    name: "MD-39 Form",
+    description: "Grant of registration to common test or evaluation laboratory",
+    path: "/dashboard/forms/md-39",
+  },
+  {
+    id: "md-41",
+    frameworkId: "IN_MD_41",
+    title: "MD-41",
+    name: "MD-41 Form",
+    description: "Grant of registration to medical device distributor",
+    path: "/dashboard/forms/md-41",
+  },
+  {
     id: "test-license",
     frameworkId: "IN_TEST_LICENSE",
     title: "Test License",
