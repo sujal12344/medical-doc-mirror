@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FileText, ArrowLeft, Download, ChevronRight } from "lucide-react";
+import { COMMERCIAL_MANUFACTURING_GROUP } from "@/lib/frameworks/asia/india-forms";
 
 export default function MD3Page() {
   const searchParams = useSearchParams();
@@ -56,6 +57,9 @@ export default function MD3Page() {
     document.body.removeChild(a);
   }
 
+  const md3Form = COMMERCIAL_MANUFACTURING_GROUP.forms.find(f => f.id === 'MD-3');
+  const documents = md3Form?.documents || [];
+
   return (
     <div className="p-8 max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex items-center justify-between">
@@ -94,6 +98,25 @@ export default function MD3Page() {
         <p className="text-sm text-muted mb-6">
           This will generate the MD-3 templates.
         </p>
+
+        {documents.length > 0 && (
+          <div className="mb-8">
+            <h3 className="text-xs font-semibold text-foreground mb-3 uppercase tracking-wide">Included Documents</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {documents.map((doc, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-surface2 border border-border rounded-xl">
+                  <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] shrink-0">
+                    <FileText className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-medium text-foreground truncate" title={doc.fileName}>
+                    {doc.fileName}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center gap-4">
           <button
             onClick={handleGenerate}
