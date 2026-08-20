@@ -175,7 +175,6 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
         { fileName: '11_MD-26_Biocompatibility_and_Animal_Performance_Conditional_Template.docx', name: 'MD-26 Biocompatibility and Animal Performance Conditional', required: true },
         { fileName: '12_MD-26_Regulatory_Market_PMS_and_Indian_Population_Conditional_Template.docx', name: 'MD-26 Regulatory Market PMS and Indian Population Conditional', required: true },
         { fileName: '13_MD-26_Clinical_Investigation_Waiver_Request_Conditional_Template.docx', name: 'MD-26 Clinical Investigation Waiver Request Conditional', required: true },
-        { fileName: '14_MD-26_Post_Marketing_Clinical_Investigation_Undertaking_Conditional_Template (1).docx', name: 'MD-26 Post Marketing Clinical Investigation Undertaking Conditional  (1)', required: true },
         { fileName: '14_MD-26_Post_Marketing_Clinical_Investigation_Undertaking_Conditional_Template.docx', name: 'MD-26 Post Marketing Clinical Investigation Undertaking Conditional', required: true },
         { fileName: '15_MD-26_Drug_Device_Combination_Data_Conditional_Template.docx', name: 'MD-26 Drug Device Combination Data Conditional', required: true },
       ]
