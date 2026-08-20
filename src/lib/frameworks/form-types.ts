@@ -16,6 +16,15 @@ export type ApplicationFormId =
   | AuditTestingBodiesFormId 
   | MarketSaleDistributionFormId;
 
+export type DocumentSource = 
+  | 'FORM'     // Generated specifically for this application (e.g. Cover Letter, Challan, Form MD-X)
+  | 'LEGAL'    // Corporate/Legal (Constitution, POA, Undertakings, Agreements)
+  | 'QMS'      // Extracted from Organization Quality System (ISO 13485, SOPs, Quality Manual)
+  | 'PMF'      // Extracted from Site Plant Master File (Layouts, Equipment, Site specifics)
+  | 'DMF'      // Extracted from Product Device Master File (Design, IFU, Risk, Essential Principles)
+  | 'CLINICAL' // Clinical Investigation & Performance (Ethics approval, Investigator Brochure)
+  | 'EXTERNAL'; // Provided by 3rd party or foreign regulators (FSC, NOCs, Valid Licenses)
+
 // Define strict Group IDs
 export type FormGroupId = 
   | 'commercial-manufacturing'
@@ -31,6 +40,7 @@ export interface DocumentTemplate {
   fileName: string; // e.g., '04_Site_Plant_Master_File_Template.docx'
   name: string; // Friendly name for UI e.g., 'Site Plant Master File'
   required: boolean;
+  source?: DocumentSource;
 }
 
 // Form Definition

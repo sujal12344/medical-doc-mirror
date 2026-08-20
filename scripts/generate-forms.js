@@ -48,6 +48,21 @@ const groups = [
   }
 ];
 
+function determineSource(fileName) {
+  const lower = fileName.toLowerCase();
+  
+  if (lower.includes('cover') || lower.includes('official') || lower.match(/form_md/)) return 'FORM';
+  if (lower.includes('constitution') || lower.includes('agreement') || lower.includes('undertaking') || lower.includes('power_of_attorney')) return 'LEGAL';
+  if (lower.includes('qms') || lower.includes('quality') || lower.includes('iso') || lower.includes('sop') || lower.includes('organisation')) return 'QMS';
+  if (lower.includes('plant') || lower.includes('site')) return 'PMF';
+  if (lower.includes('device_master') || lower.includes('essential_principles') || lower.includes('design') || lower.includes('risk') || lower.includes('ifu') || lower.includes('label') || lower.includes('stability') || lower.includes('performance_evaluation')) return 'DMF';
+  if (lower.includes('clinical') || lower.includes('investigator') || lower.includes('ethics') || lower.includes('consent') || lower.includes('case_report')) return 'CLINICAL';
+  if (lower.includes('fsc') || lower.includes('noc') || lower.includes('audit')) return 'EXTERNAL';
+  
+  // Default to DMF if we can't figure it out, as it's the most common technical file
+  return 'DMF';
+}
+
 function generateFriendlyName(fileName) {
   let name = fileName.replace('.docx', '');
   name = name.replace(/^[0-9]+_/, ''); // remove leading 01_
@@ -84,7 +99,7 @@ for (const group of groups) {
     if (fs.existsSync(dirPath)) {
       const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.docx'));
       for (const file of files) {
-        documentsStr += `        { fileName: '${file}', name: '${generateFriendlyName(file)}', required: true },\n`;
+        documentsStr += `        { fileName: '${file}', name: '${generateFriendlyName(file)}', required: true, source: '${determineSource(file)}' },\n`;
       }
     } else {
       console.log(`Warning: Directory not found for ${formFolderName}`);
