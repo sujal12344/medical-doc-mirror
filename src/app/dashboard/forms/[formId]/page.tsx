@@ -1,32 +1,60 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { FileText, ArrowLeft, Download, ChevronRight } from "lucide-react";
+import { CDSCO_FORM_GROUPS } from "@/lib/frameworks/asia/india-forms";
+import { DocumentSourceList } from "@/components/forms/DocumentSourceList";
 
-export default function MD8Page() {
+export default function DynamicFormPage() {
+  const params = useParams<{ formId: string }>();
   const searchParams = useSearchParams();
   const docId = searchParams.get("docId");
 
+  const formId = params.formId || "";
+  const formIdUpper = formId.toUpperCase();
+  const apiRouteId = formId.toLowerCase().replace("-", "");
+
+  const [overrides, setOverrides] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [statusMsg, setStatusMsg] = useState("");
   const [statusType, setStatusType] = useState<"info" | "success" | "error">("info");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
 
   useEffect(() => {
-    return () => { if (downloadUrl) URL.revokeObjectURL(downloadUrl); };
+    return () => {
+      if (downloadUrl) URL.revokeObjectURL(downloadUrl);
+    };
   }, [downloadUrl]);
+
+  let matchedForm = null;
+  for (const group of CDSCO_FORM_GROUPS) {
+    const f = group.forms.find((f) => f.id === formIdUpper);
+    if (f) {
+      matchedForm = f;
+      break;
+    }
+  }
+
+  const documents = matchedForm?.documents || [];
 
   async function handleGenerate() {
     if (!docId) return;
-    if (downloadUrl) { URL.revokeObjectURL(downloadUrl); setDownloadUrl(null); }
-    setStatusMsg(`Generating MD-8 documents...`);
+    if (downloadUrl) {
+      URL.revokeObjectURL(downloadUrl);
+      setDownloadUrl(null);
+    }
+    setStatusMsg(`Generating ${formIdUpper} documents...`);
     setStatusType("info");
     setLoading(true);
-    
+
     try {
-      const res = await fetch(`/api/documents/${docId}/generate-md8`, { method: "POST", headers: { "Content-Type": "application/json" } });
+      const res = await fetch(`/api/documents/${docId}/forms/${formIdUpper}/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ overrides }),
+      });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setStatusMsg(data.error || `Failed to generate documents.`);
@@ -36,7 +64,7 @@ export default function MD8Page() {
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       setDownloadUrl(url);
-      setStatusMsg(`MD-8 documents generated successfully!`);
+      setStatusMsg(`${formIdUpper} documents generated successfully!`);
       setStatusType("success");
     } catch (err) {
       setStatusMsg("An unexpected error occurred.");
@@ -50,10 +78,22 @@ export default function MD8Page() {
     if (!downloadUrl) return;
     const a = document.createElement("a");
     a.href = downloadUrl;
-    a.download = "MD-8_Documents.zip";
+    a.download = `${formIdUpper}_Documents.zip`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  if (!matchedForm) {
+    return (
+      <div className="p-8 max-w-5xl mx-auto text-center">
+        <h1 className="text-2xl font-bold text-foreground">Form Not Found</h1>
+        <p className="text-muted mt-2">The form {formIdUpper} does not exist.</p>
+        <Link href="/dashboard/forms" className="text-[var(--accent)] hover:underline mt-4 inline-block">
+          Return to Forms Library
+        </Link>
+      </div>
+    );
   }
 
   return (
@@ -65,35 +105,46 @@ export default function MD8Page() {
               <ArrowLeft className="w-3 h-3" /> Back to Forms
             </Link>
             <ChevronRight className="w-3 h-3" />
-            <span className="text-foreground font-medium">MD-8 Form</span>
+            <span className="text-foreground font-medium">{formIdUpper} Form</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)]">
               <FileText className="w-4 h-4" />
             </div>
-            MD-8 Form Generation
+            {formIdUpper} Form Generation
           </h1>
           <p className="text-sm text-muted mt-1">
-            Application for Grant of Loan Licence to Manufacture for Sale or for Distribution of Class C or Class D. Generate and download the required templates in a ZIP archive.
+            {matchedForm.name}. Generate and download the required templates in a ZIP archive.
           </p>
         </div>
       </div>
 
       {statusMsg && (
-        <div className={`p-4 rounded-xl text-sm font-medium border animate-in fade-in slide-in-from-top-2 ${
-          statusType === "success" ? "bg-green-500/10 text-green-500 border-green-500/20" :
-          statusType === "error" ? "bg-red-500/10 text-red-500 border-red-500/20" :
-          "bg-blue-500/10 text-blue-500 border-blue-500/20"
-        }`}>
+        <div
+          className={`p-4 rounded-xl text-sm font-medium border animate-in fade-in slide-in-from-top-2 ${
+            statusType === "success"
+              ? "bg-green-500/10 text-green-500 border-green-500/20"
+              : statusType === "error"
+              ? "bg-red-500/10 text-red-500 border-red-500/20"
+              : "bg-blue-500/10 text-blue-500 border-blue-500/20"
+          }`}
+        >
           {statusMsg}
         </div>
       )}
 
       <div className="bg-surface border border-border rounded-2xl p-6 shadow-sm">
         <h2 className="text-sm font-semibold text-foreground uppercase tracking-wide mb-4">Generate Documents</h2>
-        <p className="text-sm text-muted mb-6">
-          This will generate the MD-8 templates.
-        </p>
+        <p className="text-sm text-muted mb-6">This will generate the {formIdUpper} templates.</p>
+
+        {/* Note: pass down the overrides state and setter */}
+        <DocumentSourceList 
+           documents={documents} 
+           formId={formIdUpper} 
+           overrides={overrides}
+           setOverrides={setOverrides} 
+        />
+
         <div className="flex items-center gap-4">
           <button
             onClick={handleGenerate}

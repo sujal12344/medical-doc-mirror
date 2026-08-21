@@ -271,3 +271,28 @@ export const CDSCO_FORM_GROUPS = [
   AUDIT_TESTING_BODIES_GROUP,
   MARKET_SALE_DISTRIBUTION_GROUP,
 ];
+
+/**
+ * Dynamically determines which application forms (e.g., MD-3, MD-4) require a given generated document.
+ * This ensures full traceability between foundational documents (DMF/PMF) and their required application endpoints.
+ */
+export function getRequiredFormsForSource(frameworkId: string): string[] {
+  // Map standard document framework IDs to their underlying logical Source domain
+  let source: string | null = null;
+  
+  if (frameworkId === 'IN_DMF' || frameworkId === 'IN_DMF_MD') source = 'DMF';
+  else if (frameworkId === 'IN_PMF') source = 'PMF';
+  // Future mappings (e.g., IN_QMS -> 'QMS') can simply be appended here.
+
+  if (!source) return [];
+
+  const requiredIn: string[] = [];
+  for (const group of CDSCO_FORM_GROUPS) {
+    for (const form of group.forms) {
+      if (form.documents.some(d => d.source === source)) {
+        requiredIn.push(form.id);
+      }
+    }
+  }
+  return requiredIn;
+}
