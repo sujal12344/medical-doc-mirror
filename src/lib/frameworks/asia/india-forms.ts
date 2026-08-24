@@ -1,12 +1,17 @@
 import { 
   FormGroup, 
+  FormGroupId,
+  ApplicationFormId,
   CommercialManufacturingFormId,
   SmallQuantityTestingFormId,
   CommercialImportFormId,
+  PersonalUseImportFormId,
   ClinicalTrialsEvaluationFormId,
   NewDeviceApprovalsFormId,
   AuditTestingBodiesFormId,
-  MarketSaleDistributionFormId
+  MarketSaleDistributionFormId,
+  AuditInspectionRecordsFormId,
+  InspectionRecordsSaleDistributionFormId,
 } from '../form-types';
 
 export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing', CommercialManufacturingFormId> = {
@@ -109,6 +114,23 @@ export const COMMERCIAL_IMPORT_GROUP: FormGroup<'commercial-import', CommercialI
         { fileName: '05_Manufacturer_Declaration_of_Conformity_Template.docx', name: 'Manufacturer Declaration of Conformity', required: true, source: 'DMF' },
         { fileName: '06_Plant_Master_File_Appendix_I_Template.docx', name: 'Plant Master File Appendix I', required: true, source: 'PMF' },
         { fileName: '07_Device_Master_File_Appendix_II_Template.docx', name: 'Device Master File Appendix II', required: true, source: 'DMF' },
+      ]
+    },
+  ]
+};
+
+export const PERSONAL_USE_IMPORT_GROUP: FormGroup<'personal-use-import', PersonalUseImportFormId> = {
+  id: 'personal-use-import',
+  name: 'Personal Use Import',
+  description: 'Application for permission to import a small quantity of a medical device for bona fide personal use.',
+  forms: [
+    {
+      id: 'MD-20',
+      name: 'Application Form MD-20',
+      documents: [
+        { fileName: 'MD-20.docx', name: 'MD-20', required: true, source: 'DMF' },
+        { fileName: 'MD-20_Supporting_01_Bona_Fide_Personal_Use_Declaration.docx', name: 'MD-20 Supporting 01 Bona Fide Personal Use Declaration', required: true, source: 'DMF' },
+        { fileName: 'MD-20_Supporting_02_Registered_Medical_Practitioner_Prescription.docx', name: 'MD-20 Supporting 02 Registered Medical Practitioner Prescription', required: true, source: 'DMF' },
       ]
     },
   ]
@@ -217,7 +239,7 @@ export const AUDIT_TESTING_BODIES_GROUP: FormGroup<'audit-testing-bodies', Audit
         { fileName: '01_MD-1_Covering_Letter_Template.docx', name: 'MD-1 Covering Letter', required: true, source: 'FORM' },
         { fileName: '02_MD-1_Constitution_Details_Template.docx', name: 'MD-1 Constitution Details', required: true, source: 'LEGAL' },
         { fileName: '03_MD-1_Organisation_Audit_Business_Profile_Template.docx', name: 'MD-1 Organisation Audit Business Profile', required: true, source: 'QMS' },
-        { fileName: '04_MD-1_SOP_Master_List_Template(1).docx', name: 'MD-1 SOP Master List (1)', required: true, source: 'QMS' },
+        { fileName: '04_MD-1_SOP_Master_List_Template.docx', name: 'MD-1 SOP Master List', required: true, source: 'QMS' },
         { fileName: '05_MD-1_Technical_Personnel_and_Outside_Experts_List_Template.docx', name: 'MD-1 Technical Personnel and Outside Experts List', required: true, source: 'DMF' },
         { fileName: '06_MD-1_Independence_and_Conflict_of_Interest_Undertaking_Template.docx', name: 'MD-1 Independence and Conflict of Interest Undertaking', required: true, source: 'LEGAL' },
         { fileName: '07_Official_Form_MD-1_Template.docx', name: 'Official Form MD-1', required: true, source: 'FORM' },
@@ -262,14 +284,48 @@ export const MARKET_SALE_DISTRIBUTION_GROUP: FormGroup<'market-sale-distribution
   ]
 };
 
-export const CDSCO_FORM_GROUPS = [
+export const AUDIT_INSPECTION_RECORDS_GROUP: FormGroup<'audit-inspection-records', AuditInspectionRecordsFormId> = {
+  id: 'audit-inspection-records',
+  name: 'Audit & Inspection Records',
+  description: 'Prescribed audit and inspection books maintained at licensed medical-device premises for recording observations and non-conformities identified by auditors or Medical Device Officers.',
+  forms: [
+    {
+      id: 'MD-11',
+      name: 'Application Form MD-11',
+      documents: [
+        { fileName: '01_MD-14_Inspection_book_Template.docx', name: 'MD-14 Inspection book', required: true, source: 'DMF' },
+        { fileName: 'Inspection book.docx', name: 'Inspection book', required: true, source: 'DMF' },
+      ]
+    },
+  ]
+};
+
+export const INSPECTION_RECORDS_SALE_DISTRIBUTION_GROUP: FormGroup<'inspection-records-sale-distribution', InspectionRecordsSaleDistributionFormId> = {
+  id: 'inspection-records-sale-distribution',
+  name: 'Sale & Distribution Inspection Records',
+  description: 'Prescribed inspection book maintained by registration-certificate holders for recording observations and defects noted by Medical Device Officers at registered sale or distribution premises.',
+  forms: [
+    {
+      id: 'MD-43',
+      name: 'Application Form MD-43',
+      documents: [
+        { fileName: '01_MD-14_Inspection_Book_Template.docx', name: 'MD-14 Inspection Book', required: true, source: 'DMF' },
+      ]
+    },
+  ]
+};
+
+export const CDSCO_FORM_GROUPS: FormGroup<FormGroupId, ApplicationFormId>[] = [
   COMMERCIAL_MANUFACTURING_GROUP,
   SMALL_QUANTITY_TESTING_GROUP,
   COMMERCIAL_IMPORT_GROUP,
+  PERSONAL_USE_IMPORT_GROUP,
   CLINICAL_TRIALS_EVALUATION_GROUP,
   NEW_DEVICE_APPROVALS_GROUP,
   AUDIT_TESTING_BODIES_GROUP,
   MARKET_SALE_DISTRIBUTION_GROUP,
+  AUDIT_INSPECTION_RECORDS_GROUP,
+  INSPECTION_RECORDS_SALE_DISTRIBUTION_GROUP,
 ];
 
 /**

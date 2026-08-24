@@ -1,4 +1,3 @@
-// Define strict IDs for only the Application Forms
 export type CommercialManufacturingFormId = 'MD-3' | 'MD-4' | 'MD-7' | 'MD-8';
 export type SmallQuantityTestingFormId = 'MD-12' | 'MD-16';
 export type CommercialImportFormId = 'MD-14';
@@ -6,6 +5,9 @@ export type ClinicalTrialsEvaluationFormId = 'MD-22' | 'MD-24';
 export type NewDeviceApprovalsFormId = 'MD-26' | 'MD-28';
 export type AuditTestingBodiesFormId = 'MD-1' | 'MD-39';
 export type MarketSaleDistributionFormId = 'MD-41';
+export type PersonalUseImportFormId = 'MD-20';
+export type AuditInspectionRecordsFormId = 'MD-11';
+export type InspectionRecordsSaleDistributionFormId = 'MD-43';
 
 export type ApplicationFormId = 
   | CommercialManufacturingFormId 
@@ -14,7 +16,10 @@ export type ApplicationFormId =
   | ClinicalTrialsEvaluationFormId 
   | NewDeviceApprovalsFormId 
   | AuditTestingBodiesFormId 
-  | MarketSaleDistributionFormId;
+  | MarketSaleDistributionFormId
+  | PersonalUseImportFormId
+  | AuditInspectionRecordsFormId
+  | InspectionRecordsSaleDistributionFormId;
 
 export type DocumentSource = 
   | 'FORM'     // Generated specifically for this application (e.g. Cover Letter, Challan, Form MD-X)
@@ -33,7 +38,10 @@ export type FormGroupId =
   | 'clinical-trials-evaluation'
   | 'new-device-approvals'
   | 'audit-testing-bodies'
-  | 'market-sale-distribution';
+  | 'market-sale-distribution'
+  | 'personal-use-import'
+  | 'audit-inspection-records'
+  | 'inspection-records-sale-distribution';
 
 // Document Template Definition (Maps to format/ folders)
 export interface DocumentTemplate {
