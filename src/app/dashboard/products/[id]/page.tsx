@@ -9,7 +9,7 @@ import { FRAMEWORKS, REGION_GROUPS, filterFrameworksByDeviceType } from "@/lib/f
 import type { FrameworkDeviceType } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
 import ProductDetailsButton from "../../../../components/ProductDetailsButton";
-import { getRequiredFormsForSource } from "@/lib/frameworks/asia/india-forms";
+import { CDSCO_FORM_GROUPS, getRequiredFormsForSource } from "@/lib/frameworks/asia/india-forms";
 
 // Touched to trigger recompilation
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -155,22 +155,63 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           <div className="space-y-2">
             {docs.map((d) => {
               const requiredForms = getRequiredFormsForSource(d.frameworkId);
+              
+              const getFormDesc = (fId: string) => {
+                for (const group of CDSCO_FORM_GROUPS) {
+                  const form = group.forms.find(f => f.id === fId);
+                  if (form) return form.description || form.name;
+                }
+                return fId;
+              };
+
               return (
                 <Link key={String(d._id)} href={`/dashboard/documents/${d._id}`}
-                  className="flex items-center justify-between bg-surface border border-border rounded-xl p-4 hover:border-accent/40 hover:shadow-sm transition">
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">{d.title}</p>
-                    <p className="text-xs text-muted mt-0.5">{d.countryCode} &middot; {d.frameworkId} &middot; v{d.version}</p>
-                    {requiredForms.length > 0 && (
-                      <p className="text-[11px] text-[var(--accent)] font-semibold mt-1.5 flex items-center gap-1.5">
-                        <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span></span>
-                        Required for applications: {requiredForms.join(", ")}
-                      </p>
-                    )}
+                  className="flex flex-col bg-surface border border-border rounded-xl p-5 hover:border-[var(--accent)]/50 hover:shadow-md transition-all duration-300">
+                  <div className="flex items-start justify-between w-full mb-3">
+                    <div>
+                      <p className="text-sm font-bold text-foreground group-hover:text-[var(--accent)] transition-colors">{d.title}</p>
+                      <p className="text-[11px] font-medium text-muted mt-1 uppercase tracking-wider">{d.countryCode} &middot; {d.frameworkId} &middot; v{d.version}</p>
+                    </div>
+                    <span className={`text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider shadow-sm border ${d.status === "submitted" ? "bg-[var(--status-success-bg)] text-[var(--status-success)] border-[var(--status-success)]/20" : d.status === "approved" ? "bg-[var(--class-b-bg)] text-[var(--class-b)] border-[var(--class-b)]/20" : d.status === "in-review" ? "bg-purple-500/10 text-purple-600 border-purple-500/20" : "bg-[var(--status-warning-bg)] text-[var(--status-warning)] border-[var(--status-warning)]/20"}`}>
+                      {d.status}
+                    </span>
                   </div>
-                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${d.status === "submitted" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" : d.status === "approved" ? "bg-[var(--class-b-bg)] text-[var(--class-b)]" : d.status === "in-review" ? "bg-purple-50 text-purple-600" : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"}`}>
-                    {d.status}
-                  </span>
+
+                  {requiredForms.length > 0 && (
+                    <div className="mt-2 pt-3 border-t border-border/50">
+                      <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                        <span className="relative flex h-2 w-2">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-60"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-[var(--accent)]"></span>
+                        </span>
+                        Required for {requiredForms.length} Application{requiredForms.length > 1 ? 's' : ''}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {requiredForms.slice(0, 3).map(f => (
+                          <div key={f} className="inline-flex items-center text-[10px] font-semibold bg-[var(--accent)]/10 text-[var(--accent)] px-2.5 py-1 rounded-md shadow-sm border border-[var(--accent)]/20">
+                            {getFormDesc(f)}
+                          </div>
+                        ))}
+                        {requiredForms.length > 3 && (
+                          <div className="group relative inline-flex">
+                            <div className="inline-flex items-center cursor-help text-[10px] font-bold bg-surface2 text-muted-foreground px-2.5 py-1 rounded-md shadow-sm border border-border hover:bg-border/50 transition-colors">
+                              +{requiredForms.length - 3} more
+                            </div>
+                            <div className="absolute bottom-full left-0 mb-2 hidden group-hover:block w-64 bg-surface p-3 rounded-xl border border-border shadow-xl z-50 animate-in fade-in slide-in-from-bottom-1 duration-200">
+                              <p className="text-[10px] font-bold text-muted uppercase tracking-wider mb-2">Additional Applications</p>
+                              <div className="flex flex-col gap-1.5">
+                                {requiredForms.slice(3).map(f => (
+                                  <div key={f} className="text-[10px] font-medium text-foreground bg-surface2 px-2 py-1 rounded border border-border/50">
+                                    {getFormDesc(f)}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </Link>
               );
             })}
