@@ -9,6 +9,7 @@ import { FRAMEWORKS, REGION_GROUPS, filterFrameworksByDeviceType } from "@/lib/f
 import type { FrameworkDeviceType } from "@/lib/frameworks";
 import CreateDocButton from "./CreateDocButton";
 import ProductDetailsButton from "../../../../components/ProductDetailsButton";
+import { getRequiredFormsForSource } from "@/lib/frameworks/asia/india-forms";
 
 // Touched to trigger recompilation
 export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -152,18 +153,27 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
           </p>
         ) : (
           <div className="space-y-2">
-            {docs.map((d) => (
-              <Link key={String(d._id)} href={`/dashboard/documents/${d._id}`}
-                className="flex items-center justify-between bg-surface border border-border rounded-xl p-4 hover:border-accent/40 hover:shadow-sm transition">
-                <div>
-                  <p className="text-sm font-semibold text-foreground">{d.title}</p>
-                  <p className="text-xs text-muted mt-0.5">{d.countryCode} &middot; {d.frameworkId} &middot; v{d.version}</p>
-                </div>
-                <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${d.status === "submitted" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" : d.status === "approved" ? "bg-[var(--class-b-bg)] text-[var(--class-b)]" : d.status === "in-review" ? "bg-purple-50 text-purple-600" : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"}`}>
-                  {d.status}
-                </span>
-              </Link>
-            ))}
+            {docs.map((d) => {
+              const requiredForms = getRequiredFormsForSource(d.frameworkId);
+              return (
+                <Link key={String(d._id)} href={`/dashboard/documents/${d._id}`}
+                  className="flex items-center justify-between bg-surface border border-border rounded-xl p-4 hover:border-accent/40 hover:shadow-sm transition">
+                  <div>
+                    <p className="text-sm font-semibold text-foreground">{d.title}</p>
+                    <p className="text-xs text-muted mt-0.5">{d.countryCode} &middot; {d.frameworkId} &middot; v{d.version}</p>
+                    {requiredForms.length > 0 && (
+                      <p className="text-[11px] text-[var(--accent)] font-semibold mt-1.5 flex items-center gap-1.5">
+                        <span className="relative flex h-1.5 w-1.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[var(--accent)] opacity-75"></span><span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[var(--accent)]"></span></span>
+                        Required for applications: {requiredForms.join(", ")}
+                      </p>
+                    )}
+                  </div>
+                  <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${d.status === "submitted" ? "bg-[var(--status-success-bg)] text-[var(--status-success)]" : d.status === "approved" ? "bg-[var(--class-b-bg)] text-[var(--class-b)]" : d.status === "in-review" ? "bg-purple-50 text-purple-600" : "bg-[var(--status-warning-bg)] text-[var(--status-warning)]"}`}>
+                    {d.status}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
