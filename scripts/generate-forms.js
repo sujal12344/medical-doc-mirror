@@ -97,6 +97,28 @@ for (const t of genericTypes) {
 }
 out += `} from '../form-types';\n\n`;
 
+const formDescriptions = {
+  'MD-3': 'Manufacture for Sale (Class A/B)',
+  'MD-4': 'Loan Licence to Manufacture (Class A/B)',
+  'MD-7': 'Manufacture for Sale (Class C/D)',
+  'MD-8': 'Loan Licence to Manufacture (Class C/D)',
+  'MD-12': 'Manufacture for Test/Evaluation',
+  'MD-14': 'Commercial Import Licence',
+  'MD-16': 'Import for Test/Evaluation',
+  'MD-18': 'Import for Investigational Treatment',
+  'MD-20': 'Import for Personal Use',
+  'MD-22': 'Conduct Clinical Investigation',
+  'MD-24': 'Clinical Performance Evaluation (IVD)',
+  'MD-26': 'New Device Approval (No Predicate)',
+  'MD-28': 'New IVD Approval',
+  'MD-33': 'Purchaser Independent Testing',
+  'MD-39': 'Register Testing Laboratory',
+  'MD-41': 'Registration to Sell/Distribute',
+  'MD-1': 'Register Notified Body',
+  'MD-11': 'Audit/Inspection Book (Manufacturing)',
+  'MD-43': 'Inspection Book (Sale/Distribution)',
+};
+
 for (const group of groups) {
   const genericTypeName = group.id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('') + 'FormId';
 
@@ -122,7 +144,8 @@ for (const group of groups) {
 
     out += `    {\n`;
     out += `      id: '${formId}',\n`;
-    out += `      name: 'Application Form ${formId}',\n`; // A placeholder for now
+    out += `      name: 'Application Form ${formId}',\n`;
+    out += `      description: '${formDescriptions[formId] || 'Regulatory Application Form'}',\n`;
     out += `      documents: [\n${documentsStr}      ]\n`;
     out += `    },\n`;
   }
