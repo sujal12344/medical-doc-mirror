@@ -1,0 +1,32 @@
+name: Auto-Sync Polling
+
+on:
+  schedule:
+    - cron: '*/5 * * * *' 
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout your private repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch and Merge from Upstream
+        run: |
+
+          git remote add upstream https://${{ secrets.MY_OWN_PAT }}@github.com/A-r-y-a-n-123/medical-doc-generator.git
+          
+          git fetch upstream
+
+          git merge upstream/main --no-edit
+
+          git push origin main
