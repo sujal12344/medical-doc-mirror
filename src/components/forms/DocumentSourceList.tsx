@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import React, { useState } from "react";
 import { FileText, X, Loader2 } from "lucide-react";
@@ -139,7 +139,15 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides 
       </div>
 
       {previewDoc && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div 
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onMouseDown={(e) => {
+            if (e.target === e.currentTarget) {
+              setPreviewDoc(null);
+            }
+          }}
+          contentEditable
+        >
           <div className="bg-surface border border-border w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-4 border-b border-border bg-surface2/50">
               <div className="flex items-center gap-3 overflow-hidden">
@@ -180,6 +188,25 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides 
                 <div 
                   className="bg-surface mx-auto shadow-lg min-h-[1056px] w-full max-w-[816px] p-12 text-foreground text-sm border border-border [&>h1]:text-2xl [&>h1]:font-bold [&>h1]:mb-4 [&>h2]:text-xl [&>h2]:font-bold [&>h2]:mb-3 [&>p]:mb-4 [&>table]:w-full [&>table]:border-collapse [&>table]:mb-4 [&_td]:border [&_td]:border-border [&_td]:p-2 [&_th]:border [&_th]:border-border [&_th]:p-2 [&_th]:bg-surface2 [&_th]:text-left [&_th]:font-semibold"
                   dangerouslySetInnerHTML={{ __html: previewHtml }}
+                  onClick={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.classList.contains('inline-editor')) {
+                      if (target.dataset.focused !== 'true') {
+                        const selection = window.getSelection();
+                        const range = document.createRange();
+                        range.selectNodeContents(target);
+                        selection?.removeAllRanges();
+                        selection?.addRange(range);
+                        target.dataset.focused = 'true';
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const target = e.target as HTMLElement;
+                    if (target.classList.contains('inline-editor')) {
+                      target.dataset.focused = 'false';
+                    }
+                  }}
                 />
               )}
             </div>
