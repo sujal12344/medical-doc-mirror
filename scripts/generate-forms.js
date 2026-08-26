@@ -182,7 +182,7 @@ for (const group of groups) {
       const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.docx'));
       for (const file of files) {
         const tplConfig = config.templates[file];
-        let docProps = `fileName: '${file}', name: '${generateFriendlyName(file)}', required: true, source: '${determineSource(file)}'`;
+        let docProps = `fileName: '${file}', name: '${generateFriendlyName(file)}', source: '${determineSource(file)}'`;
         
         if (tplConfig) {
           if (tplConfig.conditionRule) docProps += `, conditionRule: "${tplConfig.conditionRule}"`;

@@ -47,7 +47,6 @@ export type FormGroupId =
 export interface DocumentTemplate {
   fileName: string; // e.g., '04_Site_Plant_Master_File_Template.docx'
   name: string; // Friendly name for UI e.g., 'Site Plant Master File'
-  required: boolean;
   source?: DocumentSource;
   conditionRule?: string;
   badgeLabel?: string;
