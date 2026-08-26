@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import JSZip from "jszip";
 import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
+import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 import { sectionsToPlain } from "@/lib/documentSections";
 import { generateDocxFromTemplate, cleanPlaceholders } from "@/lib/docxTemplateHelper";
@@ -100,6 +101,35 @@ export async function POST(
     const safeFormId = formId.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
     const templateDir = path.join(process.cwd(), "format", safeFormId);
 
+    const productIds: string[] = doc.contextPayload?.productIds || [];
+    
+    // Fetch products from DB to get their names and details for the Annexure
+    const fetchedProducts = productIds.length > 0 
+      ? await Product.find({ _id: { $in: productIds } }).lean() 
+      : [];
+
+    // Inject array for the Annexure table loop
+    cleanedPlaceholders.annexureProducts = fetchedProducts.map((p: any, i: number) => ({
+      sn: i + 1,
+      genericName: p.name || "N/A",
+      modelNo: p.modelNo || "N/A",
+      intendedUse: p.intendedUse || "N/A",
+      deviceClass: p.classification || "N/A",
+      material: p.material || "N/A",
+      dimension: p.dimension || "N/A",
+      shelfLife: p.shelfLife || "N/A",
+      sterile: p.sterile ? "Sterile" : "Non-sterile",
+      brandName: p.brandName || "N/A"
+    }));
+
+    // For preview fallback if it's missing
+    if (cleanedPlaceholders.annexureProducts.length === 0) {
+      cleanedPlaceholders.annexureProducts = [{
+        sn: 1, genericName: "Sample Product", modelNo: "-", intendedUse: "-",
+        deviceClass: "A", material: "-", dimension: "-", shelfLife: "-", sterile: "-", brandName: "-"
+      }];
+    }
+
     for (const template of formConfig.documents) {
       // In the legacy system, md1 templates were in `format/md1/template/`
       // while md4 was in `format/md-4/`. We will check both.
@@ -117,11 +147,62 @@ export async function POST(
       }
 
       try {
-        const buffer = generateDocxFromTemplate(templatePath, cleanedPlaceholders);
-        const outputName = template.fileName.replace("_Template", "");
-        zip.file(outputName, buffer);
-        generatedCount++;
-        console.log(`${LOG} Generated: ${outputName}`);
+        if (template.source === 'DMF') {
+          // Generate one copy PER product using the actual product name
+          for (let i = 0; i < fetchedProducts.length; i++) {
+            const product = fetchedProducts[i] as any;
+            
+            // Evaluate condition rule if it exists
+            if (template.conditionRule) {
+               try {
+                 // Create a safe context for evaluation
+                 const context = { product };
+                 // eslint-disable-next-line no-new-func
+                 const conditionFn = new Function('context', `return ${template.conditionRule};`);
+                 const isMatch = conditionFn(context);
+                 if (!isMatch) {
+                    console.log(`${LOG} Skipping ${template.fileName} for product ${product.name} due to conditionRule`);
+                    continue;
+                 }
+               } catch (e) {
+                 console.error(`${LOG} Error evaluating conditionRule for ${template.fileName}:`, e);
+               }
+            }
+
+            const productSpecificPlaceholders = { 
+              ...cleanedPlaceholders, 
+              productId: product._id.toString(),
+              productName: product.name 
+            };
+            
+            const buffer = generateDocxFromTemplate(templatePath, productSpecificPlaceholders);
+            const baseName = template.fileName.replace("_Template", "").replace(".docx", "");
+            
+            // Format the product name to be file-system safe
+            const safeProductName = product.name ? product.name.replace(/[^a-zA-Z0-9_-]/g, "_") : `Product_${i + 1}`;
+            const outputName = `${baseName}_${safeProductName}.docx`;
+            
+            zip.file(outputName, buffer);
+            generatedCount++;
+            console.log(`${LOG} Generated (Duplicated): ${outputName}`);
+          }
+          
+          // Fallback if no products were selected
+          if (fetchedProducts.length === 0) {
+             const buffer = generateDocxFromTemplate(templatePath, cleanedPlaceholders);
+             const baseName = template.fileName.replace("_Template", "").replace(".docx", "");
+             const outputName = `${baseName}_Default.docx`;
+             zip.file(outputName, buffer);
+             generatedCount++;
+          }
+        } else {
+          // Generate a single copy (e.g. for PMF, FORM, LEGAL)
+          const buffer = generateDocxFromTemplate(templatePath, cleanedPlaceholders);
+          const outputName = template.fileName.replace("_Template", "");
+          zip.file(outputName, buffer);
+          generatedCount++;
+          console.log(`${LOG} Generated: ${outputName}`);
+        }
       } catch (error) {
         console.error(`${LOG} Error generating ${template.fileName}:`, error);
       }

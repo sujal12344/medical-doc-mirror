@@ -5,7 +5,7 @@ import { RegulatoryDocument } from "@/models/Document";
 import { requireAuth } from "@/lib/auth";
 
 const createSchema = z.object({
-  productId: z.string().optional(),
+  contextPayload: z.record(z.string(), z.any()).optional(),
   countryCode: z.string().min(1).max(10),
   frameworkId: z.string().min(1).max(50),
   title: z.string().trim().min(2).max(500),

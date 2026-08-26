@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { isValidObjectId } from "mongoose";
 import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
+import { Product } from "@/models/Product";
 import { requireAuth } from "@/lib/auth";
 
 
@@ -13,7 +14,14 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     await connectToDatabase();
     const doc = await RegulatoryDocument.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
     if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
-    return NextResponse.json({ document: doc });
+    
+    // Fetch related products for frontend condition evaluation
+    let products: any[] = [];
+    if (doc.contextPayload?.productIds?.length) {
+      products = await Product.find({ _id: { $in: doc.contextPayload.productIds } }).lean();
+    }
+    
+    return NextResponse.json({ document: doc, products });
   } catch (error) {
     if ((error as Error).message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     return NextResponse.json({ error: "Failed" }, { status: 500 });

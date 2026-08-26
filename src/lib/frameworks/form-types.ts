@@ -49,13 +49,15 @@ export interface DocumentTemplate {
   name: string; // Friendly name for UI e.g., 'Site Plant Master File'
   required: boolean;
   source?: DocumentSource;
+  conditionRule?: string;
+  badgeLabel?: string;
 }
 
-// Form Definition
 export interface FormDefinition<TFormId extends ApplicationFormId = ApplicationFormId> {
   id: TFormId;
   name: string;
   description?: string;
+  requiredContexts?: string[];
   documents: DocumentTemplate[];
 }
 

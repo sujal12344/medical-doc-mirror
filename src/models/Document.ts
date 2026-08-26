@@ -9,7 +9,7 @@ export type UploadedDoc = {
 
 export type DocumentDocument = {
   _id: string;
-  productId: Types.ObjectId;
+  contextPayload?: Record<string, any>;
   userId: Types.ObjectId;
   countryCode: string;
   frameworkId: string;
@@ -24,7 +24,7 @@ export type DocumentDocument = {
 
 const documentSchema = new Schema<DocumentDocument>(
   {
-    productId: { type: Schema.Types.ObjectId, ref: "Product", index: true },
+    contextPayload: { type: Schema.Types.Mixed },
     userId: { type: Schema.Types.ObjectId, ref: "Company", required: true, index: true },
     countryCode: { type: String, required: true, maxlength: 10 },
     frameworkId: { type: String, required: true, maxlength: 50 },

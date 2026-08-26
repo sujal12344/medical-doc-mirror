@@ -23,13 +23,14 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-3',
       name: 'Application Form MD-3',
       description: 'Manufacture for Sale (Class A/B)',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_MD-3_Covering_Letter_Template.docx', name: 'MD-3 Covering Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD-3_Template.docx', name: 'Official Form MD-3', required: true, source: 'FORM' },
         { fileName: '03_Constitution_Details_of_Manufacturer_Template.docx', name: 'Constitution Details of Manufacturer', required: true, source: 'LEGAL' },
         { fileName: '04_Site_Plant_Master_File_Template.docx', name: 'Site Plant Master File', required: true, source: 'PMF' },
-        { fileName: '05_Device_Master_File_Non_IVD_Template.docx', name: 'Device Master File Non IVD', required: true, source: 'DMF' },
-        { fileName: '06_Device_Master_File_IVD_Template.docx', name: 'Device Master File IVD', required: true, source: 'DMF' },
+        { fileName: '05_Device_Master_File_Non_IVD_Template.docx', name: 'Device Master File Non IVD', required: true, source: 'DMF', conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: 'Non-IVD Only' },
+        { fileName: '06_Device_Master_File_IVD_Template.docx', name: 'Device Master File IVD', required: true, source: 'DMF', conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: 'IVD Only' },
         { fileName: '07_Essential_Principles_Checklist_Template.docx', name: 'Essential Principles Checklist', required: true, source: 'DMF' },
         { fileName: '08_Fifth_Schedule_QMS_Compliance_Undertaking_Template.docx', name: 'Fifth Schedule QMS Compliance Undertaking', required: true, source: 'LEGAL' },
       ]
@@ -38,6 +39,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-4',
       name: 'Application Form MD-4',
       description: 'Loan Licence to Manufacture (Class A/B)',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_MD-4_Covering_Letter_Template.docx', name: 'MD-4 Covering Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD-4_Template.docx', name: 'Official Form MD-4', required: true, source: 'FORM' },
@@ -51,6 +53,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-7',
       name: 'Application Form MD-7',
       description: 'Manufacture for Sale (Class C/D)',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_MD-7_Covering_Letter_Template.docx', name: 'MD-7 Covering Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD-7_Template.docx', name: 'Official Form MD-7', required: true, source: 'FORM' },
@@ -66,6 +69,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-8',
       name: 'Application Form MD-8',
       description: 'Loan Licence to Manufacture (Class C/D)',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_MD8_Covering_Letter_Template.docx', name: 'MD8 Covering Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD8_Template.docx', name: 'Official Form MD8', required: true, source: 'FORM' },
@@ -91,6 +95,7 @@ export const SMALL_QUANTITY_TESTING_GROUP: FormGroup<'small-quantity-testing', S
       id: 'MD-12',
       name: 'Application Form MD-12',
       description: 'Manufacture for Test/Evaluation',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
       ]
     },
@@ -98,6 +103,7 @@ export const SMALL_QUANTITY_TESTING_GROUP: FormGroup<'small-quantity-testing', S
       id: 'MD-16',
       name: 'Application Form MD-16',
       description: 'Import for Test/Evaluation',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
       ]
     },
@@ -113,6 +119,7 @@ export const COMMERCIAL_IMPORT_GROUP: FormGroup<'commercial-import', CommercialI
       id: 'MD-14',
       name: 'Application Form MD-14',
       description: 'Commercial Import Licence',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_MD-14_Covering_Letter_Template.docx', name: 'MD-14 Covering Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD-14_Template.docx', name: 'Official Form MD-14', required: true, source: 'FORM' },
@@ -135,6 +142,7 @@ export const PERSONAL_USE_IMPORT_GROUP: FormGroup<'personal-use-import', Persona
       id: 'MD-20',
       name: 'Application Form MD-20',
       description: 'Import for Personal Use',
+      requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: 'MD-20.docx', name: 'MD-20', required: true, source: 'DMF' },
         { fileName: 'MD-20_Supporting_01_Bona_Fide_Personal_Use_Declaration.docx', name: 'MD-20 Supporting 01 Bona Fide Personal Use Declaration', required: true, source: 'DMF' },
@@ -153,6 +161,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       id: 'MD-22',
       name: 'Application Form MD-22',
       description: 'Conduct Clinical Investigation',
+      requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_MD-22_Cover_Letter_Template.docx', name: 'MD-22 Cover Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD-22_Template.docx', name: 'Official Form MD-22', required: true, source: 'FORM' },
@@ -171,6 +180,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       id: 'MD-24',
       name: 'Application Form MD-24',
       description: 'Clinical Performance Evaluation (IVD)',
+      requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_Cover_Letter_MD24.docx', name: 'Cover Letter MD24', required: true, source: 'FORM' },
         { fileName: '02_Form_MD24_with_Annexure.docx', name: 'Form MD24 with Annexure', required: true, source: 'FORM' },
@@ -194,6 +204,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       id: 'MD-26',
       name: 'Application Form MD-26',
       description: 'New Device Approval (No Predicate)',
+      requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_MD-26_Cover_Letter_Template.docx', name: 'MD-26 Cover Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD-26_Template.docx', name: 'Official Form MD-26', required: true, source: 'FORM' },
@@ -216,6 +227,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       id: 'MD-28',
       name: 'Application Form MD-28',
       description: 'New IVD Approval',
+      requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_MD-28_Cover_Letter_Template.docx', name: 'MD-28 Cover Letter', required: true, source: 'FORM' },
         { fileName: '02_Official_Form_MD-28_Template.docx', name: 'Official Form MD-28', required: true, source: 'FORM' },
@@ -289,6 +301,7 @@ export const MARKET_SALE_DISTRIBUTION_GROUP: FormGroup<'market-sale-distribution
       id: 'MD-41',
       name: 'Application Form MD-41',
       description: 'Registration to Sell/Distribute',
+      requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_Official_Form_MD-41_Template.docx', name: 'Official Form MD-41', required: true, source: 'FORM' },
         { fileName: '02_MD-41_Good_Distribution_Compliance_Self-Certificate_Template.docx', name: 'MD-41 Good Distribution Compliance Self-Certificate', required: true, source: 'DMF' },

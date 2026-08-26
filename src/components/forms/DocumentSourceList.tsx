@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import React, { useState } from "react";
 import { FileText, X, Loader2 } from "lucide-react";
@@ -9,9 +9,10 @@ interface DocumentSourceListProps {
   formId?: string;
   overrides?: Record<string, string>;
   setOverrides?: (overrides: Record<string, string>) => void;
+  contextProducts?: any[];
 }
 
-export function DocumentSourceList({ documents, formId, overrides, setOverrides }: DocumentSourceListProps) {
+export function DocumentSourceList({ documents, formId, overrides, setOverrides, contextProducts = [] }: DocumentSourceListProps) {
   const [previewDoc, setPreviewDoc] = useState<DocumentTemplate | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewPlaceholders, setPreviewPlaceholders] = useState<string[]>([]);
@@ -20,33 +21,40 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides 
 
   if (!documents || documents.length === 0) return null;
 
-  const grouped = documents.reduce((acc, doc) => {
+  // Filter documents based on conditionRule against all context products
+  const filteredDocuments = documents.filter(doc => {
+    if (!doc.conditionRule) return true;
+    if (contextProducts.length === 0) return true; // Show all if we don't have products to evaluate against
+
+    // It matches if at least one selected product satisfies the condition
+    return contextProducts.some(product => {
+      try {
+        const context = { product };
+        // eslint-disable-next-line no-new-func
+        const conditionFn = new Function('context', `return ${doc.conditionRule};`);
+        return conditionFn(context);
+      } catch (e) {
+        console.error("Error evaluating condition in UI:", e);
+        return true;
+      }
+    });
+  });
+
+  const grouped = filteredDocuments.reduce((acc, doc) => {
     const s = doc.source || 'EXTERNAL';
     if (!acc[s]) acc[s] = [];
     acc[s].push(doc);
     return acc;
   }, {} as Record<string, typeof documents>);
 
-  const getLabel = (source: string, count: number) => {
-    const plural = count === 1 ? '' : 's';
-    switch(source) {
-      case 'FORM': 
-        return `Generating ${count} form template${plural} specifically for this application`;
-      case 'LEGAL': 
-        return `Extracting ${count} file${plural} from your corporate and legal records`;
-      case 'QMS': 
-        return `Pulling ${count} document${plural} from your Quality Management System (QMS)`;
-      case 'PMF': 
-        return `Including ${count} document${plural} from your manufacturing site's Plant Master File (PMF)`;
-      case 'DMF': 
-        return `Attaching ${count} technical file${plural} from your product's Device Master File (DMF)`;
-      case 'CLINICAL': 
-        return `Gathering ${count} record${plural} from your clinical trials and performance evaluations`;
-      case 'EXTERNAL': 
-        return `Adding ${count} certificate${plural} provided by regulatory or third-party bodies`;
-      default: 
-        return `Extracting ${count} document${plural}`;
-    }
+  const SOURCE_INFO: Record<string, { title: string, desc: string, icon: React.ReactNode }> = {
+    'FORM': { title: 'Application Forms', desc: 'Auto-filled official forms and cover letters.', icon: <FileText className="w-5 h-5 text-blue-500" /> },
+    'LEGAL': { title: 'Corporate Records', desc: 'Legal structure, POA, and undertakings.', icon: <FileText className="w-5 h-5 text-purple-500" /> },
+    'QMS': { title: 'Quality Management (QMS)', desc: 'ISO certificates and quality manuals.', icon: <FileText className="w-5 h-5 text-emerald-500" /> },
+    'PMF': { title: 'Plant Master File (PMF)', desc: 'Site layouts, equipment, and facility details.', icon: <FileText className="w-5 h-5 text-orange-500" /> },
+    'DMF': { title: 'Device Master File (DMF)', desc: 'Technical specifications, risk, and IFUs.', icon: <FileText className="w-5 h-5 text-indigo-500" /> },
+    'CLINICAL': { title: 'Clinical Records', desc: 'Trial data and performance evaluations.', icon: <FileText className="w-5 h-5 text-rose-500" /> },
+    'EXTERNAL': { title: 'External Certificates', desc: 'Third-party approvals like FSC or CE.', icon: <FileText className="w-5 h-5 text-slate-500" /> }
   };
 
   const handlePreview = async (doc: DocumentTemplate) => {
@@ -111,31 +119,52 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides 
 
   return (
     <>
-      <div className="mb-8 space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-500">
-        {(Object.entries(grouped) as [string, DocumentTemplate[]][]).map(([source, docs]) => (
-          <div key={source}>
-            <h3 className="text-xs font-semibold text-muted mb-3 tracking-wider">
-              {getLabel(source, docs.length)}
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {docs.map((doc, i) => (
-                <button 
-                  key={i} 
-                  onClick={() => handlePreview(doc)}
-                  disabled={!formId}
-                  className={`flex items-center gap-3 p-3 bg-surface2 border border-border rounded-xl text-left w-full transition ${formId ? 'hover:border-[var(--accent)] hover:shadow-sm cursor-pointer' : 'opacity-80'}`}
-                >
-                  <div className="w-8 h-8 rounded-lg bg-[var(--accent)]/10 flex items-center justify-center text-[var(--accent)] shrink-0">
-                    <FileText className="w-4 h-4" />
+      <div className="mb-12 space-y-10">
+        {(Object.entries(grouped) as [string, DocumentTemplate[]][]).map(([source, docs], idx) => {
+          const info = SOURCE_INFO[source] || { title: 'Other Documents', desc: 'Additional required files.', icon: <FileText className="w-5 h-5 text-muted-foreground" /> };
+          
+          return (
+            <div key={source} className="animate-in fade-in slide-in-from-bottom-4 duration-500" style={{ animationDelay: `${idx * 80}ms` }}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-1.5 rounded-lg border border-border bg-surface2 shadow-sm shrink-0">
+                  {info.icon}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-bold text-foreground">{info.title}</h3>
+                    <span className="text-xs font-semibold text-muted-foreground bg-surface2 border border-border px-2 py-0.5 rounded-full">{docs.length}</span>
                   </div>
-                  <span className="text-xs font-medium text-foreground truncate" title={doc.fileName}>
-                    {doc.fileName}
-                  </span>
-                </button>
-              ))}
+                  <p className="text-xs text-muted-foreground mt-0.5">{info.desc}</p>
+                </div>
+              </div>
+              
+              <div className="pl-9 border-l-2 border-border/50 ml-4 space-y-2">
+                {docs.map((doc) => (
+                  <button
+                    key={doc.fileName}
+                    onClick={() => handlePreview(doc)}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border border-border/60 bg-surface/30 hover:bg-surface/80 hover:border-[var(--accent)]/40 transition-all group text-left"
+                  >
+                    <div className="w-7 h-7 rounded-lg bg-surface2 border border-border flex items-center justify-center shrink-0 text-muted-foreground group-hover:text-[var(--accent)] group-hover:bg-[var(--accent)]/10 group-hover:border-[var(--accent)]/30 transition-all">
+                      <FileText className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="flex-1 text-sm font-medium text-foreground/90 group-hover:text-foreground transition-colors">
+                      {formId
+                        ? (doc.name || doc.fileName).replace(new RegExp(`^${formId}\\s+`, 'i'), '')
+                        : (doc.name || doc.fileName)}
+                    </span>
+                    {source === 'DMF' && contextProducts.length > 1 && (
+                      <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                        &times;{contextProducts.length}
+                      </span>
+                    )}
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-[var(--accent)] transition-colors shrink-0"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {previewDoc && (
