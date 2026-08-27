@@ -27,6 +27,6 @@ jobs:
           
           git fetch upstream
 
-          git merge upstream/main --no-edit
+          git merge upstream/sujal --no-edit
 
           git push origin main
