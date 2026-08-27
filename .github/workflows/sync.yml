@@ -23,8 +23,8 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Fetch and Merge from Upstream
-        run:
-          git remote add upstream https://${{ secrets.MY_OWN_PAT }}@github.com/A-r-y-a-n-123/medical-doc-generator.git
+        run: |
+          git remote add upstream https://${{ secrets.MY_OWN_PAT }}@github.com/A-r-y-a-n-123/medical-doc-generator.git || true
           git fetch upstream sujal
-          git merge upstream/sujal --no-edit -m "Auto-sync from upstream sujal branch"
+          git merge upstream/sujal --no-edit
           git push origin main
