@@ -119,6 +119,49 @@ const formDescriptions = {
   'MD-43': 'Inspection Book (Sale/Distribution)',
 };
 
+const formConfigs = {
+  // 1. Commercial Manufacturing
+  'MD-3': { requiredContexts: ['PRODUCT_MULTI'], templates: {
+      '05_Device_Master_File_Non_IVD_Template.docx': { conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: "Non-IVD Only" },
+      '06_Device_Master_File_IVD_Template.docx': { conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: "IVD Only" }
+  }},
+  'MD-4': { requiredContexts: ['PRODUCT_MULTI'], templates: {
+      '05_Device_Master_File_Non_IVD_Template.docx': { conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: "Non-IVD Only" },
+      '06_Device_Master_File_IVD_Template.docx': { conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: "IVD Only" }
+  }},
+  'MD-7': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
+  'MD-8': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
+
+  // 2. Commercial Import
+  'MD-14': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
+
+  // 3. Small Quantity Testing
+  'MD-12': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
+  'MD-16': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
+
+  // 4. Clinical Trials
+  'MD-22': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
+  'MD-24': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
+
+  // 5. New Device Approvals
+  'MD-26': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
+  'MD-28': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
+
+  // 6. Market Sale / Wholesale
+  'MD-41': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
+
+  // 7. Audit / Testing Bodies
+  'MD-1': { requiredContexts: [], templates: {} },
+  'MD-39': { requiredContexts: [], templates: {} },
+
+  // 8. Personal Use
+  'MD-20': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
+
+  // 9. Inspection Records
+  'MD-11': { requiredContexts: [], templates: {} },
+  'MD-43': { requiredContexts: [], templates: {} }
+};
+
 for (const group of groups) {
   const genericTypeName = group.id.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('') + 'FormId';
 
@@ -131,12 +174,22 @@ for (const group of groups) {
   for (const formFolderName of group.forms) {
     const formId = formFolderName.toUpperCase();
     const dirPath = path.join(formatDir, formFolderName);
+    
+    const config = formConfigs[formId] || { requiredContexts: [], templates: {} };
 
     let documentsStr = '';
     if (fs.existsSync(dirPath)) {
       const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.docx'));
       for (const file of files) {
-        documentsStr += `        { fileName: '${file}', name: '${generateFriendlyName(file)}', required: true, source: '${determineSource(file)}' },\n`;
+        const tplConfig = config.templates[file];
+        let docProps = `fileName: '${file}', name: '${generateFriendlyName(file)}', source: '${determineSource(file)}'`;
+        
+        if (tplConfig) {
+          if (tplConfig.conditionRule) docProps += `, conditionRule: "${tplConfig.conditionRule}"`;
+          if (tplConfig.badgeLabel) docProps += `, badgeLabel: '${tplConfig.badgeLabel}'`;
+        }
+        
+        documentsStr += `        { ${docProps} },\n`;
       }
     } else {
       console.log(`Warning: Directory not found for ${formFolderName}`);
@@ -146,6 +199,9 @@ for (const group of groups) {
     out += `      id: '${formId}',\n`;
     out += `      name: 'Application Form ${formId}',\n`;
     out += `      description: '${formDescriptions[formId] || 'Regulatory Application Form'}',\n`;
+    if (config.requiredContexts && config.requiredContexts.length > 0) {
+      out += `      requiredContexts: [${config.requiredContexts.map(c => `'${c}'`).join(', ')}],\n`;
+    }
     out += `      documents: [\n${documentsStr}      ]\n`;
     out += `    },\n`;
   }

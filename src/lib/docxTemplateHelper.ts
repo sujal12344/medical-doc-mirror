@@ -2,7 +2,7 @@ import PizZip from "pizzip";
 import Docxtemplater from "docxtemplater";
 import fs from "fs";
 
-export type PlaceholderMap = Record<string, string>;
+export type PlaceholderMap = Record<string, any>;
 
 export type TemplateConfig = {
   file: string;

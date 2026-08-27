@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { FileText } from "lucide-react";
 import { CDSCO_FORM_GROUPS } from "@/lib/frameworks/asia/india-forms";
+import { ProductMultiSelectorModal } from "@/components/forms/ProductMultiSelectorModal";
 
 type FormSpec = {
   id: string;
@@ -12,14 +13,19 @@ type FormSpec = {
   name: string;
   description: string;
   path: string;
+  requiredContexts?: string[];
 };
 
-function CreateFormButton({ form, templateCount }: { form: FormSpec, templateCount: number }) {
+function CreateFormButton({ form, templateCount, onTriggerModal }: { form: FormSpec, templateCount: number, onTriggerModal: (form: FormSpec) => void }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
 
   async function create() {
+    if (form.requiredContexts?.includes('PRODUCT_MULTI') || form.requiredContexts?.includes('PRODUCT_SINGLE')) {
+      onTriggerModal(form);
+      return;
+    }
     setLoading(true);
     setStatus("Generating Package...");
     try {
@@ -80,7 +86,7 @@ function CreateFormButton({ form, templateCount }: { form: FormSpec, templateCou
         {templateCount > 0 ? (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20 w-fit transition-colors group-hover:bg-green-500/15">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.8)] animate-pulse"></span>
-            <span className="text-[11px] font-semibold text-green-500 uppercase tracking-wide">{templateCount} required documents</span>
+            <span className="text-[11px] font-semibold text-green-500 uppercase tracking-wide">click to generate {templateCount} documents</span>
           </div>
         ) : (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-muted/10 border border-border w-fit">
@@ -104,8 +110,51 @@ function CreateFormButton({ form, templateCount }: { form: FormSpec, templateCou
 }
 
 export default function FormsDashboard() {
+  const router = useRouter();
+  const [activeFormForModal, setActiveFormForModal] = useState<FormSpec | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleModalContinue = async (payload: { productIds: string[] }) => {
+    if (!activeFormForModal) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/documents", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          countryCode: "IN",
+          frameworkId: activeFormForModal.frameworkId,
+          title: activeFormForModal.title,
+          contextPayload: payload
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        router.push(`${activeFormForModal.path}?docId=${data.document._id}`);
+      } else {
+        alert(data.message || "Failed to create package.");
+      }
+    } catch (e) {
+      alert("An error occurred");
+    } finally {
+      setIsGenerating(false);
+      setActiveFormForModal(null);
+    }
+  };
+
   return (
-    <div className="p-8 max-w-7xl mx-auto space-y-16 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="p-8 max-w-7xl mx-auto space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      
+      {activeFormForModal && (
+        <ProductMultiSelectorModal
+          formTitle={activeFormForModal.title}
+          onClose={() => setActiveFormForModal(null)}
+          onContinue={handleModalContinue}
+          generating={isGenerating}
+          isMultiSelect={activeFormForModal.requiredContexts?.includes('PRODUCT_MULTI')}
+        />
+      )}
+
       <div className="flex flex-col gap-2">
         <h1 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-foreground to-foreground/70 tracking-tight">
           Forms Library
@@ -134,9 +183,17 @@ export default function FormsDashboard() {
                   name: `${form.id} Form`,
                   description: form.description || "Regulatory Application Form",
                   path: `/dashboard/forms/${form.id.toLowerCase()}`,
+                  requiredContexts: form.requiredContexts,
                 };
                 
-                return <CreateFormButton key={form.id} form={spec} templateCount={form.documents.length} />;
+                return (
+                  <CreateFormButton 
+                    key={form.id} 
+                    form={spec} 
+                    templateCount={form.documents.length}
+                    onTriggerModal={setActiveFormForModal}
+                  />
+                );
               })}
             </div>
           </section>

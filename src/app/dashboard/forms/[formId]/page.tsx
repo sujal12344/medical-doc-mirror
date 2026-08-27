@@ -21,6 +21,18 @@ export default function DynamicFormPage() {
   const [statusMsg, setStatusMsg] = useState("");
   const [statusType, setStatusType] = useState<"info" | "success" | "error">("info");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
+  const [contextProducts, setContextProducts] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (docId) {
+      fetch(`/api/documents/${docId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.products) setContextProducts(data.products);
+        })
+        .catch(console.error);
+    }
+  }, [docId]);
 
   useEffect(() => {
     return () => {
@@ -143,6 +155,7 @@ export default function DynamicFormPage() {
            formId={formIdUpper} 
            overrides={overrides}
            setOverrides={setOverrides} 
+           contextProducts={contextProducts}
         />
 
         <div className="flex items-center gap-4">
