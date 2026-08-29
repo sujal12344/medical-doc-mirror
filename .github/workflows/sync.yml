@@ -2,7 +2,7 @@ name: Auto-Sync Polling
 
 on:
   schedule:
-    - cron: '*/5 * * * *'
+    - cron: '*/15 * * * *'
   workflow_dispatch:
   push:
     branches: [main]
@@ -22,9 +22,25 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+      - name: Check Sync Status
+        run: |
+          echo "🔄 Sync workflow triggered by: ${{ github.event_name }}"
+          echo "⏰ Run time: $(date)"
+          echo "📍 Current branch: $(git branch --show-current)"
+          echo "📊 Current HEAD: $(git rev-parse HEAD)"
+
       - name: Fetch and Merge from Upstream
         run: |
           git remote add upstream https://${{ secrets.MY_OWN_PAT }}@github.com/A-r-y-a-n-123/medical-doc-generator.git || true
           git fetch upstream sujal
-          git merge upstream/sujal --no-edit
-          git push origin main
+          echo "📥 Upstream latest: $(git rev-parse upstream/sujal)"
+          echo "📤 Local latest: $(git rev-parse HEAD)"
+          
+          if git merge-base --is-ancestor upstream/sujal HEAD; then
+            echo "✅ Already up to date - no sync needed"
+          else
+            echo "🔄 Syncing new changes from upstream..."
+            git merge upstream/sujal --no-edit
+            git push origin main
+            echo "✅ Sync complete!"
+          fi
