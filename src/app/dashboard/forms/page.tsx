@@ -44,7 +44,7 @@ function CreateFormButton({ form, templateCount, onTriggerModal }: { form: FormS
       if (res.ok) {
         router.push(`${form.path}?docId=${data.document._id}`);
       } else {
-        setStatus(data.message || "Failed to create package.");
+        setStatus(data.error || "Failed to create package.");
         setTimeout(() => setStatus(""), 3000);
       }
     } catch (e) {
@@ -134,7 +134,7 @@ export default function FormsDashboard() {
       if (res.ok) {
         router.push(`${activeFormForModal.path}?docId=${data.document._id}`);
       } else {
-        alert(data.message || "Failed to create package.");
+        alert(data.error || "Failed to create package.");
       }
     } catch (e) {
       alert("An error occurred");

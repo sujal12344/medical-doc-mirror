@@ -42,7 +42,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     console.log(`${LOG} Debug doc contextPayload:`, JSON.stringify(doc.contextPayload || {}, null, 2));
 
-    const productId = doc.contextPayload?.productIds?.[0] || doc.contextPayload?.productId;
+    const productId = doc.contextPayload?.productIds?.[0] || doc.contextPayload?.productId || (doc as any).productId;
     console.log(`${LOG} Resolved productId:`, productId);
 
     const product = await Product.findById(productId).lean();

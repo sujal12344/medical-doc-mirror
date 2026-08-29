@@ -22,6 +22,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   if (!product) notFound();
 
   const docs = await RegulatoryDocument.find({
+    userId: (user as Record<string, unknown>)._id,
     $or: [
       { "contextPayload.productId": id },
       { "contextPayload.productIds": id }

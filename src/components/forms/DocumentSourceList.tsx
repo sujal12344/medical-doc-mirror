@@ -154,9 +154,22 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides,
                         : (doc.name || doc.fileName)}
                     </span>
                     {source === 'DMF' && contextProducts.length > 1 && (
-                      <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
-                        &times;{contextProducts.length}
-                      </span>
+                      (() => {
+                        let matchingCount = contextProducts.length;
+                        if (doc.conditionRule) {
+                          matchingCount = contextProducts.filter(product => {
+                            try {
+                              const conditionFn = new Function('context', `return ${doc.conditionRule};`);
+                              return conditionFn({ product });
+                            } catch { return true; }
+                          }).length;
+                        }
+                        return matchingCount > 1 ? (
+                          <span className="text-[11px] font-semibold text-muted-foreground shrink-0">
+                            &times;{matchingCount}
+                          </span>
+                        ) : null;
+                      })()
                     )}
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground/40 group-hover:text-[var(--accent)] transition-colors shrink-0"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
@@ -175,7 +188,6 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides,
               setPreviewDoc(null);
             }
           }}
-          contentEditable
         >
           <div className="bg-surface border border-border w-full max-w-4xl max-h-[90vh] rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between p-4 border-b border-border bg-surface2/50">

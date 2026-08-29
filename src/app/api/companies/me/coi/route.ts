@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { connectToDatabase } from "@/lib/mongodb";
 import { Company } from "@/models/Company";
 import OpenAI from "openai";
+import { Storage } from "@google-cloud/storage";
 // pdf-parse/index.js runs a readFileSync self-test at module evaluation time
 // which crashes Next.js during build. Import from the implementation directly.
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -46,6 +47,11 @@ export async function POST(request: Request) {
 
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 });
+    }
+
+    const maxUploadBytes = parseInt(process.env.MAX_UPLOAD_BYTES || "100000000", 10);
+    if (file.size > maxUploadBytes) {
+      return NextResponse.json({ error: "File exceeds the maximum allowed size" }, { status: 413 });
     }
 
     const allowedTypes = [
@@ -129,6 +135,33 @@ If a field cannot be found, return "" for strings or [] for arrays. Do NOT hallu
       );
     }
 
+    // 2.5 Store original file in access-controlled storage
+    let fileUrl = "";
+    try {
+      const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+      const clientEmail = process.env.GOOGLE_CLOUD_CLIENT_EMAIL;
+      const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n');
+      const bucketName = process.env.GCS_BUCKET?.trim();
+
+      if (projectId && clientEmail && privateKey && bucketName) {
+        const storage = new Storage({
+          projectId,
+          credentials: { client_email: clientEmail, private_key: privateKey },
+        });
+        const bucket = storage.bucket(bucketName);
+        const timestamp = Date.now();
+        const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '');
+        const gcsPath = `coi-docs/${userId}/${timestamp}_${sanitizedFileName}`;
+        
+        const gcsFile = bucket.file(gcsPath);
+        await gcsFile.save(buffer, { contentType: file.type });
+        
+        fileUrl = gcsPath;
+      }
+    } catch (gcsError) {
+      console.error("[COI GCS Upload Error]", gcsError);
+    }
+
     // 3. Save extracted data to the Company document in the DB
     await connectToDatabase();
     const updatedCompany = await Company.findByIdAndUpdate(
@@ -136,6 +169,7 @@ If a field cannot be found, return "" for strings or [] for arrays. Do NOT hallu
       {
         $set: {
           coiData: {
+            fileUrl,
             fileName: file.name,
             extractedAt: new Date(),
             applicantName:           extracted.applicantName           || "",
@@ -149,6 +183,10 @@ If a field cannot be found, return "" for strings or [] for arrays. Do NOT hallu
       },
       { new: true, select: "coiData" }
     );
+
+    if (!updatedCompany) {
+      return NextResponse.json({ error: "Company profile not found" }, { status: 404 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -172,7 +210,25 @@ export async function GET() {
     const userId = (user as Record<string, unknown>)._id as string;
     await connectToDatabase();
     const company = await Company.findById(userId).select("coiData").lean();
-    return NextResponse.json({ coiData: (company as { coiData?: unknown })?.coiData || null });
+    let coiData = (company as { coiData?: any })?.coiData || null;
+
+    if (coiData?.fileUrl && !coiData.fileUrl.startsWith('http')) {
+      try {
+        const projectId = process.env.GOOGLE_CLOUD_PROJECT_ID;
+        const clientEmail = process.env.GOOGLE_CLOUD_CLIENT_EMAIL;
+        const privateKey = process.env.GOOGLE_CLOUD_PRIVATE_KEY?.replace(/\\n/g, '\n');
+        const bucketName = process.env.GCS_BUCKET?.trim();
+        if (projectId && clientEmail && privateKey && bucketName) {
+           const storage = new Storage({ projectId, credentials: { client_email: clientEmail, private_key: privateKey } });
+           const [url] = await storage.bucket(bucketName).file(coiData.fileUrl).getSignedUrl({
+             version: 'v4', action: 'read', expires: Date.now() + 15 * 60 * 1000
+           });
+           coiData.fileUrl = url;
+        }
+      } catch (err) { console.error("Error signing URL", err); }
+    }
+
+    return NextResponse.json({ coiData });
   } catch (error) {
     const err = error as Error;
     if (err.message === "Unauthorized") {

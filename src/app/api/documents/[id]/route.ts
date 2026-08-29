@@ -37,7 +37,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 
     if (doc.contextPayload?.productIds?.length) {
       const productIds = doc.contextPayload.productIds;
-      products = await Product.find({ _id: { $in: productIds } }).lean();
+      products = await Product.find({ _id: { $in: productIds }, userId: (user as Record<string, unknown>)._id }).lean();
 
       // Fetch technical docs
       const techDocs = await RegulatoryDocument.find({
@@ -52,11 +52,23 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         for (const sectionData of Object.values(sections)) {
           if (sectionData.fields) {
             for (const [k, v] of Object.entries(sectionData.fields)) {
-              if (v !== undefined && v !== null) {
+              if (v !== undefined && v !== null && !prefillData[k]) {
                 prefillData[k] = String(v);
               }
             }
           }
+        }
+      }
+      
+      if (products.length > 0) {
+        const classes = Array.from(new Set(products.map(p => p.deviceClass).filter(Boolean)));
+        if (classes.length && !prefillData.deviceClass) {
+          prefillData.deviceClass = classes.join(", ");
+        }
+        
+        const scopes = Array.from(new Set(products.map(p => p.intendedUse || p.name).filter(Boolean)));
+        if (scopes.length && !prefillData.deviceScopeSummary) {
+          prefillData.deviceScopeSummary = scopes.join("; ");
         }
       }
     }
@@ -75,6 +87,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         if (!prefillData.designatedPersonName) prefillData.designatedPersonName = coi.signatories[0].name;
         if (!prefillData.designatedPersonDesignation) prefillData.designatedPersonDesignation = coi.signatories[0].designation;
       }
+    }
+
+    if (!prefillData.manufacturingSiteAddress && prefillData.registeredOfficeAddress) {
+       prefillData.manufacturingSiteAddress = prefillData.registeredOfficeAddress;
     }
 
     // Add smart defaults to match generation logic

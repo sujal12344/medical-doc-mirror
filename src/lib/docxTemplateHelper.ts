@@ -69,7 +69,7 @@ export function validatePlaceholders(
   provided: PlaceholderMap
 ): { valid: boolean; missing: string[] } {
   const missing = required.filter((placeholder) => {
-    const key = placeholder.replace(/\{\{|\}\}/g, "");
+    const key = placeholder.replace(/^\{+/, "").replace(/\}+$/, "");
     return !(key in provided);
   });
 

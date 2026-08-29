@@ -175,20 +175,21 @@ export default function SettingsPage() {
             </p>
           </div>
           {coiData && (
-            <span className="shrink-0 ml-4 flex items-center gap-1.5 text-xs font-semibold text-green-600 bg-green-500/10 border border-green-500/20 px-2.5 py-1 rounded-full">
-              <CheckCircle className="w-3.5 h-3.5" /> Verified
+            <span className="shrink-0 ml-4 flex items-center gap-1.5 text-xs font-semibold text-blue-600 bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-full">
+              <CheckCircle className="w-3.5 h-3.5" /> Extracted
             </span>
           )}
         </div>
 
         {/* Upload zone */}
         {!coiData ? (
-          <div
+          <button
+            type="button"
             onDragOver={(e) => { e.preventDefault(); setCoiDragOver(true); }}
             onDragLeave={() => setCoiDragOver(false)}
             onDrop={onDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`mt-5 border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all
+            className={`w-full mt-5 border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-all
               ${coiDragOver ? "border-[var(--accent)] bg-[var(--accent)]/5" : "border-border hover:border-[var(--accent)]/50 hover:bg-surface2/60"}`}
           >
             {coiUploading ? (
@@ -208,7 +209,7 @@ export default function SettingsPage() {
                 </div>
               </>
             )}
-          </div>
+          </button>
         ) : (
           /* Extracted data display */
           <div className="mt-5 space-y-4">
