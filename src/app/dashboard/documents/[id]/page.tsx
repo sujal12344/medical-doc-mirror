@@ -15,7 +15,7 @@ type DocData = {
   title: string;
   countryCode: string;
   frameworkId: string;
-  productId: string;
+  contextPayload?: { productId?: string; productIds?: string[] };
   status: string;
   version: number;
   sections: Record<string, { fields: Record<string, string>; completionPct: number }>;
@@ -143,7 +143,8 @@ export default function DocumentEditorPage() {
         };
         setDoc(normalized);
         if (data.document.frameworkId === "IN_TEST_LICENSE") {
-          router.replace(`/dashboard/products/${data.document.productId}/test-license?docId=${id}`);
+          const pId = data.document.contextPayload?.productIds?.[0] || data.document.contextPayload?.productId;
+          router.replace(`/dashboard/products/${pId}/test-license?docId=${id}`);
           return;
         }
 
@@ -293,9 +294,10 @@ export default function DocumentEditorPage() {
       : `Indexing product knowledge to Pinecone, then running ${frameworkName} auto-fill…`;
     setChatMessages((prev) => [...prev, { role: "bot", text: startMsg }]);
     try {
-      if (!opts?.isInitial && doc.productId) {
+      const pId = doc.contextPayload?.productIds?.[0] || doc.contextPayload?.productId;
+      if (!opts?.isInitial && pId) {
         try {
-          const indexed = await upsertProductKnowledgeIndex(doc.productId, chatDocContext);
+          const indexed = await upsertProductKnowledgeIndex(pId, chatDocContext);
           if (indexed) {
             setChatMessages((prev) => [
               ...prev,

@@ -1,0 +1,35 @@
+{
+  "md_form": "md-34",
+  "placeholders": [
+    "batchOrLotNumber",
+    "brandName",
+    "deviceName",
+    "medicalDeviceOfficerName",
+    "medicalDeviceOfficerOffice",
+    "nonDisposalPeriodDays",
+    "orderDate",
+    "quantity",
+    "recipientAddress",
+    "recipientName",
+    "remarks",
+    "sNo",
+    "storageLocation"
+  ],
+  "templates": {
+    "01_Official_Form_Non-Disposal_Order_Template.docx": [
+      "batchOrLotNumber",
+      "brandName",
+      "deviceName",
+      "medicalDeviceOfficerName",
+      "medicalDeviceOfficerOffice",
+      "nonDisposalPeriodDays",
+      "orderDate",
+      "quantity",
+      "recipientAddress",
+      "recipientName",
+      "remarks",
+      "sNo",
+      "storageLocation"
+    ]
+  }
+}

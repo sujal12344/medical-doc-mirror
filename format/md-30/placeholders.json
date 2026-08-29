@@ -1,0 +1,39 @@
+{
+  "md_form": "md-30",
+  "placeholders": [
+    "courtFeeAmount",
+    "magistrateName",
+    "memorandumDate",
+    "memorandumSerialNumber",
+    "offenceAlleged",
+    "opinionRequired",
+    "packetDistinguishingNumber",
+    "samplePurportedName",
+    "senderAddress",
+    "senderCourtName",
+    "senderEmailAddress",
+    "senderMobileNumber",
+    "senderName",
+    "testingLaboratoryAddress",
+    "testingLaboratoryName"
+  ],
+  "templates": {
+    "01_Official_Form_Court_Sample_Memorandum_Template.docx": [
+      "courtFeeAmount",
+      "magistrateName",
+      "memorandumDate",
+      "memorandumSerialNumber",
+      "offenceAlleged",
+      "opinionRequired",
+      "packetDistinguishingNumber",
+      "samplePurportedName",
+      "senderAddress",
+      "senderCourtName",
+      "senderEmailAddress",
+      "senderMobileNumber",
+      "senderName",
+      "testingLaboratoryAddress",
+      "testingLaboratoryName"
+    ]
+  }
+}

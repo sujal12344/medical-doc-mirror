@@ -77,6 +77,20 @@ export interface CompanyDocument extends Document {
     uploadedAt: Date;
   }[];
 
+  // Structured data extracted from the Certificate of Incorporation (COI) via AI
+  coiData?: {
+    fileUrl: string;              // URL of the uploaded COI document
+    fileName: string;
+    extractedAt: Date;
+    // Extracted fields — used to auto-fill regulatory templates
+    applicantName: string;        // → {applicantName} in templates
+    bodyConstitution: string;     // Pvt Ltd / LLP / OPC etc → {bodyConstitution}
+    registeredOfficeAddress: string; // → {registeredOfficeAddress}
+    incorporationDate: string;    // → {incorporationDate}
+    cinNumber: string;            // Corporate Identity Number → {cinNumber}
+    signatories: { name: string; designation: string }[]; // → {designatedPersonName}, {designatedPersonDesignation}
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -186,7 +200,26 @@ const CompanySchema = new Schema<CompanyDocument>(
         expiryDate: { type: Date },
         uploadedAt: { type: Date, default: Date.now },
       }
-    ]
+    ],
+    coiData: {
+      type: {
+        fileUrl:                  { type: String, default: '' },
+        fileName:                 { type: String, default: '' },
+        extractedAt:              { type: Date },
+        applicantName:            { type: String, default: '' },
+        bodyConstitution:         { type: String, default: '' },
+        registeredOfficeAddress:  { type: String, default: '' },
+        incorporationDate:        { type: String, default: '' },
+        cinNumber:                { type: String, default: '' },
+        signatories: {
+          type: [{ name: { type: String, default: '' }, designation: { type: String, default: '' } }],
+          default: [],
+          _id: false,
+        },
+      },
+      default: null,
+      _id: false,
+    },
   },
   {
     timestamps: true, // Automatically adds createdAt and updatedAt

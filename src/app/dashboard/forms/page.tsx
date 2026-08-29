@@ -14,6 +14,8 @@ type FormSpec = {
   description: string;
   path: string;
   requiredContexts?: string[];
+  requiresPmf?: boolean;
+  requiresDmf?: boolean;
 };
 
 function CreateFormButton({ form, templateCount, onTriggerModal }: { form: FormSpec, templateCount: number, onTriggerModal: (form: FormSpec) => void }) {
@@ -42,7 +44,7 @@ function CreateFormButton({ form, templateCount, onTriggerModal }: { form: FormS
       if (res.ok) {
         router.push(`${form.path}?docId=${data.document._id}`);
       } else {
-        setStatus(data.message || "Failed to create package.");
+        setStatus(data.error || "Failed to create package.");
         setTimeout(() => setStatus(""), 3000);
       }
     } catch (e) {
@@ -132,7 +134,7 @@ export default function FormsDashboard() {
       if (res.ok) {
         router.push(`${activeFormForModal.path}?docId=${data.document._id}`);
       } else {
-        alert(data.message || "Failed to create package.");
+        alert(data.error || "Failed to create package.");
       }
     } catch (e) {
       alert("An error occurred");
@@ -152,6 +154,8 @@ export default function FormsDashboard() {
           onContinue={handleModalContinue}
           generating={isGenerating}
           isMultiSelect={activeFormForModal.requiredContexts?.includes('PRODUCT_MULTI')}
+          requiresPmf={activeFormForModal.requiresPmf}
+          requiresDmf={activeFormForModal.requiresDmf}
         />
       )}
 
@@ -184,6 +188,8 @@ export default function FormsDashboard() {
                   description: form.description || "Regulatory Application Form",
                   path: `/dashboard/forms/${form.id.toLowerCase()}`,
                   requiredContexts: form.requiredContexts,
+                  requiresPmf: form.documents.some(d => d.source === 'PMF'),
+                  requiresDmf: form.documents.some(d => d.source === 'DMF'),
                 };
                 
                 return (

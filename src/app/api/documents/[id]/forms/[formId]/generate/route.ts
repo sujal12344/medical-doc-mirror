@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
 import { Product } from "@/models/Product";
+import { Company } from "@/models/Company";
 import { requireAuth } from "@/lib/auth";
 import { sectionsToPlain } from "@/lib/documentSections";
 import { generateDocxFromTemplate, cleanPlaceholders } from "@/lib/docxTemplateHelper";
@@ -55,6 +56,21 @@ export async function POST(
     if (!placeholders.applicationDate) {
       placeholders.applicationDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
     }
+
+    const company = await Company.findById((user as Record<string, unknown>)._id).lean();
+    if (company?.coiData) {
+      const coi = company.coiData;
+      if (coi.applicantName && !placeholders.applicantName) placeholders.applicantName = coi.applicantName;
+      if (coi.bodyConstitution && !placeholders.bodyConstitution) placeholders.bodyConstitution = coi.bodyConstitution;
+      if (coi.registeredOfficeAddress && !placeholders.registeredOfficeAddress) placeholders.registeredOfficeAddress = coi.registeredOfficeAddress;
+      if (coi.incorporationDate && !placeholders.incorporationDate) placeholders.incorporationDate = coi.incorporationDate;
+      if (coi.cinNumber && !placeholders.incorporationNumber) placeholders.incorporationNumber = coi.cinNumber;
+      if (coi.signatories && coi.signatories.length > 0) {
+        if (!placeholders.designatedPersonName) placeholders.designatedPersonName = coi.signatories[0].name;
+        if (!placeholders.designatedPersonDesignation) placeholders.designatedPersonDesignation = coi.signatories[0].designation;
+      }
+    }
+
     if (!placeholders.applicationPlace) {
       placeholders.applicationPlace = placeholders.registeredOfficeAddress?.split(",")[0] || "Mumbai";
     }
@@ -74,10 +90,12 @@ export async function POST(
       : "";
     
     // Standardize aliases used in older templates
-    placeholders.incorporationNumber = placeholders.incorporationOrRegistrationNumber || "";
-    placeholders.incorporationDate = placeholders.incorporationOrRegistrationDate || "";
-    placeholders.telephoneNumber = placeholders.mobileNumber || "";
-    placeholders.faxNumber = placeholders.mobileNumber || "";
+    if (placeholders.incorporationOrRegistrationNumber) placeholders.incorporationNumber = placeholders.incorporationOrRegistrationNumber;
+    if (placeholders.incorporationOrRegistrationDate) placeholders.incorporationDate = placeholders.incorporationOrRegistrationDate;
+    if (placeholders.mobileNumber) {
+      placeholders.telephoneNumber = placeholders.mobileNumber;
+      placeholders.faxNumber = placeholders.mobileNumber;
+    }
     placeholders.slNo = "1";
     placeholders.standard = placeholders.applicableAccreditationStandards || "";
     placeholders.scope = placeholders.accreditationScopeSummary || "";
@@ -105,8 +123,49 @@ export async function POST(
     
     // Fetch products from DB to get their names and details for the Annexure
     const fetchedProducts = productIds.length > 0 
-      ? await Product.find({ _id: { $in: productIds } }).lean() 
+      ? await Product.find({ _id: { $in: productIds }, userId: (user as Record<string, unknown>)._id }).lean() 
       : [];
+
+    // Fetch all technical documents (DMF/PMF) for the selected products
+    const techDocs = productIds.length > 0 
+      ? await RegulatoryDocument.find({
+          userId: (user as Record<string, unknown>)._id,
+          frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
+          "contextPayload.productId": { $in: productIds }
+        }).lean()
+      : [];
+
+    // Bubble up fields from ALL technical docs (PMF and DMFs) so single-copy docs like Covering Letters have access
+    for (const tDoc of techDocs) {
+      const tSections = sectionsToPlain(tDoc.sections);
+      for (const sectionData of Object.values(tSections)) {
+        if (sectionData.fields) {
+          for (const [fieldId, fieldValue] of Object.entries(sectionData.fields)) {
+            if (fieldValue !== undefined && fieldValue !== null && !cleanedPlaceholders[fieldId]) {
+               cleanedPlaceholders[fieldId] = String(fieldValue);
+            }
+          }
+        }
+      }
+    }
+
+    // Bubble up Product details to the global placeholders for single-copy docs
+    if (fetchedProducts.length > 0) {
+      const classes = Array.from(new Set(fetchedProducts.map(p => p.deviceClass).filter(Boolean)));
+      if (classes.length && !cleanedPlaceholders.deviceClass) {
+        cleanedPlaceholders.deviceClass = classes.join(", ");
+      }
+      
+      const scopes = Array.from(new Set(fetchedProducts.map(p => p.intendedUse || p.name).filter(Boolean)));
+      if (scopes.length && !cleanedPlaceholders.deviceScopeSummary) {
+        cleanedPlaceholders.deviceScopeSummary = scopes.join("; ");
+      }
+    }
+
+    // Fallback for manufacturingSiteAddress if missing from PMF
+    if (!cleanedPlaceholders.manufacturingSiteAddress && cleanedPlaceholders.registeredOfficeAddress) {
+       cleanedPlaceholders.manufacturingSiteAddress = cleanedPlaceholders.registeredOfficeAddress;
+    }
 
     // Inject array for the Annexure table loop
     cleanedPlaceholders.annexureProducts = fetchedProducts.map((p: any, i: number) => ({
@@ -114,7 +173,7 @@ export async function POST(
       genericName: p.name || "N/A",
       modelNo: p.modelNo || "N/A",
       intendedUse: p.intendedUse || "N/A",
-      deviceClass: p.classification || "N/A",
+      deviceClass: p.deviceClass || "N/A",
       material: p.material || "N/A",
       dimension: p.dimension || "N/A",
       shelfLife: p.shelfLife || "N/A",
@@ -169,8 +228,28 @@ export async function POST(
                }
             }
 
+            const dmfDoc = techDocs.find(d => 
+              (d.frameworkId === "IN_DMF" || d.frameworkId === "IN_DMF_MD") && 
+              String(d.contextPayload?.productId) === String(product._id)
+            );
+            
+            const dmfFields: Record<string, string> = {};
+            if (dmfDoc) {
+              const dmfSections = sectionsToPlain(dmfDoc.sections);
+              for (const sectionData of Object.values(dmfSections)) {
+                if (sectionData.fields) {
+                  for (const [fieldId, fieldValue] of Object.entries(sectionData.fields)) {
+                    if (fieldValue !== undefined && fieldValue !== null) {
+                       dmfFields[fieldId] = String(fieldValue);
+                    }
+                  }
+                }
+              }
+            }
+
             const productSpecificPlaceholders = { 
               ...cleanedPlaceholders, 
+              ...dmfFields,
               productId: product._id.toString(),
               productName: product.name 
             };
@@ -180,7 +259,8 @@ export async function POST(
             
             // Format the product name to be file-system safe
             const safeProductName = product.name ? product.name.replace(/[^a-zA-Z0-9_-]/g, "_") : `Product_${i + 1}`;
-            const outputName = `${baseName}_${safeProductName}.docx`;
+            const uniqueId = product.name ? `_${i + 1}` : "";
+            const outputName = `${baseName}_${safeProductName}${uniqueId}.docx`;
             
             zip.file(outputName, buffer);
             generatedCount++;

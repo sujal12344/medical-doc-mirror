@@ -1,0 +1,43 @@
+{
+  "md_form": "md-31",
+  "placeholders": [
+    "certificateDate",
+    "directorOrAuthorisedOfficerName",
+    "memorandumDate",
+    "memorandumNumber",
+    "memorandumSender",
+    "observedResult",
+    "qualityOpinion",
+    "reasonsForOpinion",
+    "sNo",
+    "sampleBearingNumber",
+    "samplePurportedName",
+    "sampleReceivedDate",
+    "sealCondition",
+    "specificationOrAcceptanceCriteria",
+    "testConclusion",
+    "testMethodOrProtocol",
+    "testParameter"
+  ],
+  "templates": {
+    "01_Official_Form_CMDTL_Test_or_Evaluation_Certificate_Template.docx": [
+      "certificateDate",
+      "directorOrAuthorisedOfficerName",
+      "memorandumDate",
+      "memorandumNumber",
+      "memorandumSender",
+      "observedResult",
+      "qualityOpinion",
+      "reasonsForOpinion",
+      "sNo",
+      "sampleBearingNumber",
+      "samplePurportedName",
+      "sampleReceivedDate",
+      "sealCondition",
+      "specificationOrAcceptanceCriteria",
+      "testConclusion",
+      "testMethodOrProtocol",
+      "testParameter"
+    ]
+  }
+}

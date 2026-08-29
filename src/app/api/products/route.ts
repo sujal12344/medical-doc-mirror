@@ -3,6 +3,7 @@ import { z } from "zod";
 import { connectToDatabase } from "@/lib/mongodb";
 import { applyDeviceTypeSections, flatToNestedProduct, resolveDeviceType } from "@/lib/productMapper";
 import { Product } from "@/models/Product";
+import { RegulatoryDocument } from "@/models/Document";
 import { requireAuth } from "@/lib/auth";
 
 const productSchema = z
@@ -61,9 +62,22 @@ export async function GET(req: Request) {
         );
       }
 
+      const docs = await RegulatoryDocument.find({
+        userId: (user as Record<string, unknown>)._id,
+        frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
+        "contextPayload.productId": id
+      }).select("frameworkId").lean();
+
+      const hasDMF = docs.some(d => d.frameworkId === "IN_DMF" || d.frameworkId === "IN_DMF_MD");
+      const hasPMF = docs.some(d => d.frameworkId === "IN_PMF");
+
       return NextResponse.json({
         success: true,
-        product,
+        product: {
+          ...product,
+          hasDMF: product.hasDMF || hasDMF,
+          hasPMF: product.hasPMF || hasPMF
+        },
       });
     }
 
@@ -77,10 +91,26 @@ export async function GET(req: Request) {
       .sort({ updatedAt: -1 })
       .lean();
 
+    const productIds = products.map(p => String(p._id));
+    const docs = await RegulatoryDocument.find({
+      userId: (user as Record<string, unknown>)._id,
+      frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
+      "contextPayload.productId": { $in: productIds }
+    }).select("frameworkId contextPayload.productId").lean();
+
+    const dmfSet = new Set(docs.filter(d => d.frameworkId === "IN_DMF" || d.frameworkId === "IN_DMF_MD").map(d => String(d.contextPayload?.productId)));
+    const pmfSet = new Set(docs.filter(d => d.frameworkId === "IN_PMF").map(d => String(d.contextPayload?.productId)));
+
+    const enrichedProducts = products.map(p => ({
+      ...p,
+      hasDMF: p.hasDMF || dmfSet.has(String(p._id)),
+      hasPMF: p.hasPMF || pmfSet.has(String(p._id)),
+    }));
+
     return NextResponse.json({
       success: true,
-      count: products.length,
-      products,
+      count: enrichedProducts.length,
+      products: enrichedProducts,
     });
   } catch (error) {
     if ((error as Error).message === "Unauthorized") {

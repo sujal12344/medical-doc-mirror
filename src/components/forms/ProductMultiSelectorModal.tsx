@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Box, X, Check, Search } from "lucide-react";
+import { Box, X, Check, Search, AlertCircle } from "lucide-react";
 
-type ProductShort = { _id: string; name: string; deviceType: string };
+type ProductShort = { _id: string; name: string; deviceType: string; hasDMF?: boolean; hasPMF?: boolean; };
 
 interface ProductMultiSelectorModalProps {
   formTitle: string;
@@ -12,9 +12,13 @@ interface ProductMultiSelectorModalProps {
   onContinue: (payload: { productIds: string[] }) => void;
   generating: boolean;
   isMultiSelect?: boolean;
+  requiresPmf?: boolean;
+  requiresDmf?: boolean;
 }
 
-export function ProductMultiSelectorModal({ formTitle, onClose, onContinue, generating, isMultiSelect = true }: ProductMultiSelectorModalProps) {
+export function ProductMultiSelectorModal({ 
+  formTitle, onClose, onContinue, generating, isMultiSelect = true, requiresPmf, requiresDmf 
+}: ProductMultiSelectorModalProps) {
   const router = useRouter();
   const [products, setProducts] = useState<ProductShort[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
@@ -31,6 +35,14 @@ export function ProductMultiSelectorModal({ formTitle, onClose, onContinue, gene
       .catch(() => setLoadingProducts(false));
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
   const handleToggle = (id: string) => {
     if (isMultiSelect) {
       setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -42,7 +54,11 @@ export function ProductMultiSelectorModal({ formTitle, onClose, onContinue, gene
   const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-sm animate-in fade-in duration-200"
+      role="dialog"
+      aria-modal="true"
+    >
       <div className="bg-surface border border-border shadow-2xl rounded-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[85vh]">
         <div className="p-6 border-b border-border/50 flex items-center justify-between bg-surface/50 shrink-0">
           <div>
@@ -85,18 +101,41 @@ export function ProductMultiSelectorModal({ formTitle, onClose, onContinue, gene
               </div>
               
               {filteredProducts.map(p => {
-                const isSelected = selectedIds.includes(p._id);
+                const isMissingPmf = requiresPmf && !p.hasPMF;
+                const isMissingDmf = requiresDmf && !p.hasDMF;
+                const isDisabled = isMissingPmf || isMissingDmf;
+                
+                const isSelected = !isDisabled && selectedIds.includes(p._id);
+                
                 return (
                   <button
                     key={p._id}
-                    onClick={() => handleToggle(p._id)}
-                    className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center justify-between group ${isSelected ? 'border-[var(--accent)] bg-[var(--accent)]/5 shadow-md shadow-[var(--accent)]/5' : 'border-border hover:border-muted-foreground/30 bg-surface'}`}
+                    onClick={() => !isDisabled && handleToggle(p._id)}
+                    disabled={isDisabled}
+                    className={`w-full text-left p-4 rounded-xl border transition-all duration-200 flex items-center justify-between group 
+                      ${isDisabled ? 'opacity-60 bg-surface/30 border-border cursor-not-allowed' : 
+                        isSelected ? 'border-[var(--accent)] bg-[var(--accent)]/5 shadow-md shadow-[var(--accent)]/5' : 
+                        'border-border hover:border-muted-foreground/30 bg-surface'
+                      }`}
                   >
                     <div>
-                      <h4 className={`font-bold ${isSelected ? 'text-[var(--accent)]' : 'text-foreground'}`}>{p.name}</h4>
-                      <p className="text-xs text-muted mt-1 uppercase tracking-wider font-semibold">Type: {p.deviceType === 'ivd' ? 'In Vitro Diagnostic' : 'Medical Device'}</p>
+                      <h4 className={`font-bold ${isSelected ? 'text-[var(--accent)]' : isDisabled ? 'text-muted-foreground' : 'text-foreground'}`}>{p.name}</h4>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <p className="text-xs text-muted uppercase tracking-wider font-semibold">Type: {p.deviceType === 'ivd' ? 'IVD' : 'Medical Device'}</p>
+                        
+                        {isDisabled && (
+                          <div className="flex items-center gap-1 text-[10px] uppercase font-bold tracking-wider text-red-500 bg-red-500/10 px-1.5 py-0.5 rounded">
+                            <AlertCircle className="w-3 h-3" />
+                            Missing {isMissingPmf && isMissingDmf ? 'PMF & DMF' : isMissingPmf ? 'PMF' : 'DMF'}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors ${isSelected ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 'border-border group-hover:border-muted-foreground/40'}`}>
+                    <div className={`w-6 h-6 rounded-md border-2 flex items-center justify-center transition-colors 
+                      ${isDisabled ? 'border-border bg-surface2' : 
+                        isSelected ? 'border-[var(--accent)] bg-[var(--accent)] text-white' : 
+                        'border-border group-hover:border-muted-foreground/40'
+                      }`}>
                       {isSelected && <Check className="w-3.5 h-3.5" />}
                     </div>
                   </button>

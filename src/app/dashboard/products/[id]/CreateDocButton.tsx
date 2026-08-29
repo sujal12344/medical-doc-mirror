@@ -25,7 +25,7 @@ export default function CreateDocButton({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          productId,
+          contextPayload: { productIds: [productId] },
           countryCode: framework.countryCode,
           frameworkId: framework.id,
           title: `${productName} — ${framework.documentType} (${framework.countryName})`,

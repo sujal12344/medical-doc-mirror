@@ -39,7 +39,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     const doc = await RegulatoryDocument.findOne({ _id: id, userId: (user as Record<string, unknown>)._id });
     if (!doc) return NextResponse.json({ error: "Document not found" }, { status: 404 });
 
-    const product = await Product.findById(doc.productId).lean();
+    console.log(`${LOG} Debug doc contextPayload:`, JSON.stringify(doc.contextPayload || {}, null, 2));
+
+    const productId = doc.contextPayload?.productIds?.[0] || doc.contextPayload?.productId;
+    console.log(`${LOG} Resolved productId:`, productId);
+    
+    const product = await Product.findById(productId).lean();
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
     const uploadedDocs = (product.uploadedDocs || []) as { originalName: string; extractedText: string }[];
@@ -63,7 +68,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
       documentId: id,
       frameworkId: doc.frameworkId,
       framework: fw.documentType,
-      productId: String(doc.productId),
+      productId: String(productId),
       productName: (product as { name?: string }).name ?? "(no name)",
     });
 

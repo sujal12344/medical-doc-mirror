@@ -53,7 +53,7 @@ export function extractPlaceholdersFromTemplate(templatePath: string): string[] 
     });
 
     // Get all tags/placeholders
-    const tags = doc.getFullText().match(/\{\{[^}]+\}\}/g) || [];
+    const tags = doc.getFullText().match(/\{[^}]+\}/g) || [];
     return [...new Set(tags)]; // Remove duplicates
   } catch (error) {
     console.error("Error extracting placeholders:", error);
@@ -69,7 +69,7 @@ export function validatePlaceholders(
   provided: PlaceholderMap
 ): { valid: boolean; missing: string[] } {
   const missing = required.filter((placeholder) => {
-    const key = placeholder.replace(/\{\{|\}\}/g, "");
+    const key = placeholder.replace(/^\{+/, "").replace(/\}+$/, "");
     return !(key in provided);
   });
 
