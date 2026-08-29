@@ -3,6 +3,7 @@ import JSZip from "jszip";
 import { connectToDatabase } from "@/lib/mongodb";
 import { RegulatoryDocument } from "@/models/Document";
 import { Product } from "@/models/Product";
+import { Company } from "@/models/Company";
 import { requireAuth } from "@/lib/auth";
 import { sectionsToPlain } from "@/lib/documentSections";
 import { generateDocxFromTemplate, cleanPlaceholders } from "@/lib/docxTemplateHelper";
@@ -55,6 +56,21 @@ export async function POST(
     if (!placeholders.applicationDate) {
       placeholders.applicationDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
     }
+
+    const company = await Company.findById((user as Record<string, unknown>)._id).lean();
+    if (company?.coiData) {
+      const coi = company.coiData;
+      if (coi.applicantName && !placeholders.applicantName) placeholders.applicantName = coi.applicantName;
+      if (coi.bodyConstitution && !placeholders.bodyConstitution) placeholders.bodyConstitution = coi.bodyConstitution;
+      if (coi.registeredOfficeAddress && !placeholders.registeredOfficeAddress) placeholders.registeredOfficeAddress = coi.registeredOfficeAddress;
+      if (coi.incorporationDate && !placeholders.incorporationDate) placeholders.incorporationDate = coi.incorporationDate;
+      if (coi.cinNumber && !placeholders.incorporationNumber) placeholders.incorporationNumber = coi.cinNumber;
+      if (coi.signatories && coi.signatories.length > 0) {
+        if (!placeholders.designatedPersonName) placeholders.designatedPersonName = coi.signatories[0].name;
+        if (!placeholders.designatedPersonDesignation) placeholders.designatedPersonDesignation = coi.signatories[0].designation;
+      }
+    }
+
     if (!placeholders.applicationPlace) {
       placeholders.applicationPlace = placeholders.registeredOfficeAddress?.split(",")[0] || "Mumbai";
     }
@@ -107,6 +123,29 @@ export async function POST(
     const fetchedProducts = productIds.length > 0 
       ? await Product.find({ _id: { $in: productIds } }).lean() 
       : [];
+
+    // Fetch all technical documents (DMF/PMF) for the selected products
+    const techDocs = productIds.length > 0 
+      ? await RegulatoryDocument.find({
+          userId: (user as Record<string, unknown>)._id,
+          frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
+          "contextPayload.productId": { $in: productIds }
+        }).lean()
+      : [];
+
+    const pmfDoc = techDocs.find(d => d.frameworkId === "IN_PMF");
+    if (pmfDoc) {
+      const pmfSections = sectionsToPlain(pmfDoc.sections);
+      for (const sectionData of Object.values(pmfSections)) {
+        if (sectionData.fields) {
+          for (const [fieldId, fieldValue] of Object.entries(sectionData.fields)) {
+            if (fieldValue !== undefined && fieldValue !== null) {
+               cleanedPlaceholders[fieldId] = String(fieldValue);
+            }
+          }
+        }
+      }
+    }
 
     // Inject array for the Annexure table loop
     cleanedPlaceholders.annexureProducts = fetchedProducts.map((p: any, i: number) => ({
@@ -169,8 +208,28 @@ export async function POST(
                }
             }
 
+            const dmfDoc = techDocs.find(d => 
+              (d.frameworkId === "IN_DMF" || d.frameworkId === "IN_DMF_MD") && 
+              String(d.contextPayload?.productId) === String(product._id)
+            );
+            
+            const dmfFields: Record<string, string> = {};
+            if (dmfDoc) {
+              const dmfSections = sectionsToPlain(dmfDoc.sections);
+              for (const sectionData of Object.values(dmfSections)) {
+                if (sectionData.fields) {
+                  for (const [fieldId, fieldValue] of Object.entries(sectionData.fields)) {
+                    if (fieldValue !== undefined && fieldValue !== null) {
+                       dmfFields[fieldId] = String(fieldValue);
+                    }
+                  }
+                }
+              }
+            }
+
             const productSpecificPlaceholders = { 
               ...cleanedPlaceholders, 
+              ...dmfFields,
               productId: product._id.toString(),
               productName: product.name 
             };

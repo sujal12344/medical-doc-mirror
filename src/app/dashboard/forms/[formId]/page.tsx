@@ -29,6 +29,9 @@ export default function DynamicFormPage() {
         .then(res => res.json())
         .then(data => {
           if (data.products) setContextProducts(data.products);
+          if (data.prefillData) {
+            setOverrides(prev => ({ ...data.prefillData, ...prev }));
+          }
         })
         .catch(console.error);
     }

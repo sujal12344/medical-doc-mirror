@@ -21,7 +21,12 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
   const product = await Product.findOne({ _id: id, userId: (user as Record<string, unknown>)._id }).lean();
   if (!product) notFound();
 
-  const docs = await RegulatoryDocument.find({ productId: id }).sort({ updatedAt: -1 }).lean();
+  const docs = await RegulatoryDocument.find({
+    $or: [
+      { "contextPayload.productId": id },
+      { "contextPayload.productIds": id }
+    ]
+  }).sort({ updatedAt: -1 }).lean();
   const productDeviceType: FrameworkDeviceType =
     product.deviceType === "ivd" ? "ivd" : "medical-device";
   const availableFrameworks = filterFrameworksByDeviceType(

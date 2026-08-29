@@ -108,6 +108,11 @@ export type ProductDocument = {
   isSterile: boolean;
   hasSoftware: boolean;
 
+  /** Indicates if a Device Master File (DMF) has been generated/uploaded for this product */
+  hasDMF: boolean;
+  /** Indicates if a Plant Master File (PMF) has been generated/uploaded for this product */
+  hasPMF: boolean;
+
   /** Present only when deviceType is "medical-device" */
   medDevice?: MedDevice;
   /** Present only when deviceType is "ivd" */
@@ -224,6 +229,9 @@ const productSchema = new Schema<ProductDocument>(
 
     isSterile: { type: Boolean, default: false },
     hasSoftware: { type: Boolean, default: false },
+
+    hasDMF: { type: Boolean, default: false },
+    hasPMF: { type: Boolean, default: false },
 
     medDevice: { type: medDeviceSchema, required: false },
     IVDdevice: { type: ivdDeviceSchema, required: false },

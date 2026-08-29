@@ -14,6 +14,8 @@ type FormSpec = {
   description: string;
   path: string;
   requiredContexts?: string[];
+  requiresPmf?: boolean;
+  requiresDmf?: boolean;
 };
 
 function CreateFormButton({ form, templateCount, onTriggerModal }: { form: FormSpec, templateCount: number, onTriggerModal: (form: FormSpec) => void }) {
@@ -152,6 +154,8 @@ export default function FormsDashboard() {
           onContinue={handleModalContinue}
           generating={isGenerating}
           isMultiSelect={activeFormForModal.requiredContexts?.includes('PRODUCT_MULTI')}
+          requiresPmf={activeFormForModal.requiresPmf}
+          requiresDmf={activeFormForModal.requiresDmf}
         />
       )}
 
@@ -184,6 +188,8 @@ export default function FormsDashboard() {
                   description: form.description || "Regulatory Application Form",
                   path: `/dashboard/forms/${form.id.toLowerCase()}`,
                   requiredContexts: form.requiredContexts,
+                  requiresPmf: form.documents.some(d => d.source === 'PMF'),
+                  requiresDmf: form.documents.some(d => d.source === 'DMF'),
                 };
                 
                 return (

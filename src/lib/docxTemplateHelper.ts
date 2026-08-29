@@ -53,7 +53,7 @@ export function extractPlaceholdersFromTemplate(templatePath: string): string[] 
     });
 
     // Get all tags/placeholders
-    const tags = doc.getFullText().match(/\{\{[^}]+\}\}/g) || [];
+    const tags = doc.getFullText().match(/\{[^}]+\}/g) || [];
     return [...new Set(tags)]; // Remove duplicates
   } catch (error) {
     console.error("Error extracting placeholders:", error);
