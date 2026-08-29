@@ -1,0 +1,43 @@
+{
+  "md_form": "md-38",
+  "placeholders": [
+    "batchOrLotNumber",
+    "brandName",
+    "deviceName",
+    "expiryOrUseBeforeDate",
+    "manufacturingDate",
+    "medicalDeviceOfficerName",
+    "medicalDeviceOfficerOffice",
+    "medicalDeviceOfficerOfficeAddress",
+    "memorandumDate",
+    "memorandumSerialNumber",
+    "premisesNameAndAddress",
+    "quantity",
+    "sNo",
+    "sampleMark",
+    "testOrEvaluationRequested",
+    "testingLaboratoryAddress",
+    "testingLaboratoryName"
+  ],
+  "templates": {
+    "04_Official_Form_Memorandum_to_Testing_Officer_Template.docx": [
+      "batchOrLotNumber",
+      "brandName",
+      "deviceName",
+      "expiryOrUseBeforeDate",
+      "manufacturingDate",
+      "medicalDeviceOfficerName",
+      "medicalDeviceOfficerOffice",
+      "medicalDeviceOfficerOfficeAddress",
+      "memorandumDate",
+      "memorandumSerialNumber",
+      "premisesNameAndAddress",
+      "quantity",
+      "sNo",
+      "sampleMark",
+      "testOrEvaluationRequested",
+      "testingLaboratoryAddress",
+      "testingLaboratoryName"
+    ]
+  }
+}

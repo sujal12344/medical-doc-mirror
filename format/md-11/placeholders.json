@@ -1,0 +1,62 @@
+{
+  "md_form": "md-11",
+  "placeholders": [
+    "applicationDate",
+    "applicationNumber",
+    "authoritySignature",
+    "authorityStamp",
+    "bookIdentifier",
+    "documentRevision",
+    "inspectionDate",
+    "inspectionObservations",
+    "inspectionPageNumber",
+    "intendedUse",
+    "licenceFormNumber",
+    "licenseNumber",
+    "licenseeAddress",
+    "licenseeName",
+    "manufacturerAddress",
+    "manufacturerName",
+    "officerDesignation",
+    "officerName",
+    "officerSignature",
+    "premisesAddress",
+    "productClass",
+    "productName",
+    "shelfLife",
+    "videDate",
+    "videNumber"
+  ],
+  "templates": {
+    "01_Inspection_book_Template.docx": [
+      "authoritySignature",
+      "authorityStamp",
+      "bookIdentifier",
+      "documentRevision",
+      "inspectionDate",
+      "inspectionObservations",
+      "inspectionPageNumber",
+      "licenceFormNumber",
+      "licenseNumber",
+      "licenseeAddress",
+      "licenseeName",
+      "officerDesignation",
+      "officerName",
+      "officerSignature",
+      "premisesAddress"
+    ],
+    "Inspection book.docx": [
+      "applicationDate",
+      "applicationNumber",
+      "inspectionDate",
+      "intendedUse",
+      "manufacturerAddress",
+      "manufacturerName",
+      "productClass",
+      "productName",
+      "shelfLife",
+      "videDate",
+      "videNumber"
+    ]
+  }
+}

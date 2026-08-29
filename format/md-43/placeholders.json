@@ -1,0 +1,37 @@
+{
+  "md_form": "md-43",
+  "placeholders": [
+    "authoritySignature",
+    "authorityStamp",
+    "bookIdentifier",
+    "documentRevision",
+    "inspectionDate",
+    "inspectionObservations",
+    "inspectionPageNumber",
+    "officerDesignation",
+    "officerName",
+    "officerSignature",
+    "registeredPremisesAddress",
+    "registrationCertificateHolderAddress",
+    "registrationCertificateHolderName",
+    "registrationCertificateNumber"
+  ],
+  "templates": {
+    "01_Inspection_Book_Template.docx": [
+      "authoritySignature",
+      "authorityStamp",
+      "bookIdentifier",
+      "documentRevision",
+      "inspectionDate",
+      "inspectionObservations",
+      "inspectionPageNumber",
+      "officerDesignation",
+      "officerName",
+      "officerSignature",
+      "registeredPremisesAddress",
+      "registrationCertificateHolderAddress",
+      "registrationCertificateHolderName",
+      "registrationCertificateNumber"
+    ]
+  }
+}

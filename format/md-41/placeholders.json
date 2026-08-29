@@ -1,0 +1,80 @@
+{
+  "md_form": "md-41",
+  "placeholders": [
+    "activityOrProductCategory",
+    "applicantConstitution",
+    "applicantContactNumber",
+    "applicantEmailAddress",
+    "applicantFaxNumber",
+    "applicantName",
+    "applicationDate",
+    "applicationPlace",
+    "areaOrLocation",
+    "authorisedSignatoryDesignation",
+    "authorisedSignatoryName",
+    "competentPersonExperience",
+    "competentPersonName",
+    "competentPersonQualification",
+    "feeAmount",
+    "feePaymentDate",
+    "feeTransactionId",
+    "premisesAddress",
+    "segregationAndControls",
+    "serialNumber",
+    "sharedPremisesControlSummary"
+  ],
+  "templates": {
+    "01_Official_Form_Template.docx": [
+      "applicantConstitution",
+      "applicantContactNumber",
+      "applicantEmailAddress",
+      "applicantFaxNumber",
+      "applicantName",
+      "applicationDate",
+      "applicationPlace",
+      "authorisedSignatoryDesignation",
+      "authorisedSignatoryName",
+      "competentPersonExperience",
+      "competentPersonName",
+      "competentPersonQualification",
+      "feeAmount",
+      "feePaymentDate",
+      "feeTransactionId",
+      "premisesAddress"
+    ],
+    "02_Good_Distribution_Compliance_Self-Certificate_Template.docx": [
+      "applicantConstitution",
+      "applicantName",
+      "applicationDate",
+      "applicationPlace",
+      "authorisedSignatoryDesignation",
+      "authorisedSignatoryName",
+      "competentPersonExperience",
+      "competentPersonName",
+      "competentPersonQualification",
+      "premisesAddress"
+    ],
+    "03_Other_Activities_at_Premises_Statement_Template.docx": [
+      "activityOrProductCategory",
+      "applicantName",
+      "applicationDate",
+      "applicationPlace",
+      "areaOrLocation",
+      "authorisedSignatoryDesignation",
+      "authorisedSignatoryName",
+      "premisesAddress",
+      "segregationAndControls",
+      "serialNumber",
+      "sharedPremisesControlSummary"
+    ],
+    "04_Storage_Requirements_Compliance_Undertaking_Template.docx": [
+      "applicantName",
+      "applicationDate",
+      "applicationPlace",
+      "authorisedSignatoryDesignation",
+      "authorisedSignatoryName",
+      "competentPersonName",
+      "premisesAddress"
+    ]
+  }
+}

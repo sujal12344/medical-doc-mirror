@@ -1,0 +1,39 @@
+{
+  "md_form": "md-36",
+  "placeholders": [
+    "batchOrLotNumber",
+    "brandName",
+    "deviceName",
+    "expiryOrUseBeforeDate",
+    "manufacturingDate",
+    "medicalDeviceOfficerName",
+    "medicalDeviceOfficerOffice",
+    "premisesAddress",
+    "premisesName",
+    "premisesNameAndAddress",
+    "quantity",
+    "recipientAddress",
+    "recipientName",
+    "sNo",
+    "sampleTakingDate"
+  ],
+  "templates": {
+    "03_Official_Form_Sample_Taking_Intimation_Template.docx": [
+      "batchOrLotNumber",
+      "brandName",
+      "deviceName",
+      "expiryOrUseBeforeDate",
+      "manufacturingDate",
+      "medicalDeviceOfficerName",
+      "medicalDeviceOfficerOffice",
+      "premisesAddress",
+      "premisesName",
+      "premisesNameAndAddress",
+      "quantity",
+      "recipientAddress",
+      "recipientName",
+      "sNo",
+      "sampleTakingDate"
+    ]
+  }
+}

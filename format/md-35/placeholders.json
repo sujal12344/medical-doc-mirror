@@ -1,0 +1,37 @@
+{
+  "md_form": "md-35",
+  "placeholders": [
+    "batchLotOrDocumentNumber",
+    "descriptionOrIdentification",
+    "itemCategory",
+    "location",
+    "medicalDeviceOfficerName",
+    "medicalDeviceOfficerOffice",
+    "premisesAddress",
+    "premisesName",
+    "quantityOrPages",
+    "recipientAddress",
+    "recipientName",
+    "remarks",
+    "sNo",
+    "seizureDate"
+  ],
+  "templates": {
+    "02_Official_Form_Seizure_Receipt_Template.docx": [
+      "batchLotOrDocumentNumber",
+      "descriptionOrIdentification",
+      "itemCategory",
+      "location",
+      "medicalDeviceOfficerName",
+      "medicalDeviceOfficerOffice",
+      "premisesAddress",
+      "premisesName",
+      "quantityOrPages",
+      "recipientAddress",
+      "recipientName",
+      "remarks",
+      "sNo",
+      "seizureDate"
+    ]
+  }
+}

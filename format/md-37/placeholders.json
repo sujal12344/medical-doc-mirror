@@ -1,0 +1,41 @@
+{
+  "md_form": "md-37",
+  "placeholders": [
+    "batchOrLotNumber",
+    "brandName",
+    "deviceName",
+    "expiryOrUseBeforeDate",
+    "fairPriceAmount",
+    "manufacturingDate",
+    "medicalDeviceOfficerName",
+    "medicalDeviceOfficerOffice",
+    "premisesAddress",
+    "premisesNameAndAddress",
+    "quantity",
+    "receiptDate",
+    "recipientAddress",
+    "recipientName",
+    "sNo",
+    "sampleTakingDate"
+  ],
+  "templates": {
+    "05_Official_Form_Fair_Price_Refusal_Receipt_Conditional_Template.docx": [
+      "batchOrLotNumber",
+      "brandName",
+      "deviceName",
+      "expiryOrUseBeforeDate",
+      "fairPriceAmount",
+      "manufacturingDate",
+      "medicalDeviceOfficerName",
+      "medicalDeviceOfficerOffice",
+      "premisesAddress",
+      "premisesNameAndAddress",
+      "quantity",
+      "receiptDate",
+      "recipientAddress",
+      "recipientName",
+      "sNo",
+      "sampleTakingDate"
+    ]
+  }
+}

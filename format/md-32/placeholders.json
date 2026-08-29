@@ -1,0 +1,41 @@
+{
+  "md_form": "md-32",
+  "placeholders": [
+    "medicalDeviceTestingOfficerName",
+    "observedResult",
+    "reasonsForOpinion",
+    "reportDate",
+    "sNo",
+    "samplePurportedName",
+    "sampleQualityConclusion",
+    "sampleReceivedDate",
+    "sampleReceivedFrom",
+    "sampleReferenceDate",
+    "sampleReferenceNumber",
+    "sealCondition",
+    "specificationOrAcceptanceCriteria",
+    "testConclusion",
+    "testMethodOrProtocol",
+    "testParameter"
+  ],
+  "templates": {
+    "01_Official_Form_Test_or_Evaluation_Report_Template.docx": [
+      "medicalDeviceTestingOfficerName",
+      "observedResult",
+      "reasonsForOpinion",
+      "reportDate",
+      "sNo",
+      "samplePurportedName",
+      "sampleQualityConclusion",
+      "sampleReceivedDate",
+      "sampleReceivedFrom",
+      "sampleReferenceDate",
+      "sampleReferenceNumber",
+      "sealCondition",
+      "specificationOrAcceptanceCriteria",
+      "testConclusion",
+      "testMethodOrProtocol",
+      "testParameter"
+    ]
+  }
+}
