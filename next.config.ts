@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   // Required for EC2 deployment via PM2 Standalone runner
-  output: "standalone",
+  output: process.env.VERCEL ? undefined : "standalone",
 
   turbopack: {
     root: __dirname,
