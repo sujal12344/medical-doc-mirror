@@ -107,7 +107,7 @@ function toUnicodeBold(str: string): string {
       result += str[i];
     }
   }
-  return `[${result}]`;
+  return `❴${result}❵`;
 }
 
 /**

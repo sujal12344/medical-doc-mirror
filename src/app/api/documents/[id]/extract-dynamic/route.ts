@@ -77,14 +77,23 @@ Your job is to read the provided clinical document (like a Clinical Investigatio
 
 Output rules:
 - No explanation, no markdown, ONLY valid JSON.
-- If a value cannot be reasonably found or inferred from the text, return an empty string "".
-- You must return a JSON object containing the requested keys.
-- **IMPORTANT FOR TABLES/ARRAYS**: If you notice that some of the requested keys logically form columns of a table or loop (e.g., 'slNo', 'visitName', 'timePoint', 'plannedWindow'), you SHOULD group them into an array of objects under an appropriate parent key (like 'proceduresAssessments', 'scheduleOfAssessments', 'clinicalFacilities') if that parent key is in the requested list.
+- You MUST return a JSON object where EACH requested key maps to a nested object containing BOTH the "value" and the "source".
+- CRITICAL: DO NOT return plain strings or arrays directly! It MUST be { "value": ..., "source": "..." }.
+- If a value cannot be reasonably found or inferred from the text, set the "value" to an empty string "" and "source" to "".
+- **Example format**:
+  {
+    "applicantName": { "value": "MedTech Corp", "source": "Certificate_of_Incorporation.pdf" },
+    "cipDate": { "value": "12-Oct-2023", "source": "Clinical_Investigation_Plan.pdf" }
+  }
+- **IMPORTANT FOR TABLES/ARRAYS**: If you notice that some of the requested keys logically form columns of a table or loop (e.g., 'slNo', 'visitName', 'timePoint', 'plannedWindow'), group them into an array of objects. In this specific case, you don't need a "source" key per array element. Just return the array of objects as the "value".
   Example:
-  "proceduresAssessments": [
-    { "slNo": 1, "visitName": "Baseline", "plannedWindow": "Day 0" },
-    { "slNo": 2, "visitName": "Follow-up", "plannedWindow": "Day 7" }
-  ]
+  "proceduresAssessments": {
+    "source": "Clinical_Investigation_Plan.pdf",
+    "value": [
+      { "slNo": 1, "visitName": "Baseline", "plannedWindow": "Day 0" },
+      { "slNo": 2, "visitName": "Follow-up", "plannedWindow": "Day 7" }
+    ]
+  }
 - **PATIENT INFORMATION SHEET (pis...)**: Keys starting with 'pis' (e.g., pisRisksDiscomforts, pisStudyProcedures) are meant for the Patient Informed Consent form. Extract comprehensive, patient-friendly paragraphs from the document (usually found in the Risk/Benefit or Ethics sections) to satisfy these fields.
 - **CHECKBOXES**: If you see keys like 'yes' or 'no', these are literal checkbox placeholders. Ignore them and return "".`;
 
@@ -119,27 +128,48 @@ ${contextText}`;
     }
 
     console.log(`${LOG} Extraction successful:`, Object.keys(extractedData));
+    console.log(`${LOG} Raw AI Output:`, JSON.stringify(extractedData, null, 2));
 
     // Save back to doc
     if (!doc.sections) {
       doc.sections = new Map();
     }
 
-    const dynamicSection = doc.sections.get("dynamic_extraction") || { fields: {}, completionPct: 100 };
+    const dynamicSection = doc.sections.get("dynamic_extraction") || { fields: {}, fieldSources: {}, completionPct: 100 };
     
     // Merge new extracted data with any existing dynamic data
     const updatedFields = { ...dynamicSection.fields };
-    for (const [k, v] of Object.entries(extractedData)) {
-       // Save non-empty strings, arrays, or objects
-       if (v !== undefined && v !== null && v !== "") {
-          // If it's an array and empty, skip it
-          if (Array.isArray(v) && v.length === 0) continue;
-          
-          updatedFields[k] = v;
+    const updatedSources = { ...dynamicSection.fieldSources };
+    for (const [k, obj] of Object.entries(extractedData)) {
+       if (obj !== undefined && obj !== null && obj !== "") {
+          // If OpenAI followed the prompt and returned { value, source }
+          if (typeof obj === 'object' && !Array.isArray(obj) && 'value' in obj) {
+             const val = (obj as any).value;
+             const src = (obj as any).source;
+             
+             if (val !== undefined && val !== null && val !== "") {
+                if (Array.isArray(val) && val.length === 0) continue;
+                updatedFields[k] = val;
+                if (src) updatedSources[k] = src;
+             }
+          } 
+          // Fallback: If OpenAI ignored the prompt and returned a raw string/array
+          else {
+             if (Array.isArray(obj) && obj.length === 0) continue;
+             updatedFields[k] = obj;
+             // No source available because AI didn't provide it
+          }
        }
     }
-
-    doc.sections.set("dynamic_extraction", { fields: updatedFields, completionPct: 100 });
+    
+    doc.sections.set("dynamic_extraction", {
+       fields: updatedFields,
+       fieldSources: updatedSources,
+       completionPct: 100
+    });
+    
+    // Force Mongoose to save the Map with Mixed types properly
+    doc.markModified("sections");
     await doc.save();
 
     console.log(`${LOG} Saved to doc.sections.dynamic_extraction`);
