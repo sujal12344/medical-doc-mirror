@@ -4,8 +4,8 @@ interface DynamicExtractionModalProps {
   isOpen: boolean;
   onClose: () => void;
   missingKeys: string[];
-  uploadFile: File | null;
-  setUploadFile: (file: File | null) => void;
+  uploadFiles: File[];
+  setUploadFiles: (files: File[]) => void;
   uploading: boolean;
   onExtract: () => void;
   onGenerateAnyway: () => void;
@@ -15,8 +15,8 @@ export function DynamicExtractionModal({
   isOpen,
   onClose,
   missingKeys,
-  uploadFile,
-  setUploadFile,
+  uploadFiles,
+  setUploadFiles,
   uploading,
   onExtract,
   onGenerateAnyway
@@ -65,9 +65,10 @@ export function DynamicExtractionModal({
               id="dynamic-upload" 
               className="hidden" 
               accept=".pdf,.docx,.doc" 
+              multiple
               onChange={(e) => {
                 if (e.target.files && e.target.files.length > 0) {
-                   setUploadFile(e.target.files[0]);
+                   setUploadFiles(Array.from(e.target.files));
                 }
               }} 
             />
@@ -76,7 +77,11 @@ export function DynamicExtractionModal({
                 <FileText className="w-6 h-6" />
               </div>
               <span className="text-sm font-semibold text-[var(--accent)]">Browse Files</span>
-              <span className="text-xs text-muted-foreground mt-1">{uploadFile ? uploadFile.name : "PDF or Word documents"}</span>
+              <span className="text-xs text-muted-foreground mt-1 text-center">
+                {uploadFiles.length > 0 
+                  ? `${uploadFiles.length} file(s) selected: ${uploadFiles.map(f => f.name).join(', ')}`
+                  : "Select one or more PDF/Word documents"}
+              </span>
             </label>
           </div>
 
@@ -89,7 +94,7 @@ export function DynamicExtractionModal({
             </button>
             <button
               onClick={onExtract}
-              disabled={uploading || !uploadFile}
+              disabled={uploading || uploadFiles.length === 0}
               className="px-6 py-2 bg-[var(--accent)] text-white text-sm font-semibold rounded-lg shadow-sm hover:opacity-90 transition disabled:opacity-50 flex items-center gap-2"
             >
               {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
