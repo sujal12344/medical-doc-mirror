@@ -44,14 +44,10 @@ export async function POST(
     const overrides = body.overrides || {};
     const ignoreMissing = body.ignoreMissing === true;
 
-    // Intercept generation if major clinical fields are missing and the user hasn't chosen to ignore
-    if (!ignoreMissing && missingKeys && missingKeys.length > 0) {
-      const clinicalKeys = missingKeys.filter((k: string) => 
-        k.startsWith('cip') || k.startsWith('ib') || k.startsWith('pis') || k.startsWith('clinical') || k.startsWith('study')
-      );
-      if (clinicalKeys.length >= 3) {
-        return NextResponse.json({ requiresUpload: true, missingKeys: clinicalKeys });
-      }
+    // Intercept generation if significant fields are missing and the user hasn't chosen to ignore.
+    // The frontend DynamicExtractionModal will analyze these keys and suggest the correct document (e.g. CIP, ISO, SMF).
+    if (!ignoreMissing && missingKeys && missingKeys.length >= 3) {
+      return NextResponse.json({ requiresUpload: true, missingKeys });
     }
 
     // Apply any user-provided overrides from the preview modal on top of prefillData
