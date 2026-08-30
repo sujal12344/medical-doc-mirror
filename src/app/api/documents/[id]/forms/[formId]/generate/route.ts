@@ -37,80 +37,20 @@ export async function POST(
       return NextResponse.json({ error: `Configuration for form ${formIdUpper} not found.` }, { status: 404 });
     }
 
-    const sections = sectionsToPlain(doc.sections);
-    
-    // Flatten all fields into a single placeholder map
-    const placeholders: Record<string, string> = {};
-    for (const sectionData of Object.values(sections)) {
-      if (sectionData.fields) {
-        for (const [fieldId, fieldValue] of Object.entries(sectionData.fields)) {
-          if (fieldValue !== undefined && fieldValue !== null) {
-             placeholders[fieldId] = String(fieldValue);
-          }
-        }
-      }
-    }
-
-    // Add smart defaults
-    const today = new Date();
-    if (!placeholders.applicationDate) {
-      placeholders.applicationDate = `${today.getDate().toString().padStart(2, '0')}/${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getFullYear()}`;
-    }
-
-    const company = await Company.findById((user as Record<string, unknown>)._id).lean();
-    if (company?.coiData) {
-      const coi = company.coiData;
-      if (coi.applicantName && !placeholders.applicantName) placeholders.applicantName = coi.applicantName;
-      if (coi.bodyConstitution && !placeholders.bodyConstitution) placeholders.bodyConstitution = coi.bodyConstitution;
-      if (coi.registeredOfficeAddress && !placeholders.registeredOfficeAddress) placeholders.registeredOfficeAddress = coi.registeredOfficeAddress;
-      if (coi.incorporationDate && !placeholders.incorporationDate) placeholders.incorporationDate = coi.incorporationDate;
-      if (coi.cinNumber && !placeholders.incorporationNumber) placeholders.incorporationNumber = coi.cinNumber;
-      if (coi.signatories && coi.signatories.length > 0) {
-        if (!placeholders.designatedPersonName) placeholders.designatedPersonName = coi.signatories[0].name;
-        if (!placeholders.designatedPersonDesignation) placeholders.designatedPersonDesignation = coi.signatories[0].designation;
-      }
-    }
-
-    if (!placeholders.applicationPlace) {
-      placeholders.applicationPlace = placeholders.registeredOfficeAddress?.split(",")[0] || "Mumbai";
-    }
-    if (!placeholders.designatedPersonName) {
-      placeholders.designatedPersonName = "[Authorized Signatory Name]";
-    }
-    if (!placeholders.designatedPersonDesignation) {
-      placeholders.designatedPersonDesignation = "[Designation]";
-    }
-
-    // Handle nested specific CDSCO combinations gracefully
-    placeholders.accreditationValidity = placeholders.accreditationIssueDate && placeholders.accreditationExpiryDate 
-      ? `${placeholders.accreditationIssueDate} to ${placeholders.accreditationExpiryDate}` 
-      : "";
-    placeholders.feePaymentDetails = placeholders.feePaidDate && placeholders.feeAmount
-      ? `Date: ${placeholders.feePaidDate}, Amount: ${placeholders.feeAmount}, Receipt: ${placeholders.feeReceiptOrChallanNumber || ""}`
-      : "";
-    
-    // Standardize aliases used in older templates
-    if (placeholders.incorporationOrRegistrationNumber) placeholders.incorporationNumber = placeholders.incorporationOrRegistrationNumber;
-    if (placeholders.incorporationOrRegistrationDate) placeholders.incorporationDate = placeholders.incorporationOrRegistrationDate;
-    if (placeholders.mobileNumber) {
-      placeholders.telephoneNumber = placeholders.mobileNumber;
-      placeholders.faxNumber = placeholders.mobileNumber;
-    }
-    placeholders.slNo = "1";
-    placeholders.standard = placeholders.applicableAccreditationStandards || "";
-    placeholders.scope = placeholders.accreditationScopeSummary || "";
+    const { resolvePlaceholders } = await import("@/lib/frameworks/resolvers");
+    const { prefillData, products: fetchedProducts, techDocs } = await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string);
 
     const body = await _req.json().catch(() => ({}));
     const overrides = body.overrides || {};
 
-    const cleanedPlaceholders = cleanPlaceholders(placeholders);
-
-    // Apply any user-provided overrides from the preview modal
+    // Apply any user-provided overrides from the preview modal on top of prefillData
     for (const [key, val] of Object.entries(overrides)) {
       if (val !== undefined && val !== null) {
-        cleanedPlaceholders[key] = String(val);
+        prefillData[key] = String(val);
       }
     }
+
+    const cleanedPlaceholders = cleanPlaceholders(prefillData);
 
     // Create ZIP file containing all generated documents
     const zip = new JSZip();
@@ -118,76 +58,6 @@ export async function POST(
     
     const safeFormId = formId.replace(/[^a-zA-Z0-9-]/g, "").toLowerCase();
     const templateDir = path.join(process.cwd(), "format", safeFormId);
-
-    const productIds: string[] = doc.contextPayload?.productIds || [];
-    
-    // Fetch products from DB to get their names and details for the Annexure
-    const fetchedProducts = productIds.length > 0 
-      ? await Product.find({ _id: { $in: productIds }, userId: (user as Record<string, unknown>)._id }).lean() 
-      : [];
-
-    // Fetch all technical documents (DMF/PMF) for the selected products
-    const techDocs = productIds.length > 0 
-      ? await RegulatoryDocument.find({
-          userId: (user as Record<string, unknown>)._id,
-          frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
-          "contextPayload.productId": { $in: productIds }
-        }).lean()
-      : [];
-
-    // Bubble up fields from ALL technical docs (PMF and DMFs) so single-copy docs like Covering Letters have access
-    for (const tDoc of techDocs) {
-      const tSections = sectionsToPlain(tDoc.sections);
-      for (const sectionData of Object.values(tSections)) {
-        if (sectionData.fields) {
-          for (const [fieldId, fieldValue] of Object.entries(sectionData.fields)) {
-            if (fieldValue !== undefined && fieldValue !== null && !cleanedPlaceholders[fieldId]) {
-               cleanedPlaceholders[fieldId] = String(fieldValue);
-            }
-          }
-        }
-      }
-    }
-
-    // Bubble up Product details to the global placeholders for single-copy docs
-    if (fetchedProducts.length > 0) {
-      const classes = Array.from(new Set(fetchedProducts.map(p => p.deviceClass).filter(Boolean)));
-      if (classes.length && !cleanedPlaceholders.deviceClass) {
-        cleanedPlaceholders.deviceClass = classes.join(", ");
-      }
-      
-      const scopes = Array.from(new Set(fetchedProducts.map(p => p.intendedUse || p.name).filter(Boolean)));
-      if (scopes.length && !cleanedPlaceholders.deviceScopeSummary) {
-        cleanedPlaceholders.deviceScopeSummary = scopes.join("; ");
-      }
-    }
-
-    // Fallback for manufacturingSiteAddress if missing from PMF
-    if (!cleanedPlaceholders.manufacturingSiteAddress && cleanedPlaceholders.registeredOfficeAddress) {
-       cleanedPlaceholders.manufacturingSiteAddress = cleanedPlaceholders.registeredOfficeAddress;
-    }
-
-    // Inject array for the Annexure table loop
-    cleanedPlaceholders.annexureProducts = fetchedProducts.map((p: any, i: number) => ({
-      sn: i + 1,
-      genericName: p.name || "N/A",
-      modelNo: p.modelNo || "N/A",
-      intendedUse: p.intendedUse || "N/A",
-      deviceClass: p.deviceClass || "N/A",
-      material: p.material || "N/A",
-      dimension: p.dimension || "N/A",
-      shelfLife: p.shelfLife || "N/A",
-      sterile: p.sterile ? "Sterile" : "Non-sterile",
-      brandName: p.brandName || "N/A"
-    }));
-
-    // For preview fallback if it's missing
-    if (cleanedPlaceholders.annexureProducts.length === 0) {
-      cleanedPlaceholders.annexureProducts = [{
-        sn: 1, genericName: "Sample Product", modelNo: "-", intendedUse: "-",
-        deviceClass: "A", material: "-", dimension: "-", shelfLife: "-", sterile: "-", brandName: "-"
-      }];
-    }
 
     for (const template of formConfig.documents) {
       // In the legacy system, md1 templates were in `format/md1/template/`
@@ -293,7 +163,7 @@ export async function POST(
     }
 
     const zipBuffer = await zip.generateAsync({ type: "nodebuffer", compression: "DEFLATE" });
-    const filename = `${(placeholders.applicantName || formIdUpper).replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "")}_Application_Package.zip`;
+    const filename = `${(cleanedPlaceholders.applicantName || formIdUpper).replace(/\s+/g, "_").replace(/[^a-zA-Z0-9_-]/g, "")}_Application_Package.zip`;
 
     console.log(`${LOG} Complete. Generated ${generatedCount}/${formConfig.documents.length} documents in ZIP: ${filename}`);
 

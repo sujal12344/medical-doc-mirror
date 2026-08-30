@@ -99,7 +99,7 @@ export default function SettingsPage() {
     e.target.value = ""; // reset so same file can be re-uploaded
   }
 
-  function onDrop(e: React.DragEvent<HTMLDivElement>) {
+  function onDrop(e: React.DragEvent<HTMLButtonElement>) {
     e.preventDefault();
     setCoiDragOver(false);
     const file = e.dataTransfer.files[0];
