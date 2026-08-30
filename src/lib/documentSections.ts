@@ -2,6 +2,7 @@ import type { RegulatoryFramework } from "@/lib/frameworks/types";
 
 export type SectionData = {
   fields: Record<string, string>;
+  fieldSources?: Record<string, string>;
   completionPct: number;
 };
 
@@ -21,8 +22,13 @@ export function sectionsToPlain(sections: unknown): Record<string, SectionData> 
       raw.fields instanceof Map
         ? Object.fromEntries(raw.fields)
         : { ...(raw.fields || {}) };
+    const fieldSources =
+      raw.fieldSources instanceof Map
+        ? Object.fromEntries(raw.fieldSources)
+        : { ...(raw.fieldSources || {}) };
     out[sectionId] = {
       fields,
+      fieldSources,
       completionPct: raw.completionPct ?? 0,
     };
   }
@@ -48,6 +54,7 @@ export function persistSections(
     }
     doc.sections.set(sectionId, {
       fields: { ...section.fields },
+      fieldSources: section.fieldSources ? { ...section.fieldSources } : undefined,
       completionPct: section.completionPct ?? 0,
     });
   }

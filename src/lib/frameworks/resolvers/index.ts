@@ -136,8 +136,14 @@ export async function resolvePlaceholders(
   const docSections = sectionsToPlain(doc.sections || {});
   for (const [sectionKey, sectionData] of Object.entries(docSections)) {
     if (sectionData.fields) {
-      const sourceName = sectionKey === "dynamic_extraction" ? "AI Extracted (Source Docs)" : "Manual Form Input";
       for (const [k, v] of Object.entries(sectionData.fields)) {
+        let sourceName = "Manual Form Input";
+        if (sectionKey === "dynamic_extraction") {
+          sourceName = (sectionData.fieldSources && sectionData.fieldSources[k])
+            ? `AI Extracted (${sectionData.fieldSources[k]})`
+            : "AI Extracted (Uploaded Docs)";
+        }
+        
         if (v !== undefined && v !== null && v !== '') {
           prefillData[k] = (typeof v === 'object') ? v : String(v);
           // Only log it if it wasn't already logged by a tech doc fallback or it explicitly overrides

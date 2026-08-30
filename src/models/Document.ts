@@ -15,7 +15,7 @@ export type DocumentDocument = {
   frameworkId: string;
   title: string;
   status: "draft" | "in-review" | "approved" | "submitted";
-  sections: Map<string, { fields: Record<string, string>; completionPct: number }>;
+  sections: Map<string, { fields: Record<string, string>; fieldSources?: Record<string, string>; completionPct: number }>;
   uploadedDocs: UploadedDoc[];
   version: number;
   createdAt: Date;
@@ -34,7 +34,7 @@ const documentSchema = new Schema<DocumentDocument>(
     sections: {
       type: Map,
       of: new Schema(
-        { fields: { type: Schema.Types.Mixed, default: () => ({}) }, completionPct: { type: Number, default: 0 } },
+        { fields: { type: Schema.Types.Mixed, default: () => ({}) }, fieldSources: { type: Schema.Types.Mixed }, completionPct: { type: Number, default: 0 } },
         { _id: false },
       ),
       default: () => new Map(),

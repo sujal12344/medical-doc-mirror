@@ -65,7 +65,10 @@ export async function GET(req: Request) {
       const docs = await RegulatoryDocument.find({
         userId: (user as Record<string, unknown>)._id,
         frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
-        "contextPayload.productId": id
+        $or: [
+          { "contextPayload.productId": id },
+          { "contextPayload.productIds": id }
+        ]
       }).select("frameworkId").lean();
 
       const hasDMF = docs.some(d => d.frameworkId === "IN_DMF" || d.frameworkId === "IN_DMF_MD");
@@ -95,11 +98,16 @@ export async function GET(req: Request) {
     const docs = await RegulatoryDocument.find({
       userId: (user as Record<string, unknown>)._id,
       frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
-      "contextPayload.productId": { $in: productIds }
-    }).select("frameworkId contextPayload.productId").lean();
+      $or: [
+        { "contextPayload.productId": { $in: productIds } },
+        { "contextPayload.productIds": { $in: productIds } }
+      ]
+    }).select("frameworkId contextPayload").lean();
 
-    const dmfSet = new Set(docs.filter(d => d.frameworkId === "IN_DMF" || d.frameworkId === "IN_DMF_MD").map(d => String(d.contextPayload?.productId)));
-    const pmfSet = new Set(docs.filter(d => d.frameworkId === "IN_PMF").map(d => String(d.contextPayload?.productId)));
+    const getProductId = (d: any) => String(d.contextPayload?.productIds?.[0] || d.contextPayload?.productId);
+
+    const dmfSet = new Set(docs.filter(d => d.frameworkId === "IN_DMF" || d.frameworkId === "IN_DMF_MD").map(getProductId));
+    const pmfSet = new Set(docs.filter(d => d.frameworkId === "IN_PMF").map(getProductId));
 
     const enrichedProducts = products.map(p => ({
       ...p,
