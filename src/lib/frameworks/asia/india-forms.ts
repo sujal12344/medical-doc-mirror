@@ -23,6 +23,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-3',
       name: 'Application Form MD-3',
       description: 'Manufacture for Sale (Class A/B)',
+      summary: "License to manufacture low to moderate risk medical devices or IVDs for commercial sale and distribution in India.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
@@ -39,6 +40,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-4',
       name: 'Application Form MD-4',
       description: 'Loan Licence to Manufacture (Class A/B)',
+      summary: "Permission to use the manufacturing facilities of another licensee for commercial production of Class A/B devices.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
@@ -53,6 +55,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-7',
       name: 'Application Form MD-7',
       description: 'Manufacture for Sale (Class C/D)',
+      summary: "License to manufacture high to very high risk medical devices or IVDs, requiring extensive quality and clinical data.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
@@ -69,6 +72,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       id: 'MD-8',
       name: 'Application Form MD-8',
       description: 'Loan Licence to Manufacture (Class C/D)',
+      summary: "Permission to utilize another licensees facility to manufacture high risk devices under a loan arrangement.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_MD8_Covering_Letter_Template.docx', name: 'MD8 Covering Letter', source: 'FORM' },
@@ -95,6 +99,7 @@ export const SMALL_QUANTITY_TESTING_GROUP: FormGroup<'small-quantity-testing', S
       id: 'MD-12',
       name: 'Application Form MD-12',
       description: 'Manufacture for Test/Evaluation',
+      summary: "License to manufacture limited quantities of a device purely for clinical investigation, testing, or demonstration.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
       ]
@@ -103,6 +108,7 @@ export const SMALL_QUANTITY_TESTING_GROUP: FormGroup<'small-quantity-testing', S
       id: 'MD-16',
       name: 'Application Form MD-16',
       description: 'Import for Test/Evaluation',
+      summary: "License to import limited quantities of unapproved medical devices strictly for testing or clinical trials.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
       ]
@@ -119,6 +125,7 @@ export const COMMERCIAL_IMPORT_GROUP: FormGroup<'commercial-import', CommercialI
       id: 'MD-14',
       name: 'Application Form MD-14',
       description: 'Commercial Import Licence',
+      summary: "Comprehensive license allowing authorized Indian agents to import and sell foreign-manufactured medical devices.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
@@ -142,6 +149,7 @@ export const PERSONAL_USE_IMPORT_GROUP: FormGroup<'personal-use-import', Persona
       id: 'MD-20',
       name: 'Application Form MD-20',
       description: 'Import for Personal Use',
+      summary: "Permission for patients to legally import small quantities of medical devices prescribed for their personal treatment.",
       requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: 'MD-20.docx', name: 'MD-20', source: 'DMF' },
@@ -161,6 +169,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       id: 'MD-22',
       name: 'Application Form MD-22',
       description: 'Conduct Clinical Investigation',
+      summary: "Approval from CDSCO to initiate a clinical trial for an investigational medical device involving human participants.",
       requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
@@ -180,6 +189,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       id: 'MD-24',
       name: 'Application Form MD-24',
       description: 'Clinical Performance Evaluation (IVD)',
+      summary: "Permission to evaluate the performance and safety of a new In-Vitro Diagnostic (IVD) device using clinical specimens.",
       requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_Cover_Letter_MD24.docx', name: 'Cover Letter MD24', source: 'FORM' },
@@ -204,6 +214,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       id: 'MD-26',
       name: 'Application Form MD-26',
       description: 'New Device Approval (No Predicate)',
+      summary: "Marketing authorization for innovative medical devices that do not have an equivalent predicate device currently on the market.",
       requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
@@ -227,6 +238,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       id: 'MD-28',
       name: 'Application Form MD-28',
       description: 'New IVD Approval',
+      summary: "Application to import or manufacture a completely new In-Vitro Diagnostic (IVD) that lacks a predicate in the Indian market.",
       requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
@@ -260,6 +272,7 @@ export const AUDIT_TESTING_BODIES_GROUP: FormGroup<'audit-testing-bodies', Audit
       id: 'MD-1',
       name: 'Application Form MD-1',
       description: 'Register Notified Body',
+      summary: "Registration for third-party auditing organizations authorized to inspect Class A and Class B manufacturing facilities.",
       documents: [
         { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
         { fileName: '02_Constitution_Details_Template.docx', name: 'Constitution Details', source: 'LEGAL' },
@@ -276,6 +289,7 @@ export const AUDIT_TESTING_BODIES_GROUP: FormGroup<'audit-testing-bodies', Audit
       id: 'MD-39',
       name: 'Application Form MD-39',
       description: 'Register Testing Laboratory',
+      summary: "Approval for private testing laboratories to carry out testing and evaluation of medical devices on behalf of manufacturers.",
       documents: [
         { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -301,6 +315,7 @@ export const MARKET_SALE_DISTRIBUTION_GROUP: FormGroup<'market-sale-distribution
       id: 'MD-41',
       name: 'Application Form MD-41',
       description: 'Registration to Sell/Distribute',
+      summary: "Mandatory registration certificate for wholesalers, retailers, and distributors dealing in medical devices.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
         { fileName: '01_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -321,6 +336,7 @@ export const AUDIT_INSPECTION_RECORDS_GROUP: FormGroup<'audit-inspection-records
       id: 'MD-11',
       name: 'Application Form MD-11',
       description: 'Audit/Inspection Book (Manufacturing)',
+      summary: "Required record book maintained at the manufacturing site for official auditors to log observations and remarks.",
       documents: [
         { fileName: '01_Inspection_book_Template.docx', name: 'Inspection book', source: 'DMF' },
         { fileName: 'Inspection book.docx', name: 'Inspection book', source: 'DMF' },
@@ -338,6 +354,7 @@ export const INSPECTION_RECORDS_SALE_DISTRIBUTION_GROUP: FormGroup<'inspection-r
       id: 'MD-43',
       name: 'Application Form MD-43',
       description: 'Inspection Book (Sale/Distribution)',
+      summary: "Statutory inspection book maintained by registered distributors to record observations by Medical Device Officers.",
       documents: [
         { fileName: '01_Inspection_Book_Template.docx', name: 'Inspection Book', source: 'DMF' },
       ]

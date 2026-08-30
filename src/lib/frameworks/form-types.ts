@@ -56,6 +56,7 @@ export interface FormDefinition<TFormId extends ApplicationFormId = ApplicationF
   id: TFormId;
   name: string;
   description?: string;
+  summary?: string;
   requiredContexts?: string[];
   documents: DocumentTemplate[];
 }

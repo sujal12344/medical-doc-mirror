@@ -12,6 +12,7 @@ type FormSpec = {
   title: string;
   name: string;
   description: string;
+  summary?: string;
   path: string;
   requiredContexts?: string[];
   requiresPmf?: boolean;
@@ -59,7 +60,7 @@ function CreateFormButton({ form, templateCount, onTriggerModal }: { form: FormS
     <button
       onClick={create}
       disabled={loading}
-      className="group relative flex flex-col text-left bg-surface/40 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[var(--accent)] hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 disabled:opacity-50 w-full overflow-hidden min-h-[160px]"
+      className="group relative flex flex-col text-left bg-surface/40 backdrop-blur-md border border-border rounded-2xl p-6 hover:border-[var(--accent)] hover:shadow-xl hover:shadow-[var(--accent)]/10 transition-all duration-300 disabled:opacity-50 w-full overflow-hidden h-full min-h-[220px]"
     >
       <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
       
@@ -80,10 +81,17 @@ function CreateFormButton({ form, templateCount, onTriggerModal }: { form: FormS
         </div>
       </div>
       
-      <div className="relative mt-auto pt-2">
-        <h3 className="text-base font-bold text-foreground mb-3 group-hover:text-[var(--accent)] transition-colors leading-snug line-clamp-2">
-          {form.description}
-        </h3>
+      <div className="relative mt-auto pt-3 flex flex-col h-full justify-between flex-1">
+        <div>
+          <h3 className="text-base font-bold text-foreground mb-2 group-hover:text-[var(--accent)] transition-colors leading-snug line-clamp-2">
+            {form.description}
+          </h3>
+          {form.summary && (
+            <p className="text-[12px] text-muted mb-5 leading-relaxed line-clamp-3">
+              {form.summary}
+            </p>
+          )}
+        </div>
         
         {templateCount > 0 ? (
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-green-500/10 border border-green-500/20 w-fit transition-colors group-hover:bg-green-500/15">
@@ -186,6 +194,7 @@ export default function FormsDashboard() {
                   title: form.id,
                   name: `${form.id} Form`,
                   description: form.description || "Regulatory Application Form",
+                  summary: form.summary,
                   path: `/dashboard/forms/${form.id.toLowerCase()}`,
                   requiredContexts: form.requiredContexts,
                   requiresPmf: form.documents.some(d => d.source === 'PMF'),

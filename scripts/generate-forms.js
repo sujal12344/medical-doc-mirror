@@ -119,6 +119,26 @@ const formDescriptions = {
   'MD-43': 'Inspection Book (Sale/Distribution)',
 };
 
+const formSummaries = {
+  'MD-3': 'License to manufacture low to moderate risk medical devices or IVDs for commercial sale and distribution in India.',
+  'MD-4': 'Permission to use the manufacturing facilities of another licensee for commercial production of Class A/B devices.',
+  'MD-7': 'License to manufacture high to very high risk medical devices or IVDs, requiring extensive quality and clinical data.',
+  'MD-8': "Permission to utilize another licensees facility to manufacture high risk devices under a loan arrangement.",
+  'MD-12': 'License to manufacture limited quantities of a device purely for clinical investigation, testing, or demonstration.',
+  'MD-16': 'License to import limited quantities of unapproved medical devices strictly for testing or clinical trials.',
+  'MD-14': 'Comprehensive license allowing authorized Indian agents to import and sell foreign-manufactured medical devices.',
+  'MD-20': 'Permission for patients to legally import small quantities of medical devices prescribed for their personal treatment.',
+  'MD-22': 'Approval from CDSCO to initiate a clinical trial for an investigational medical device involving human participants.',
+  'MD-24': 'Permission to evaluate the performance and safety of a new In-Vitro Diagnostic (IVD) device using clinical specimens.',
+  'MD-26': 'Marketing authorization for innovative medical devices that do not have an equivalent predicate device currently on the market.',
+  'MD-28': 'Application to import or manufacture a completely new In-Vitro Diagnostic (IVD) that lacks a predicate in the Indian market.',
+  'MD-1': 'Registration for third-party auditing organizations authorized to inspect Class A and Class B manufacturing facilities.',
+  'MD-39': 'Approval for private testing laboratories to carry out testing and evaluation of medical devices on behalf of manufacturers.',
+  'MD-41': 'Mandatory registration certificate for wholesalers, retailers, and distributors dealing in medical devices.',
+  'MD-11': 'Required record book maintained at the manufacturing site for official auditors to log observations and remarks.',
+  'MD-43': 'Statutory inspection book maintained by registered distributors to record observations by Medical Device Officers.'
+};
+
 const formConfigs = {
   // 1. Commercial Manufacturing
   'MD-3': { requiredContexts: ['PRODUCT_MULTI'], templates: {
@@ -199,6 +219,9 @@ for (const group of groups) {
     out += `      id: '${formId}',\n`;
     out += `      name: 'Application Form ${formId}',\n`;
     out += `      description: '${formDescriptions[formId] || 'Regulatory Application Form'}',\n`;
+    if (formSummaries[formId]) {
+      out += `      summary: "${formSummaries[formId]}",\n`;
+    }
     if (config.requiredContexts && config.requiredContexts.length > 0) {
       out += `      requiredContexts: [${config.requiredContexts.map(c => `'${c}'`).join(', ')}],\n`;
     }
