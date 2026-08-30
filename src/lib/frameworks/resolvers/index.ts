@@ -48,7 +48,7 @@ export async function resolvePlaceholders(
     }).lean();
   }
 
-  const ctx: ResolverContext = { coi, products, techDocs, doc, userId };
+  const ctx: ResolverContext = { coi, company, products, techDocs, doc, userId };
 
   // Determine Form ID and load required placeholders
   const formIdMatch = doc.frameworkId?.match(/MD[-_]?\d+/i) || doc.type?.match(/MD[-_]?\d+/i);
@@ -139,7 +139,7 @@ export async function resolvePlaceholders(
       const sourceName = sectionKey === "dynamic_extraction" ? "AI Extracted (Source Docs)" : "Manual Form Input";
       for (const [k, v] of Object.entries(sectionData.fields)) {
         if (v !== undefined && v !== null && v !== '') {
-          prefillData[k] = String(v);
+          prefillData[k] = (typeof v === 'object') ? v : String(v);
           // Only log it if it wasn't already logged by a tech doc fallback or it explicitly overrides
           const existing = filledSummary.find(s => s.Field === k);
           if (existing) {
@@ -163,6 +163,11 @@ export async function resolvePlaceholders(
   if (prefillData.incorporationOrRegistrationNumber && !prefillData.incorporationNumber) {
     prefillData.incorporationNumber = prefillData.incorporationOrRegistrationNumber;
     addFilledLog("incorporationNumber", "Legacy Alias", prefillData.incorporationOrRegistrationNumber);
+  }
+  
+  if (prefillData.modelNo && !prefillData.deviceModelOrType) {
+    prefillData.deviceModelOrType = prefillData.modelNo;
+    addFilledLog("deviceModelOrType", "Alias from modelNo", prefillData.modelNo);
   }
 
   // Robust custom ASCII table generator to avoid Windows unicode alignment issues

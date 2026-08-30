@@ -1,5 +1,6 @@
 export interface ResolverContext {
   coi?: any;
+  company?: any;
   products: any[];
   techDocs: any[]; // PMFs, DMFs
   doc: any; // The main form document

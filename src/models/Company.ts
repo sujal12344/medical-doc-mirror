@@ -86,6 +86,12 @@ export interface CompanyDocument extends Document {
     applicantName: string;        // → {applicantName} in templates
     bodyConstitution: string;     // Pvt Ltd / LLP / OPC etc → {bodyConstitution}
     registeredOfficeAddress: string; // → {registeredOfficeAddress}
+    pinCode: string;              // → {pinCode}
+    state: string;                // → {state}
+    district: string;             // → {district} / {city}
+    rocLocation: string;          // Issuing RoC location
+    panNumber: string;            // Permanent Account Number
+    tanNumber: string;            // Tax Deduction Account Number
     incorporationDate: string;    // → {incorporationDate}
     cinNumber: string;            // Corporate Identity Number → {cinNumber}
     signatories: { name: string; designation: string }[]; // → {designatedPersonName}, {designatedPersonDesignation}
@@ -209,6 +215,12 @@ const CompanySchema = new Schema<CompanyDocument>(
         applicantName:            { type: String, default: '' },
         bodyConstitution:         { type: String, default: '' },
         registeredOfficeAddress:  { type: String, default: '' },
+        pinCode:                  { type: String, default: '' },
+        state:                    { type: String, default: '' },
+        district:                 { type: String, default: '' },
+        rocLocation:              { type: String, default: '' },
+        panNumber:                { type: String, default: '' },
+        tanNumber:                { type: String, default: '' },
         incorporationDate:        { type: String, default: '' },
         cinNumber:                { type: String, default: '' },
         signatories: {

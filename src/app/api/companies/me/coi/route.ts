@@ -98,6 +98,12 @@ Required JSON schema:
   "applicantName": "Full registered company name as it appears on the document",
   "bodyConstitution": "Legal entity type e.g. Private Limited, LLP, OPC, Partnership, Sole Proprietorship",
   "registeredOfficeAddress": "Full registered office address including city, state and pincode on one line",
+  "pinCode": "The 6-digit postal code (PIN code) from the address",
+  "state": "The State of the registered office from the address",
+  "district": "The District or City of the registered office from the address",
+  "rocLocation": "The location of the Registrar of Companies (RoC) that issued the certificate (e.g., 'RoC - Delhi', 'RoC - Patna')",
+  "panNumber": "Permanent Account Number (PAN) if mentioned",
+  "tanNumber": "Tax Deduction Account Number (TAN) if mentioned",
   "incorporationDate": "Date of incorporation in DD/MM/YYYY format",
   "cinNumber": "Corporate Identity Number (CIN) or LLPIN or firm registration number",
   "signatories": [
@@ -118,6 +124,12 @@ If a field cannot be found, return "" for strings or [] for arrays. Do NOT hallu
       applicantName?: string;
       bodyConstitution?: string;
       registeredOfficeAddress?: string;
+      pinCode?: string;
+      state?: string;
+      district?: string;
+      rocLocation?: string;
+      panNumber?: string;
+      tanNumber?: string;
       incorporationDate?: string;
       cinNumber?: string;
       signatories?: { name: string; designation: string }[];
@@ -125,10 +137,17 @@ If a field cannot be found, return "" for strings or [] for arrays. Do NOT hallu
 
     try {
       const raw = completion.choices[0].message.content || "{}";
+      console.log("[DEBUG] Raw AI Output from OpenAI:");
+      console.log(raw);
+      
       // Strip markdown fences if model wraps the JSON
       const cleaned = raw.replace(/^```[a-z]*\s*/i, "").replace(/\s*```\s*$/i, "").trim();
       extracted = JSON.parse(cleaned);
-    } catch {
+      
+      console.log("[DEBUG] Parsed Extracted Object:");
+      console.log(JSON.stringify(extracted, null, 2));
+    } catch (err) {
+      console.error("[DEBUG] Error parsing OpenAI response:", err);
       return NextResponse.json(
         { error: "AI extraction failed. Please try again or contact support." },
         { status: 500 }
@@ -175,6 +194,12 @@ If a field cannot be found, return "" for strings or [] for arrays. Do NOT hallu
             applicantName:           extracted.applicantName           || "",
             bodyConstitution:        extracted.bodyConstitution        || "",
             registeredOfficeAddress: extracted.registeredOfficeAddress || "",
+            pinCode:                 extracted.pinCode                 || "",
+            state:                   extracted.state                   || "",
+            district:                extracted.district                || "",
+            rocLocation:             extracted.rocLocation             || "",
+            panNumber:               extracted.panNumber               || "",
+            tanNumber:               extracted.tanNumber               || "",
             incorporationDate:       extracted.incorporationDate       || "",
             cinNumber:               extracted.cinNumber               || "",
             signatories:             extracted.signatories             || [],

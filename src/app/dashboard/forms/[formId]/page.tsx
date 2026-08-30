@@ -27,7 +27,7 @@ export default function DynamicFormPage() {
   // Dynamic Extraction States
   const [missingKeys, setMissingKeys] = useState<string[]>([]);
   const [showUploadModal, setShowUploadModal] = useState(false);
-  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const loadData = async () => {
@@ -123,11 +123,11 @@ export default function DynamicFormPage() {
   }
 
   async function handleDynamicUpload() {
-    if (!docId || !uploadFile) return;
+    if (!docId || uploadFiles.length === 0) return;
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", uploadFile);
+      uploadFiles.forEach((file) => formData.append("files", file));
       formData.append("missingKeys", JSON.stringify(missingKeys));
 
       const res = await fetch(`/api/documents/${docId}/extract-dynamic`, {
@@ -142,7 +142,7 @@ export default function DynamicFormPage() {
 
       // Close modal and generate again automatically
       setShowUploadModal(false);
-      setUploadFile(null);
+      setUploadFiles([]);
       
       // Refresh the page data so the Preview UI shows the newly extracted fields
       await loadData();
@@ -242,13 +242,14 @@ export default function DynamicFormPage() {
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         missingKeys={missingKeys}
-        uploadFile={uploadFile}
-        setUploadFile={setUploadFile}
+        uploadFiles={uploadFiles}
+        setUploadFiles={setUploadFiles}
         uploading={uploading}
         onExtract={handleDynamicUpload}
         onGenerateAnyway={() => {
           setShowUploadModal(false);
-          handleGenerate(true);
+          setUploadFiles([]);
+          handleGenerate(true); // true = force generate regardless of missing fields
         }}
       />
     </div>

@@ -25,6 +25,15 @@ export function generateDocxFromTemplate(
   const doc = new Docxtemplater(zip, {
     paragraphLoop: true,
     linebreaks: true,
+    nullGetter(part) {
+      if (!part.module) {
+        return toUnicodeBold(part.value);
+      }
+      if (part.module === "rawxml") {
+        return "";
+      }
+      return "";
+    }
   });
 
   // Render the document with data (new API)
@@ -80,15 +89,37 @@ export function validatePlaceholders(
 }
 
 /**
+ * Convert a string to Unicode Bold characters to simulate bold text without XML injection.
+ */
+function toUnicodeBold(str: string): string {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  // Mathematical sans-serif bold
+  const boldChars = "𝗔𝗕𝗖𝗗𝗘𝗙𝗚𝗛𝗜𝗝𝗞𝗟𝗠𝗡𝗢𝗣𝗤𝗥𝗦𝗧𝗨𝗩𝗪𝗫𝗬𝗭𝗮𝗯𝗰𝗱𝗲𝗳𝗴𝗵𝗶𝗷𝗸𝗹𝗺𝗻𝗼𝗽𝗾𝗿𝘀𝘁𝘂𝘃𝘄𝘅𝘆𝘇𝟬𝟭𝟮𝟯𝟰𝟱𝟲𝟳𝟴𝟵";
+  
+  // Use Array.from to correctly handle surrogate pairs of unicode characters
+  const boldArray = Array.from(boldChars);
+  let result = "";
+  for (let i = 0; i < str.length; i++) {
+    const idx = chars.indexOf(str[i]);
+    if (idx !== -1) {
+      result += boldArray[idx];
+    } else {
+      result += str[i];
+    }
+  }
+  return `[${result}]`;
+}
+
+/**
  * Clean placeholder values (remove null, undefined, etc.)
  */
 export function cleanPlaceholders(placeholders: PlaceholderMap): PlaceholderMap {
   const cleaned: PlaceholderMap = {};
   
   for (const [key, value] of Object.entries(placeholders)) {
-    // Convert null/undefined to empty string
-    if (value === null || value === undefined) {
-      cleaned[key] = "";
+    // Convert null/undefined/empty string to placeholder format {key} in Unicode BOLD
+    if (value === null || value === undefined || value === "" || value === "undefined" || value === "null") {
+      cleaned[key] = toUnicodeBold(key);
       continue;
     }
 
