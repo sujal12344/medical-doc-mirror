@@ -76,8 +76,15 @@ Your job is to read the provided clinical document (like a Clinical Investigatio
 Output rules:
 - No explanation, no markdown, ONLY valid JSON.
 - If a value cannot be reasonably found or inferred from the text, return an empty string "".
-- You must return exactly this JSON schema format: a single object containing exactly the keys provided.
-- Ensure the keys match exactly what is requested.`;
+- You must return a JSON object containing the requested keys.
+- **IMPORTANT FOR TABLES/ARRAYS**: If you notice that some of the requested keys logically form columns of a table or loop (e.g., 'slNo', 'visitName', 'timePoint', 'plannedWindow'), you SHOULD group them into an array of objects under an appropriate parent key (like 'proceduresAssessments', 'scheduleOfAssessments', 'clinicalFacilities') if that parent key is in the requested list.
+  Example:
+  "proceduresAssessments": [
+    { "slNo": 1, "visitName": "Baseline", "plannedWindow": "Day 0" },
+    { "slNo": 2, "visitName": "Follow-up", "plannedWindow": "Day 7" }
+  ]
+- **PATIENT INFORMATION SHEET (pis...)**: Keys starting with 'pis' (e.g., pisRisksDiscomforts, pisStudyProcedures) are meant for the Patient Informed Consent form. Extract comprehensive, patient-friendly paragraphs from the document (usually found in the Risk/Benefit or Ethics sections) to satisfy these fields.
+- **CHECKBOXES**: If you see keys like 'yes' or 'no', these are literal checkbox placeholders. Ignore them and return "".`;
 
     // Limit text to ~80k characters (approx 20k tokens) to avoid context limit issues if the document is massive
     // Most CIPs are long, so we take the first 80k characters as a heuristic, or ideally use a long-context model
@@ -121,8 +128,11 @@ ${contextText}`;
     // Merge new extracted data with any existing dynamic data
     const updatedFields = { ...dynamicSection.fields };
     for (const [k, v] of Object.entries(extractedData)) {
-       // Only save non-empty values
-       if (v && typeof v === "string" && v.trim() !== "") {
+       // Save non-empty strings, arrays, or objects
+       if (v !== undefined && v !== null && v !== "") {
+          // If it's an array and empty, skip it
+          if (Array.isArray(v) && v.length === 0) continue;
+          
           updatedFields[k] = v;
        }
     }
