@@ -6,6 +6,7 @@ import Link from "next/link";
 import { FileText, ArrowLeft, Download, ChevronRight } from "lucide-react";
 import { CDSCO_FORM_GROUPS } from "@/lib/frameworks/asia/india-forms";
 import { DocumentSourceList } from "@/components/forms/DocumentSourceList";
+import { DynamicExtractionModal } from "@/components/forms/DynamicExtractionModal";
 
 export default function DynamicFormPage() {
   const params = useParams<{ formId: string }>();
@@ -23,18 +24,28 @@ export default function DynamicFormPage() {
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [contextProducts, setContextProducts] = useState<any[]>([]);
 
-  useEffect(() => {
-    if (docId) {
-      fetch(`/api/documents/${docId}`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.products) setContextProducts(data.products);
-          if (data.prefillData) {
-            setOverrides(prev => ({ ...data.prefillData, ...prev }));
-          }
-        })
-        .catch(console.error);
+  // Dynamic Extraction States
+  const [missingKeys, setMissingKeys] = useState<string[]>([]);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [uploadFile, setUploadFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const loadData = async () => {
+    if (!docId) return;
+    try {
+      const res = await fetch(`/api/documents/${docId}`);
+      const data = await res.json();
+      if (data.products) setContextProducts(data.products);
+      if (data.prefillData) {
+        setOverrides(prev => ({ ...data.prefillData, ...prev }));
+      }
+    } catch (err) {
+      console.error(err);
     }
+  };
+
+  useEffect(() => {
+    loadData();
   }, [docId]);
 
   useEffect(() => {
@@ -54,13 +65,13 @@ export default function DynamicFormPage() {
 
   const documents = matchedForm?.documents || [];
 
-  async function handleGenerate() {
+  async function handleGenerate(ignoreMissing = false) {
     if (!docId) return;
     if (downloadUrl) {
       URL.revokeObjectURL(downloadUrl);
       setDownloadUrl(null);
     }
-    setStatusMsg(`Generating ${formIdUpper} documents...`);
+    setStatusMsg(ignoreMissing ? `Generating ${formIdUpper} documents anyway...` : `Generating ${formIdUpper} documents...`);
     setStatusType("info");
     setLoading(true);
 
@@ -68,14 +79,26 @@ export default function DynamicFormPage() {
       const res = await fetch(`/api/documents/${docId}/forms/${formIdUpper}/generate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ overrides }),
+        body: JSON.stringify({ overrides, ignoreMissing }),
       });
-      if (!res.ok) {
+      
+      const contentType = res.headers.get("content-type");
+      if (contentType && contentType.includes("application/json")) {
         const data = await res.json().catch(() => ({}));
-        setStatusMsg(data.error || `Failed to generate documents.`);
-        setStatusType("error");
-        return;
+        if (!res.ok) {
+          setStatusMsg(data.error || `Failed to generate documents.`);
+          setStatusType("error");
+          return;
+        }
+        if (data.requiresUpload) {
+          setMissingKeys(data.missingKeys);
+          setShowUploadModal(true);
+          setStatusMsg("Missing clinical fields detected. Please upload source documents.");
+          setStatusType("info");
+          return;
+        }
       }
+
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       setDownloadUrl(url);
@@ -97,6 +120,39 @@ export default function DynamicFormPage() {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+  }
+
+  async function handleDynamicUpload() {
+    if (!docId || !uploadFile) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", uploadFile);
+      formData.append("missingKeys", JSON.stringify(missingKeys));
+
+      const res = await fetch(`/api/documents/${docId}/extract-dynamic`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to extract data");
+      }
+
+      // Close modal and generate again automatically
+      setShowUploadModal(false);
+      setUploadFile(null);
+      
+      // Refresh the page data so the Preview UI shows the newly extracted fields
+      await loadData();
+      
+      await handleGenerate(false); // Try generating normally again
+    } catch (err: any) {
+      alert("Extraction failed: " + err.message);
+    } finally {
+      setUploading(false);
+    }
   }
 
   if (!matchedForm) {
@@ -163,7 +219,7 @@ export default function DynamicFormPage() {
 
         <div className="flex items-center gap-4">
           <button
-            onClick={handleGenerate}
+            onClick={() => handleGenerate(false)}
             disabled={loading}
             className="flex items-center gap-2 px-6 py-2.5 bg-foreground text-background hover:opacity-80 text-sm font-semibold rounded-lg shadow-sm transition disabled:opacity-50"
           >
@@ -180,6 +236,21 @@ export default function DynamicFormPage() {
           )}
         </div>
       </div>
+
+      {/* Dynamic Extraction Modal */}
+      <DynamicExtractionModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        missingKeys={missingKeys}
+        uploadFile={uploadFile}
+        setUploadFile={setUploadFile}
+        uploading={uploading}
+        onExtract={handleDynamicUpload}
+        onGenerateAnyway={() => {
+          setShowUploadModal(false);
+          handleGenerate(true);
+        }}
+      />
     </div>
   );
 }
