@@ -27,8 +27,9 @@ export const GLOBAL_RESOLVERS: Record<string, ResolverFn> = {
 export async function resolvePlaceholders(
   doc: any,
   userId: string
-): Promise<{ prefillData: Record<string, any>; products: any[]; techDocs: any[] }> {
+): Promise<{ prefillData: Record<string, any>; products: any[]; techDocs: any[]; missingKeys: string[] }> {
   const prefillData: Record<string, any> = {};
+  const overallMissingKeys: string[] = [];
   
   // 1. Fetch related data models
   const company = await Company.findById(userId).lean();
@@ -131,20 +132,21 @@ export async function resolvePlaceholders(
     }
   }
 
-  // 4. Fallback to manually entered fields on the current document
+  // 4. Fallback to manually entered fields or AI extracted fields on the current document
   const docSections = sectionsToPlain(doc.sections || {});
-  for (const sectionData of Object.values(docSections)) {
+  for (const [sectionKey, sectionData] of Object.entries(docSections)) {
     if (sectionData.fields) {
+      const sourceName = sectionKey === "dynamic_extraction" ? "AI Extracted (Source Docs)" : "Manual Form Input";
       for (const [k, v] of Object.entries(sectionData.fields)) {
         if (v !== undefined && v !== null && v !== '') {
           prefillData[k] = String(v);
           // Only log it if it wasn't already logged by a tech doc fallback or it explicitly overrides
           const existing = filledSummary.find(s => s.Field === k);
           if (existing) {
-             existing.Source = "Manual Form Input";
+             existing.Source = sourceName;
              existing.Value = String(v).substring(0, 45) + (String(v).length > 45 ? '...' : '');
           } else {
-             addFilledLog(k, "Manual Form Input", v);
+             addFilledLog(k, sourceName, v);
           }
         }
       }
@@ -206,6 +208,7 @@ export async function resolvePlaceholders(
       }
       
       if (missingInTemplate.length > 0) {
+        overallMissingKeys.push(...missingInTemplate);
         console.log(`❌ MISSING (${missingInTemplate.length}) - Will appear as raw {tags}`);
         const missingGrid = [];
         for (let i = 0; i < missingInTemplate.length; i += 3) {
@@ -228,6 +231,7 @@ export async function resolvePlaceholders(
       const filledKeysSet = new Set(Object.keys(prefillData));
       const missingKeys = requiredKeys.filter(k => !filledKeysSet.has(k));
       if (missingKeys.length > 0) {
+        overallMissingKeys.push(...missingKeys);
         console.log(`\n❌ MISSING FIELDS (${missingKeys.length})`);
         const missingGrid = [];
         for (let i = 0; i < missingKeys.length; i += 3) {
@@ -247,5 +251,10 @@ export async function resolvePlaceholders(
 
   console.log(`========================================================================================\n`);
 
-  return { prefillData, products, techDocs };
+  return { 
+    prefillData, 
+    products, 
+    techDocs,
+    missingKeys: Array.from(new Set(overallMissingKeys))
+  };
 }

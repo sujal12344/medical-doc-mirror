@@ -38,10 +38,21 @@ export async function POST(
     }
 
     const { resolvePlaceholders } = await import("@/lib/frameworks/resolvers");
-    const { prefillData, products: fetchedProducts, techDocs } = await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string);
+    const { prefillData, products: fetchedProducts, techDocs, missingKeys } = await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string);
 
     const body = await _req.json().catch(() => ({}));
     const overrides = body.overrides || {};
+    const ignoreMissing = body.ignoreMissing === true;
+
+    // Intercept generation if major clinical fields are missing and the user hasn't chosen to ignore
+    if (!ignoreMissing && missingKeys && missingKeys.length > 0) {
+      const clinicalKeys = missingKeys.filter((k: string) => 
+        k.startsWith('cip') || k.startsWith('ib') || k.startsWith('pis') || k.startsWith('clinical') || k.startsWith('study')
+      );
+      if (clinicalKeys.length >= 3) {
+        return NextResponse.json({ requiresUpload: true, missingKeys: clinicalKeys });
+      }
+    }
 
     // Apply any user-provided overrides from the preview modal on top of prefillData
     for (const [key, val] of Object.entries(overrides)) {

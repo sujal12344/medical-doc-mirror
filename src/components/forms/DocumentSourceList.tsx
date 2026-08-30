@@ -105,7 +105,7 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides,
     editorSpans.forEach(span => {
       const p = span.getAttribute('data-placeholder');
       if (p) {
-        let val = (span as HTMLElement).innerText.trim();
+        const val = (span as HTMLElement).innerText.trim();
         // If they didn't touch it, and it just says "{placeholder}", don't save the literal brace string
         if (val === `{${p}}`) {
           return;
