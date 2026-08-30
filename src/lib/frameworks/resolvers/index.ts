@@ -26,7 +26,8 @@ export const GLOBAL_RESOLVERS: Record<string, ResolverFn> = {
  */
 export async function resolvePlaceholders(
   doc: any,
-  userId: string
+  userId: string,
+  logMode: boolean | string = true
 ): Promise<{ prefillData: Record<string, any>; products: any[]; techDocs: any[]; missingKeys: string[] }> {
   const prefillData: Record<string, any> = {};
   const overallMissingKeys: string[] = [];
@@ -196,71 +197,78 @@ export async function resolvePlaceholders(
     console.log(separator);
   };
 
-  // Generate Beautiful Output
-  console.log(`\n========================================================================================`);
-  console.log(`[${formId ? formId.toUpperCase() : 'UNKNOWN FORM'} Data Resolution Summary] - Doc ID: ${doc._id}`);
-  console.log(`========================================================================================`);
-  
-  if (Object.keys(templatesMapping).length > 0) {
-    const filledKeysSet = new Set(Object.keys(prefillData));
+  if (logMode !== false) {
+    // Generate Beautiful Output
+    console.log(`\n========================================================================================`);
+    console.log(`[${formId ? formId.toUpperCase() : 'UNKNOWN FORM'} Data Resolution Summary] - Doc ID: ${doc._id}`);
+    console.log(`========================================================================================`);
     
-    for (const [templateName, templateKeys] of Object.entries(templatesMapping)) {
-      console.log(`\n📄 Document: ${templateName}`);
-      console.log(`----------------------------------------------------------------------------------------`);
-      
-      const filledInTemplate = filledSummary.filter(s => templateKeys.includes(s.Field));
-      const missingInTemplate = templateKeys.filter(k => !filledKeysSet.has(k));
-      
-      if (filledInTemplate.length > 0) {
-        console.log(`✅ FILLED (${filledInTemplate.length}/${templateKeys.length})`);
-        printCleanTable(filledInTemplate);
-      } else {
-        console.log(`⚠️ NO FIELDS WERE AUTOMATICALLY FILLED FOR THIS DOCUMENT.`);
-      }
-      
-      if (missingInTemplate.length > 0) {
-        overallMissingKeys.push(...missingInTemplate);
-        console.log(`❌ MISSING (${missingInTemplate.length}) - Will appear as raw {tags}`);
-        const missingGrid = [];
-        for (let i = 0; i < missingInTemplate.length; i += 3) {
-           missingGrid.push({
-             "Col 1": missingInTemplate[i] || "",
-             "Col 2": missingInTemplate[i+1] || "",
-             "Col 3": missingInTemplate[i+2] || ""
-           });
-        }
-        printCleanTable(missingGrid);
-      } else {
-        console.log(`🎉 ALL REQUIRED FIELDS RESOLVED!`);
-      }
-    }
-  } else if (filledSummary.length > 0) {
-    console.log(`✅ FILLED FIELDS (${filledSummary.length})`);
-    printCleanTable(filledSummary);
-    
-    if (requiredKeys.length > 0) {
+    if (Object.keys(templatesMapping).length > 0) {
       const filledKeysSet = new Set(Object.keys(prefillData));
-      const missingKeys = requiredKeys.filter(k => !filledKeysSet.has(k));
-      if (missingKeys.length > 0) {
-        overallMissingKeys.push(...missingKeys);
-        console.log(`\n❌ MISSING FIELDS (${missingKeys.length})`);
-        const missingGrid = [];
-        for (let i = 0; i < missingKeys.length; i += 3) {
-           missingGrid.push({
-             "Col 1": missingKeys[i] || "",
-             "Col 2": missingKeys[i+1] || "",
-             "Col 3": missingKeys[i+2] || ""
-           });
+      
+      for (const [templateName, templateKeys] of Object.entries(templatesMapping)) {
+        // If a specific template string was passed, skip others
+        if (typeof logMode === 'string' && !templateName.toLowerCase().includes(logMode.toLowerCase()) && !logMode.toLowerCase().includes(templateName.toLowerCase())) {
+           continue;
         }
-        printCleanTable(missingGrid);
-      }
-    }
-  } else {
-    console.log(`⚠️ NO FIELDS WERE AUTOMATICALLY FILLED.`);
-    console.log(`ℹ️ No templates found for this form, so missing fields could not be calculated.`);
-  }
 
-  console.log(`========================================================================================\n`);
+        console.log(`\n📄 Document: ${templateName}`);
+        console.log(`----------------------------------------------------------------------------------------`);
+        
+        const filledInTemplate = filledSummary.filter(s => templateKeys.includes(s.Field));
+        const missingInTemplate = templateKeys.filter(k => !filledKeysSet.has(k));
+        
+        if (filledInTemplate.length > 0) {
+          console.log(`✅ FILLED (${filledInTemplate.length}/${templateKeys.length})`);
+          printCleanTable(filledInTemplate);
+        } else {
+          console.log(`⚠️ NO FIELDS WERE AUTOMATICALLY FILLED FOR THIS DOCUMENT.`);
+        }
+        
+        if (missingInTemplate.length > 0) {
+          overallMissingKeys.push(...missingInTemplate);
+          console.log(`❌ MISSING (${missingInTemplate.length}) - Will appear as raw {tags}`);
+          const missingGrid = [];
+          for (let i = 0; i < missingInTemplate.length; i += 3) {
+             missingGrid.push({
+               "Missing Field": missingInTemplate[i] || "",
+               "Missing Field ": missingInTemplate[i+1] || "",
+               "Missing Field  ": missingInTemplate[i+2] || ""
+             });
+          }
+          printCleanTable(missingGrid);
+        } else {
+          console.log(`🎉 ALL REQUIRED FIELDS RESOLVED!`);
+        }
+      }
+    } else if (filledSummary.length > 0) {
+      console.log(`✅ FILLED FIELDS (${filledSummary.length})`);
+      printCleanTable(filledSummary);
+      
+      if (requiredKeys.length > 0) {
+        const filledKeysSet = new Set(Object.keys(prefillData));
+        const missingKeys = requiredKeys.filter(k => !filledKeysSet.has(k));
+        if (missingKeys.length > 0) {
+          overallMissingKeys.push(...missingKeys);
+          console.log(`\n❌ MISSING FIELDS (${missingKeys.length})`);
+          const missingGrid = [];
+          for (let i = 0; i < missingKeys.length; i += 3) {
+             missingGrid.push({
+               "Missing Field": missingKeys[i] || "",
+               "Missing Field ": missingKeys[i+1] || "",
+               "Missing Field  ": missingKeys[i+2] || ""
+             });
+          }
+          printCleanTable(missingGrid);
+        }
+      }
+    } else {
+      console.log(`⚠️ NO FIELDS WERE AUTOMATICALLY FILLED.`);
+      console.log(`ℹ️ No templates found for this form, so missing fields could not be calculated.`);
+    }
+
+    console.log(`========================================================================================\n`);
+  }
 
   return { 
     prefillData, 

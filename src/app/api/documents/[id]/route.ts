@@ -16,7 +16,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const { resolvePlaceholders } = await import("@/lib/frameworks/resolvers");
-    const { prefillData, products } = await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string);
+    const { prefillData, products } = await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string, false);
 
     return NextResponse.json({ document: doc, products, prefillData });
   } catch (error) {

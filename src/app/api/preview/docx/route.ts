@@ -8,6 +8,7 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const formId = searchParams.get("formId");
     const fileName = searchParams.get("fileName");
+    const docId = searchParams.get("docId");
 
     if (!formId || !fileName) {
       return NextResponse.json({ error: "Missing formId or fileName" }, { status: 400 });
@@ -31,6 +32,27 @@ export async function GET(request: Request) {
 
     const result = await mammoth.convertToHtml({ buffer: fileBuffer });
     const html = result.value; 
+
+    // If docId is provided, trigger a resolution log for this specific template in the terminal
+    if (docId) {
+      try {
+        const { requireAuth } = await import("@/lib/auth");
+        const { connectToDatabase } = await import("@/lib/mongodb");
+        const { RegulatoryDocument } = await import("@/models/Document");
+        
+        const user = await requireAuth();
+        await connectToDatabase();
+        
+        const doc = await RegulatoryDocument.findOne({ _id: docId, userId: (user as Record<string, unknown>)._id }).lean();
+        if (doc) {
+          const { resolvePlaceholders } = await import("@/lib/frameworks/resolvers");
+          // Pass the fileName as logMode so it ONLY logs for this template
+          await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string, fileName);
+        }
+      } catch (err) {
+        // Ignore auth or db errors during preview log generation
+      }
+    }
 
     return NextResponse.json({ html, placeholders });
   } catch (err) {

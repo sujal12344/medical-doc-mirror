@@ -10,9 +10,10 @@ interface DocumentSourceListProps {
   overrides?: Record<string, string>;
   setOverrides?: (overrides: Record<string, string>) => void;
   contextProducts?: any[];
+  docId?: string | null;
 }
 
-export function DocumentSourceList({ documents, formId, overrides, setOverrides, contextProducts = [] }: DocumentSourceListProps) {
+export function DocumentSourceList({ documents, formId, overrides, setOverrides, contextProducts = [], docId }: DocumentSourceListProps) {
   const [previewDoc, setPreviewDoc] = useState<DocumentTemplate | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewPlaceholders, setPreviewPlaceholders] = useState<string[]>([]);
@@ -66,7 +67,8 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides,
     setPreviewPlaceholders([]);
 
     try {
-      const res = await fetch(`/api/preview/docx?formId=${formId}&fileName=${doc.fileName}`);
+      const docIdParam = docId ? `&docId=${docId}` : '';
+      const res = await fetch(`/api/preview/docx?formId=${formId}&fileName=${doc.fileName}${docIdParam}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to load preview");
       
