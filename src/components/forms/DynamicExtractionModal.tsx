@@ -24,24 +24,46 @@ export function DynamicExtractionModal({
   if (!isOpen) return null;
 
   // Dynamically determine the suggested document name based on the missing keys
-  const getDocumentSuggestion = () => {
-    if (missingKeys.some(k => k.toLowerCase().startsWith('cip') || k.toLowerCase().startsWith('ib'))) {
-      return "Clinical Investigation Plan (CIP) or Investigator Brochure (IB)";
+  const getDocumentSuggestions = () => {
+    const suggestions: string[] = [];
+    
+    if (missingKeys.some(k => k.toLowerCase().includes('fee') || k.toLowerCase().includes('bharatkosh') || k.toLowerCase().includes('challan'))) {
+      suggestions.push("Bharatkosh Fee Receipt / Challan");
+    }
+    if (missingKeys.some(k => k.toLowerCase().includes('ethics'))) {
+      suggestions.push("Ethics Committee Approval Letter");
+    }
+    if (missingKeys.some(k => k.toLowerCase().includes('sponsor') || k.toLowerCase().includes('contact') || k.toLowerCase().includes('email') || k.toLowerCase().includes('fax'))) {
+      suggestions.push("Sponsor Agreement or Cover Page with Contact Details");
+    }
+    if (missingKeys.some(k => k.toLowerCase().startsWith('cip') || k.toLowerCase().startsWith('ib') || k.toLowerCase().includes('study'))) {
+      suggestions.push("Clinical Investigation Plan (CIP) / Investigator Brochure (IB)");
     }
     if (missingKeys.some(k => k.toLowerCase().includes('iso') || k.toLowerCase().includes('qms'))) {
-      return "ISO Certificate or Quality Management System (QMS) documents";
+      suggestions.push("ISO Certificate or Quality Management System (QMS) documents");
     }
     if (missingKeys.some(k => k.toLowerCase().includes('site') || k.toLowerCase().includes('plant'))) {
-      return "Site Master File (SMF) or Plant Master File";
+      suggestions.push("Site Master File (SMF) or Plant Master File");
     }
-    return "Supporting Source Documents";
+
+    if (suggestions.length === 0) {
+      return ["Supporting Source Documents"];
+    }
+
+    return suggestions;
   };
 
-  const documentSuggestion = getDocumentSuggestion();
+  const documentSuggestions = getDocumentSuggestions();
 
   return (
-    <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface border border-border w-full max-w-lg rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200">
+    <div 
+      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-surface border border-border w-full max-w-lg rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface2/50">
           <h3 className="text-base font-semibold text-foreground flex items-center gap-2">
             <UploadCloud className="w-5 h-5 text-[var(--accent)]" />
@@ -55,9 +77,16 @@ export function DynamicExtractionModal({
           <p className="text-sm text-muted-foreground mb-4">
             To perfectly fill out this form, we need data for <strong>{missingKeys.length} fields</strong> (e.g. {missingKeys.slice(0, 3).join(", ")}).
           </p>
-          <p className="text-sm text-foreground font-medium mb-4">
-            Please upload your <strong>{documentSuggestion}</strong>.
+          <p className="text-sm text-foreground font-medium mb-2">
+            Please upload the following documents:
           </p>
+          <ul className="text-sm text-muted-foreground mb-6 list-disc list-inside space-y-1 bg-surface2/50 p-4 rounded-xl border border-border/50">
+            {documentSuggestions.map((suggestion, idx) => (
+              <li key={idx} className="text-[var(--accent)] font-medium">
+                {suggestion}
+              </li>
+            ))}
+          </ul>
           
           <div className="border-2 border-dashed border-border rounded-xl p-6 flex flex-col items-center justify-center text-center bg-surface2/30 mb-6">
             <input 
