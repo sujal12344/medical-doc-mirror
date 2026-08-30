@@ -48,7 +48,7 @@ export async function resolvePlaceholders(
     }).lean();
   }
 
-  const ctx: ResolverContext = { coi, products, techDocs, doc, userId };
+  const ctx: ResolverContext = { coi, company, products, techDocs, doc, userId };
 
   // Determine Form ID and load required placeholders
   const formIdMatch = doc.frameworkId?.match(/MD[-_]?\d+/i) || doc.type?.match(/MD[-_]?\d+/i);
