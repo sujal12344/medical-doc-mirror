@@ -16,9 +16,9 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
     if (!doc) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     const { resolvePlaceholders } = await import("@/lib/frameworks/resolvers");
-    const { prefillData, products } = await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string, false);
+    const { prefillData, products, filledSummary } = await resolvePlaceholders(doc, (user as Record<string, unknown>)._id as string, false);
 
-    return NextResponse.json({ document: doc, products, prefillData });
+    return NextResponse.json({ document: doc, products, prefillData, filledSummary });
   } catch (error) {
     if ((error as Error).message === "Unauthorized") return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     return NextResponse.json({ error: "Failed" }, { status: 500 });
