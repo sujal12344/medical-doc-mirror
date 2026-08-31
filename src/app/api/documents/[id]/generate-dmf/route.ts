@@ -473,7 +473,7 @@ export async function POST(
     });
     if (!doc) return NextResponse.json({ error: "Document not found" }, { status: 404 });
 
-    const product = await Product.findById(doc.productId).lean() as Record<string, unknown> | null;
+    const product = await Product.findById((doc.contextPayload?.productId || doc.contextPayload?.productIds?.[0])).lean() as Record<string, unknown> | null;
     const fw = FRAMEWORKS.find(f => f.id === doc.frameworkId);
     if (!fw) return NextResponse.json({ error: "Framework not found" }, { status: 404 });
 
