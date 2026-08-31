@@ -33,7 +33,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 
     const trimmed = extractedText.slice(0, 200_000);
 
-    const product = await Product.findById(doc.productId);
+    const product = await Product.findById((doc.contextPayload?.productId || doc.contextPayload?.productIds?.[0]));
     if (product) {
       product.uploadedDocs.push({
         fileId: randomUUID(),

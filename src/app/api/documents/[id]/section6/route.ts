@@ -166,7 +166,7 @@ export async function POST(
     });
     if (!doc) return NextResponse.json({ error: "Document not found" }, { status: 404 });
 
-    const product = await Product.findById(doc.productId).lean();
+    const product = await Product.findById((doc.contextPayload?.productId || doc.contextPayload?.productIds?.[0])).lean();
     if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
 
     const fw = FRAMEWORKS.find((f) => f.id === doc.frameworkId);
