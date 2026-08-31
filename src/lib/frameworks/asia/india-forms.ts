@@ -195,7 +195,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
-        { fileName: '02_Form_MD24_with_Annexure.docx', name: 'Form MD24 with Annexure', source: 'FORM' },
+        { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
         { fileName: '03_IVD_Device_Description_IFU_and_Labels.docx', name: 'IVD Device Description IFU and Labels', source: 'DMF' },
         { fileName: '04_In_House_Performance_Evaluation_Report.docx', name: 'In House Performance Evaluation Report', source: 'DMF' },
         { fileName: '05_Clinical_Performance_Evaluation_Plan.docx', name: 'Clinical Performance Evaluation Plan', source: 'DMF' },

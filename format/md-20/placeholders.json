@@ -3,6 +3,7 @@
   "placeholders": [
     "applicantAddress",
     "applicantName",
+    "applicantOccupation",
     "applicantSignature",
     "applicationDate",
     "applicationPlace",
@@ -15,6 +16,7 @@
     "invoiceStatementAttachment",
     "manufacturerAddress",
     "manufacturerName",
+    "manufacturerNameAndAddress",
     "medicalPractitionerAddress",
     "medicalPractitionerInstitution",
     "medicalPractitionerName",
@@ -34,6 +36,17 @@
     "prescriptionDate"
   ],
   "templates": {
+    "01_Covering_Letter_Template.docx": [
+      "applicantAddress",
+      "applicantName",
+      "applicantOccupation",
+      "applicationDate",
+      "applicationPlace",
+      "deviceName",
+      "diseaseName",
+      "importQuantity",
+      "manufacturerNameAndAddress"
+    ],
     "MD-20.docx": [
       "applicantAddress",
       "applicantName",

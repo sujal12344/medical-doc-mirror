@@ -37,6 +37,7 @@
     "evidenceStatus",
     "evidenceValidity",
     "feeDetails",
+    "feeReferenceNumber",
     "genericName",
     "ifuReference",
     "intendedUse",
@@ -67,6 +68,7 @@
     "slNo",
     "status",
     "storageFacilities",
+    "substantialEquivalenceClaimed",
     "substantialEquivalenceSummary",
     "testingFacilitySummary",
     "variantsAndAccessories",
@@ -81,7 +83,8 @@
       "designatedPersonName",
       "deviceClass",
       "deviceScopeSummary",
-      "overseasManufacturerName"
+      "feeReferenceNumber",
+      "substantialEquivalenceClaimed"
     ],
     "02_Official_Form_Template.docx": [
       "agentConstitution",
