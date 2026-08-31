@@ -75,6 +75,7 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
       summary: "Permission to utilize another licensees facility to manufacture high risk devices under a loan arrangement.",
       requiredContexts: ['PRODUCT_MULTI'],
       documents: [
+        { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
         { fileName: '01_MD8_Covering_Letter_Template.docx', name: 'MD8 Covering Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
         { fileName: '03_Constitution_Details_Template.docx', name: 'Constitution Details', source: 'LEGAL' },
@@ -152,6 +153,7 @@ export const PERSONAL_USE_IMPORT_GROUP: FormGroup<'personal-use-import', Persona
       summary: "Permission for patients to legally import small quantities of medical devices prescribed for their personal treatment.",
       requiredContexts: ['PRODUCT_SINGLE'],
       documents: [
+        { fileName: '01_Covering_Letter_Template.docx', name: 'Covering Letter', source: 'FORM' },
         { fileName: 'MD-20.docx', name: 'MD-20', source: 'DMF' },
         { fileName: 'Supporting_01_Bona_Fide_Personal_Use_Declaration.docx', name: 'Supporting 01 Bona Fide Personal Use Declaration', source: 'DMF' },
         { fileName: 'Supporting_02_Registered_Medical_Practitioner_Prescription.docx', name: 'Supporting 02 Registered Medical Practitioner Prescription', source: 'DMF' },
