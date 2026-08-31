@@ -11,9 +11,10 @@ interface DocumentSourceListProps {
   setOverrides?: (overrides: Record<string, string>) => void;
   contextProducts?: any[];
   docId?: string | null;
+  filledSummary?: { Field: string; Source: string; Value: string }[];
 }
 
-export function DocumentSourceList({ documents, formId, overrides, setOverrides, contextProducts = [], docId }: DocumentSourceListProps) {
+export function DocumentSourceList({ documents, formId, overrides, setOverrides, contextProducts = [], docId, filledSummary = [] }: DocumentSourceListProps) {
   const [previewDoc, setPreviewDoc] = useState<DocumentTemplate | null>(null);
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewPlaceholders, setPreviewPlaceholders] = useState<string[]>([]);
@@ -77,15 +78,24 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides,
         : [];
       setPreviewPlaceholders(cleanPlaceholders);
 
-      // Inject contenteditable spans into HTML for inline editing
+      // Clean up raw array tags so they don't look ugly in the preview
       let html = data.html;
+      html = html.replace(/\{#[^}]+\}/g, '');
+      html = html.replace(/\{\/[^}]+\}/g, '');
+      html = html.replace(/\{slNo\}/g, '1'); // Fallback to 1 for preview
+      
+      // Inject contenteditable spans into HTML for inline editing
       for (const p of cleanPlaceholders) {
          // Safe replacement of `{placeholder}` with an editable span
          const regex = new RegExp(`\\{${p}\\}`, 'g');
          const defaultVal = overrides?.[p] !== undefined ? overrides[p] : `{${p}}`;
+         
+         const summaryObj = filledSummary.find(s => s.Field === p);
+         const titleAttr = summaryObj ? `title="Source: ${summaryObj.Source.replace(/"/g, '&quot;')}"` : '';
+
          html = html.replace(
            regex, 
-           `<span class="inline-editor text-[var(--accent)] bg-[var(--accent)]/10 px-1.5 py-0.5 rounded cursor-text outline-none border-b border-dashed border-[var(--accent)] min-w-[20px] inline-block transition hover:bg-[var(--accent)]/20 focus:bg-[var(--accent)]/20" contenteditable="true" spellcheck="false" data-placeholder="${p}">${defaultVal}</span>`
+           `<span class="inline-editor text-[var(--accent)] bg-[var(--accent)]/10 px-1.5 py-0.5 rounded cursor-text outline-none border-b border-dashed border-[var(--accent)] min-w-[20px] inline-block transition hover:bg-[var(--accent)]/20 focus:bg-[var(--accent)]/20" contenteditable="true" spellcheck="false" data-placeholder="${p}" ${titleAttr}>${defaultVal}</span>`
          );
       }
       setPreviewHtml(html);

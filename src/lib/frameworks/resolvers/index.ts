@@ -28,7 +28,7 @@ export async function resolvePlaceholders(
   doc: any,
   userId: string,
   logMode: boolean | string = true
-): Promise<{ prefillData: Record<string, any>; products: any[]; techDocs: any[]; missingKeys: string[] }> {
+): Promise<{ prefillData: Record<string, any>; products: any[]; techDocs: any[]; missingKeys: string[]; filledSummary: { Field: string; Source: string; Value: string }[] }> {
   const prefillData: Record<string, any> = {};
   const overallMissingKeys: string[] = [];
   
@@ -274,6 +274,7 @@ export async function resolvePlaceholders(
     prefillData, 
     products, 
     techDocs,
-    missingKeys: Array.from(new Set(overallMissingKeys))
+    missingKeys: Array.from(new Set(overallMissingKeys)),
+    filledSummary
   };
 }

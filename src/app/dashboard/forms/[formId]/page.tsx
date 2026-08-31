@@ -23,6 +23,7 @@ export default function DynamicFormPage() {
   const [statusType, setStatusType] = useState<"info" | "success" | "error">("info");
   const [downloadUrl, setDownloadUrl] = useState<string | null>(null);
   const [contextProducts, setContextProducts] = useState<any[]>([]);
+  const [filledSummary, setFilledSummary] = useState<{ Field: string; Source: string; Value: string }[]>([]);
 
   // Dynamic Extraction States
   const [missingKeys, setMissingKeys] = useState<string[]>([]);
@@ -38,6 +39,9 @@ export default function DynamicFormPage() {
       if (data.products) setContextProducts(data.products);
       if (data.prefillData) {
         setOverrides(prev => ({ ...data.prefillData, ...prev }));
+      }
+      if (data.filledSummary) {
+        setFilledSummary(data.filledSummary);
       }
     } catch (err) {
       console.error(err);
@@ -216,6 +220,7 @@ export default function DynamicFormPage() {
            setOverrides={setOverrides} 
            contextProducts={contextProducts}
            docId={docId}
+           filledSummary={filledSummary}
         />
 
         <div className="flex items-center gap-4">

@@ -12,14 +12,14 @@ export const productResolvers: Record<string, ResolverFn> = {
 
   // --- Dynamic Loops ---
   devices: (ctx) => ctx.products.map((p, i) => ({
-    sn: i + 1,
+    slNo: i + 1,
     genericName: p.genericName || p.name || 'N/A',
     intendedUse: p.intendedUse || 'N/A',
     deviceClass: p.deviceClass || 'N/A',
     modelNo: p.modelNo || 'N/A',
   })),
   annexureProducts: (ctx) => ctx.products.map((p, i) => ({
-    sn: i + 1,
+    slNo: i + 1,
     genericName: p.name || "N/A",
     modelNo: p.modelNo || "N/A",
     intendedUse: p.intendedUse || "N/A",
