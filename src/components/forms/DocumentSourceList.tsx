@@ -77,8 +77,13 @@ export function DocumentSourceList({ documents, formId, overrides, setOverrides,
         : [];
       setPreviewPlaceholders(cleanPlaceholders);
 
-      // Inject contenteditable spans into HTML for inline editing
+      // Clean up raw array tags so they don't look ugly in the preview
       let html = data.html;
+      html = html.replace(/\{#[^}]+\}/g, '');
+      html = html.replace(/\{\/[^}]+\}/g, '');
+      html = html.replace(/\{slNo\}/g, '1'); // Fallback to 1 for preview
+      
+      // Inject contenteditable spans into HTML for inline editing
       for (const p of cleanPlaceholders) {
          // Safe replacement of `{placeholder}` with an editable span
          const regex = new RegExp(`\\{${p}\\}`, 'g');

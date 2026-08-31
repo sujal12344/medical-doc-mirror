@@ -6,7 +6,7 @@ import { ResolverContext, ResolverFn } from "./types";
 export const clinicalResolvers: Record<string, ResolverFn> = {
   sites: (ctx) => [
     {
-      sn: 1,
+      slNo: 1,
       siteNameAddress: ctx.coi?.registeredAddress || "N/A",
       ethicsCommitteeDetails: "[Ethics Committee Details]",
       principalInvestigatorName: "[Principal Investigator]"

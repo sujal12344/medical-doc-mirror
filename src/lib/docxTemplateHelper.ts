@@ -63,7 +63,9 @@ export function extractPlaceholdersFromTemplate(templatePath: string): string[] 
 
     // Get all tags/placeholders
     const tags = doc.getFullText().match(/\{[^}]+\}/g) || [];
-    return [...new Set(tags)]; // Remove duplicates
+    const uniqueTags = [...new Set(tags)];
+    // Filter out array loops ({#...}, {/...}) and slNo since they shouldn't be extracted as normal variables
+    return uniqueTags.filter(tag => !tag.startsWith('{#') && !tag.startsWith('{/') && tag !== '{slNo}');
   } catch (error) {
     console.error("Error extracting placeholders:", error);
     return [];
