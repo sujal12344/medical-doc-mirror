@@ -25,29 +25,29 @@ export function DynamicExtractionModal({
 
   // Dynamically determine the suggested document name based on the missing keys
   const getDocumentSuggestions = () => {
-    const suggestions: string[] = [];
+    const suggestions: { name: string, url: string }[] = [];
     
     if (missingKeys.some(k => k.toLowerCase().includes('fee') || k.toLowerCase().includes('bharatkosh') || k.toLowerCase().includes('challan'))) {
-      suggestions.push("Bharatkosh Fee Receipt / Challan");
+      suggestions.push({ name: "Bharatkosh Fee Receipt / Challan", url: "#" });
     }
     if (missingKeys.some(k => k.toLowerCase().includes('ethics'))) {
-      suggestions.push("Ethics Committee Approval Letter");
+      suggestions.push({ name: "Ethics Committee Approval Letter", url: "#" });
     }
     if (missingKeys.some(k => k.toLowerCase().includes('sponsor') || k.toLowerCase().includes('contact') || k.toLowerCase().includes('email') || k.toLowerCase().includes('fax'))) {
-      suggestions.push("Sponsor Agreement or Cover Page with Contact Details");
+      suggestions.push({ name: "Sponsor Agreement or Cover Page with Contact Details", url: "#" });
     }
     if (missingKeys.some(k => k.toLowerCase().startsWith('cip') || k.toLowerCase().startsWith('ib') || k.toLowerCase().includes('study'))) {
-      suggestions.push("Clinical Investigation Plan (CIP) / Investigator Brochure (IB)");
+      suggestions.push({ name: "Clinical Investigation Plan (CIP) / Investigator Brochure (IB)", url: "#" });
     }
     if (missingKeys.some(k => k.toLowerCase().includes('iso') || k.toLowerCase().includes('qms'))) {
-      suggestions.push("ISO Certificate or Quality Management System (QMS) documents");
+      suggestions.push({ name: "ISO Certificate or Quality Management System (QMS) documents", url: "#" });
     }
     if (missingKeys.some(k => k.toLowerCase().includes('site') || k.toLowerCase().includes('plant'))) {
-      suggestions.push("Site Master File (SMF) or Plant Master File");
+      suggestions.push({ name: "Site Master File (SMF) or Plant Master File", url: "#" });
     }
 
     if (suggestions.length === 0) {
-      return ["Supporting Source Documents"];
+      return [{ name: "Supporting Source Documents", url: "#" }];
     }
 
     return suggestions;
@@ -82,8 +82,15 @@ export function DynamicExtractionModal({
           </p>
           <ul className="text-sm text-muted-foreground mb-6 list-disc list-inside space-y-1 bg-surface2/50 p-4 rounded-xl border border-border/50">
             {documentSuggestions.map((suggestion, idx) => (
-              <li key={idx} className="text-[var(--accent)] font-medium">
-                {suggestion}
+              <li key={idx} className="font-medium">
+                <a 
+                  href={suggestion.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[var(--accent)] hover:underline inline-flex items-center gap-1"
+                >
+                  {suggestion.name}
+                </a>
               </li>
             ))}
           </ul>
