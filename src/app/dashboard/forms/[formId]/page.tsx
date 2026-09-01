@@ -154,7 +154,9 @@ export default function DynamicFormPage() {
       
       await handleGenerate(false); // Try generating normally again
     } catch (err: any) {
-      alert("Extraction failed: " + err.message);
+      setStatusMsg("Extraction failed: " + err.message);
+      setStatusType("error");
+      setShowUploadModal(false);
     } finally {
       setUploading(false);
     }

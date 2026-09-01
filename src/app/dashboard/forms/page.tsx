@@ -11,6 +11,7 @@ export default function FormsDashboard() {
   const router = useRouter();
   const [activeFormForModal, setActiveFormForModal] = useState<FormSpec | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleModalContinue = async (payload: { productIds: string[] }) => {
     if (!activeFormForModal) return;
@@ -30,10 +31,10 @@ export default function FormsDashboard() {
       if (res.ok) {
         router.push(`${activeFormForModal.path}?docId=${data.document._id}`);
       } else {
-        alert(data.error || "Failed to create package.");
+        setError(data.error || "Failed to create package.");
       }
     } catch (e) {
-      alert("An error occurred");
+      setError("An error occurred");
     } finally {
       setIsGenerating(false);
       setActiveFormForModal(null);
@@ -53,6 +54,12 @@ export default function FormsDashboard() {
           requiresPmf={activeFormForModal.requiresPmf}
           requiresDmf={activeFormForModal.requiresDmf}
         />
+      )}
+
+      {error && (
+        <div className="p-4 rounded-xl text-sm font-medium border bg-red-500/10 text-red-500 border-red-500/20 animate-in fade-in slide-in-from-top-2">
+          {error}
+        </div>
       )}
 
       <div className="flex flex-col gap-2">

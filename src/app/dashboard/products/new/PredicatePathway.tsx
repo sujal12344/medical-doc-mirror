@@ -65,6 +65,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
     total: number;
     listType: "import" | "manufacturer";
   } | null>(null);
+  const [searchError, setSearchError] = useState<string | null>(null);
 
   function applyPredicateSuggestion(suggestion: PredicateSuggestion) {
     upd("predicateExists", true);
@@ -88,13 +89,14 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
     }
 
     if (!intendedUse) {
-      alert("Please enter the Intended Use/Claims above first.");
+      setSearchError("Please enter the Intended Use/Claims above first.");
       return;
     }
 
     setPredicateLoading(true);
     setPredicateSuggestions([]);
     setPredicateSearchMeta(null);
+    setSearchError(null);
     try {
       const res = await fetch("/api/products/predicate", {
         method: "POST",
@@ -108,7 +110,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
       const data = await res.json();
 
       if (!data.success) {
-        alert(data.message || "No match found");
+        setSearchError(data.message || "No match found");
         return;
       }
 
@@ -127,7 +129,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
           : [];
 
       if (suggestions.length === 0) {
-        alert("No predicate suggestions returned");
+        setSearchError("No predicate suggestions returned");
         return;
       }
 
@@ -140,7 +142,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
       applyPredicateSuggestion(suggestions[0]);
     } catch (error) {
       console.error(error);
-      alert("Failed to auto-fill predicate device");
+      setSearchError("Failed to auto-fill predicate device");
     } finally {
       setPredicateLoading(false);
     }
@@ -176,6 +178,7 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
               setSearchImportList((v) => !v);
               setPredicateSuggestions([]);
               setPredicateSearchMeta(null);
+              setSearchError(null);
             }}
             className={`relative shrink-0 mt-0.5 w-10 h-5 rounded-full transition-colors disabled:opacity-50 ${
               searchImportList ? "bg-accent" : "bg-surface2 border border-border"
@@ -209,6 +212,12 @@ export default function PredicatePathway({ form, upd, productId }: { form: Pathw
             <span className="w-2.5 h-2.5 border border-muted/40 border-t-muted rounded-full animate-spin shrink-0" />
             Scraping CDSCO {searchImportList ? "Import" : "Manufacturer"} list and matching by intended use — this may take a minute.
           </p>
+        )}
+        
+        {searchError && (
+          <div className="p-3 rounded-xl border bg-red-500/10 text-red-500 border-red-500/20 text-xs animate-in fade-in slide-in-from-top-2">
+            {searchError}
+          </div>
         )}
 
         {predicateSuggestions.length > 0 && !predicateLoading && (
