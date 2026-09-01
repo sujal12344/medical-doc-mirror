@@ -175,7 +175,7 @@ export function DynamicExtractionModal({
               type="file" 
               id="dynamic-upload" 
               className="hidden" 
-              accept=".pdf,.docx,.doc" 
+              accept=".pdf,.docx,.doc,.png,.jpg,.jpeg" 
               multiple
               onChange={(e) => {
                 if (e.target.files && e.target.files.length > 0) {
@@ -191,7 +191,7 @@ export function DynamicExtractionModal({
               <span className="text-xs text-muted-foreground mt-1 text-center">
                 {uploadFiles.length > 0 
                   ? `${uploadFiles.length} file(s) selected: ${uploadFiles.map(f => f.name).join(', ')}`
-                  : "Select one or more PDF/Word documents"}
+                  : "Select one or more PDF, Word, or Image documents"}
               </span>
             </label>
           </div>

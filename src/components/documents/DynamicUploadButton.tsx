@@ -103,7 +103,7 @@ export default function DynamicUploadButton({
       <input
         ref={fileInputRef}
         type="file"
-        accept=".pdf,.docx,.doc"
+        accept=".pdf,.docx,.doc,.png,.jpg,.jpeg"
         multiple
         className="hidden"
         onChange={handleFileSelect}
