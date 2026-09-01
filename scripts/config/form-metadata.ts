@@ -1,4 +1,17 @@
-const formDescriptions = {
+import { ApplicationFormId, DocumentSource } from '../../src/lib/frameworks/form-types';
+
+export type TemplateConfig = {
+  conditionRule?: string;
+  badgeLabel?: string;
+};
+
+export type FormConfig = {
+  requiredContexts?: string[];
+  allowedDeviceType?: 'medical-device' | 'ivd';
+  templates: Record<string, TemplateConfig>;
+};
+
+export const formDescriptions: Partial<Record<ApplicationFormId, string>> = {
   'MD-3': 'Manufacture for Sale (Class A/B)',
   'MD-4': 'Loan Licence to Manufacture (Class A/B)',
   'MD-7': 'Manufacture for Sale (Class C/D)',
@@ -20,7 +33,7 @@ const formDescriptions = {
   'MD-43': 'Inspection Book (Sale/Distribution)',
 };
 
-const formSummaries = {
+export const formSummaries: Partial<Record<ApplicationFormId, string>> = {
   'MD-3': 'License to manufacture low to moderate risk medical devices or IVDs for commercial sale and distribution in India.',
   'MD-4': 'Permission to use the manufacturing facilities of another licensee for commercial production of Class A/B devices.',
   'MD-7': 'License to manufacture high to very high risk medical devices or IVDs, requiring extensive quality and clinical data.',
@@ -40,7 +53,7 @@ const formSummaries = {
   'MD-43': 'Statutory inspection book maintained by registered distributors to record observations by Medical Device Officers.'
 };
 
-const formConfigs = {
+export const formConfigs: Partial<Record<ApplicationFormId, FormConfig>> = {
   // 1. Commercial Manufacturing
   'MD-3': { requiredContexts: ['PRODUCT_MULTI'], templates: {
       '05_Device_Master_File_Non_IVD_Template.docx': { conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: "Non-IVD Only" },
@@ -50,8 +63,14 @@ const formConfigs = {
       '05_Device_Master_File_Non_IVD_Template.docx': { conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: "Non-IVD Only" },
       '06_Device_Master_File_IVD_Template.docx': { conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: "IVD Only" }
   }},
-  'MD-7': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
-  'MD-8': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
+  'MD-7': { requiredContexts: ['PRODUCT_MULTI'], templates: {
+      '07_Device_Master_File_Appendix_II_Template.docx': { conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: "Non-IVD Only" },
+      '08_IVD_Device_Master_File_Appendix_III_Template_CONDITIONAL.docx': { conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: "IVD Only" }
+  }},
+  'MD-8': { requiredContexts: ['PRODUCT_MULTI'], templates: {
+      '08_Device_Master_File_Template.docx': { conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: "Non-IVD Only" },
+      '10_IVD_Performance_Evaluation_Report_Template_CONDITIONAL.docx': { conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: "IVD Only" }
+  }},
 
   // 2. Commercial Import
   'MD-14': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
@@ -83,7 +102,7 @@ const formConfigs = {
   'MD-43': { requiredContexts: [], templates: {} }
 };
 
-const sourceCategorizationRules = [
+const sourceCategorizationRules: { source: DocumentSource; keywords: string[] }[] = [
   { source: 'FORM', keywords: ['cover', 'official', 'form_md', 'fee_challan'] },
   { source: 'LEGAL', keywords: ['constitution', 'agreement', 'undertaking', 'power_of_attorney'] },
   { source: 'QMS', keywords: ['qms', 'quality', 'iso', 'sop', 'organisation'] },
@@ -93,7 +112,7 @@ const sourceCategorizationRules = [
   { source: 'EXTERNAL', keywords: ['fsc', 'noc', 'audit'] }
 ];
 
-function determineSource(fileName) {
+export function determineSource(fileName: string): DocumentSource {
   const lower = fileName.toLowerCase();
   
   for (const rule of sourceCategorizationRules) {
@@ -105,10 +124,3 @@ function determineSource(fileName) {
   // Default to DMF if we can't figure it out, as it's the most common technical file
   return 'DMF';
 }
-
-module.exports = {
-  formDescriptions,
-  formSummaries,
-  formConfigs,
-  determineSource
-};

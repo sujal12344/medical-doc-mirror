@@ -64,8 +64,8 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
         { fileName: '04_Plant_Master_File_Appendix_I_Template.docx', name: 'Plant Master File Appendix I', source: 'PMF' },
         { fileName: '05_QMS_Compliance_Undertaking_Template.docx', name: 'QMS Compliance Undertaking', source: 'LEGAL' },
         { fileName: '06_QMS_Requirements_and_Environmental_Summary_Template.docx', name: 'QMS Requirements and Environmental Summary', source: 'QMS' },
-        { fileName: '07_Device_Master_File_Appendix_II_Template.docx', name: 'Device Master File Appendix II', source: 'DMF' },
-        { fileName: '08_IVD_Device_Master_File_Appendix_III_Template_CONDITIONAL.docx', name: 'IVD Device Master File Appendix III  CONDITIONAL', source: 'DMF' },
+        { fileName: '07_Device_Master_File_Appendix_II_Template.docx', name: 'Device Master File Appendix II', source: 'DMF', conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: 'Non-IVD Only' },
+        { fileName: '08_IVD_Device_Master_File_Appendix_III_Template_CONDITIONAL.docx', name: 'IVD Device Master File Appendix III  CONDITIONAL', source: 'DMF', conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: 'IVD Only' },
       ]
     },
     {
@@ -83,9 +83,9 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
         { fileName: '05_Plant_Master_File_Template.docx', name: 'Plant Master File', source: 'PMF' },
         { fileName: '06_QMS_Compliance_Undertaking_Template.docx', name: 'QMS Compliance Undertaking', source: 'LEGAL' },
         { fileName: '07_QMS_Requirements_Summary_Template.docx', name: 'QMS Requirements Summary', source: 'QMS' },
-        { fileName: '08_Device_Master_File_Template.docx', name: 'Device Master File', source: 'DMF' },
+        { fileName: '08_Device_Master_File_Template.docx', name: 'Device Master File', source: 'DMF', conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: 'Non-IVD Only' },
         { fileName: '09_Essential_Principles_Checklist_Template.docx', name: 'Essential Principles Checklist', source: 'DMF' },
-        { fileName: '10_IVD_Performance_Evaluation_Report_Template_CONDITIONAL.docx', name: 'IVD Performance Evaluation Report  CONDITIONAL', source: 'DMF' },
+        { fileName: '10_IVD_Performance_Evaluation_Report_Template_CONDITIONAL.docx', name: 'IVD Performance Evaluation Report  CONDITIONAL', source: 'DMF', conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: 'IVD Only' },
       ]
     },
   ]

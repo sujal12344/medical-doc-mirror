@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "generate-forms": "npx tsx scripts/generate-forms.ts"
   },
   "dependencies": {
     "@google-cloud/storage": "^7.19.0",

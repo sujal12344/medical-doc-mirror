@@ -1,9 +1,14 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const formatDir = path.join(__dirname, '..', 'format');
 
-const groups = [
+const groups:{
+    id: string;
+    name: string;
+    description: string;
+    forms: string[];
+}[] = [
   {
     id: 'commercial-manufacturing',
     name: 'Commercial Manufacturing',
@@ -67,9 +72,10 @@ const groups = [
   }
 ];
 
-const { formDescriptions, formSummaries, formConfigs, determineSource } = require('./config/form-metadata');
+import { formDescriptions, formSummaries, formConfigs, determineSource } from './config/form-metadata';
+import { ApplicationFormId } from '@/lib/frameworks/form-types';
 
-function generateFriendlyName(fileName) {
+function generateFriendlyName(fileName: string) {
   let name = fileName.replace('.docx', '');
   name = name.replace(/^[0-9]+_/, ''); // remove leading 01_
   name = name.replace(/_/g, ' ');
@@ -94,7 +100,7 @@ for (const group of groups) {
   out += `  forms: [\n`;
 
   for (const formFolderName of group.forms) {
-    const formId = formFolderName.toUpperCase();
+    const formId = formFolderName.toUpperCase() as ApplicationFormId;
     const dirPath = path.join(formatDir, formFolderName);
     
     const config = formConfigs[formId] || { requiredContexts: [], templates: {} };
@@ -125,7 +131,7 @@ for (const group of groups) {
       out += `      summary: "${formSummaries[formId]}",\n`;
     }
     if (config.requiredContexts && config.requiredContexts.length > 0) {
-      out += `      requiredContexts: [${config.requiredContexts.map(c => `'${c}'`).join(', ')}],\n`;
+      out += `      requiredContexts: [${config.requiredContexts.map((c: string) => `'${c}'`).join(', ')}],\n`;
     }
     if (config.allowedDeviceType) {
       out += `      allowedDeviceType: '${config.allowedDeviceType}',\n`;
