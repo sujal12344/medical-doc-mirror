@@ -133,6 +133,7 @@ export default function DocumentEditorPage() {
   const [dmfGenerating, setDmfGenerating] = useState(false);
   const [pmfGenerating, setPmfGenerating] = useState(false);
   const [documentGenerating, setDocumentGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/documents/${id}`).then((r) => r.json()).then((data) => {
@@ -753,6 +754,13 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
             );
           })}
         </div>
+        
+        {generateError && (
+          <div className="mt-4 p-3 rounded-xl border bg-red-500/10 text-red-500 border-red-500/20 text-xs animate-in fade-in slide-in-from-top-2">
+            {generateError}
+          </div>
+        )}
+
         <div className="mt-4 space-y-2">
           <button
             onClick={createVersion}
@@ -765,11 +773,12 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
             onClick={async () => {
               if (!doc || documentGenerating) return;
               setDocumentGenerating(true);
+              setGenerateError(null);
               try {
                 const r = await fetch(`/api/documents/${id}/generate`, { method: "POST" });
                 if (!r.ok) { 
                   const d = await r.json(); 
-                  alert(d.error || "Failed to generate document"); 
+                  setGenerateError(d.error || "Failed to generate document"); 
                   return; 
                 }
                 const blob = await r.blob();
@@ -783,7 +792,7 @@ IMPORTANT: When the user asks to fill a specific field, respond with the exact v
                 a.click();
                 URL.revokeObjectURL(url);
               } catch { 
-                alert("Network error generating document."); 
+                setGenerateError("Network error generating document."); 
               } finally { 
                 setDocumentGenerating(false); 
               }

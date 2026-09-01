@@ -1,4 +1,5 @@
 import { UploadCloud, X, FileText, Loader2 } from "lucide-react";
+import { SUGGESTION_RULES } from "@/lib/config/document-suggestions";
 
 interface DynamicExtractionModalProps {
   isOpen: boolean;
@@ -31,71 +32,27 @@ export function DynamicExtractionModal({
   const getDocumentSuggestions = () => {
     const suggestions: { name: string, links?: { label: string, url: string }[] }[] = [];
     
-    if (missingKeys.some(k => k.toLowerCase().includes('fee') || k.toLowerCase().includes('bharatkosh') || k.toLowerCase().includes('challan'))) {
-      suggestions.push({ 
-        name: "Bharatkosh Fee Receipt / Challan", 
-        links: [
-          { label: "Receipt Example", url: "https://bharatkosh.gov.in/Static/Template/UserguideBharatkosh.pdf#page=15" },
-          { label: "Challan Example", url: "https://bharatkosh.gov.in/Static/Template/UserguideBharatkosh.pdf#page=17" },
-          { label: "User Manual", url: "https://cdscoonline.gov.in/CDSCO/resources/app_srv/cdsco/global/Online_Payment_User_Manual_v1.0.pdf" }
-        ]
+    SUGGESTION_RULES.forEach(rule => {
+      // 1. Check if the form requires this rule's source context (if rule has constraints)
+      const hasRequiredSource = rule.requiredSourceContexts.length === 0 || 
+        rule.requiredSourceContexts.some(ctx => requiredSources.includes(ctx)) ||
+        requiredSources.length === 0; // If form doesn't specify sources, show it
+        
+      if (!hasRequiredSource) return;
+
+      // 2. Check if any missing key matches the rule's keywords
+      const hasMatchingKeyword = missingKeys.some(k => {
+        const lowerKey = k.toLowerCase();
+        return rule.keywords.some(keyword => lowerKey.includes(keyword));
       });
-    }
-    
-    // Only suggest Legal or Clinical documents if the form needs them
-    if (requiredSources.length === 0 || requiredSources.includes('LEGAL') || requiredSources.includes('CLINICAL')) {
-      if (missingKeys.some(k => k.toLowerCase().includes('ethics'))) {
-        suggestions.push({ 
-          name: "Ethics Committee Approval Letter",
-          links: [
-            { label: "ICMR Guidelines", url: "https://ethics.ncdirindia.org/asset/pdf/ICMR_National_Ethical_Guidelines.pdf" },
-            { label: "EC Registration (CDSCO)", url: "https://cdsco.gov.in/opencms/opencms/en/Clinical-Trial/Ethics-Committee/" }
-          ]
+
+      if (hasMatchingKeyword) {
+        suggestions.push({
+          name: rule.name,
+          links: rule.links
         });
       }
-      if (missingKeys.some(k => k.toLowerCase().includes('sponsor') || k.toLowerCase().includes('contact') || k.toLowerCase().includes('email') || k.toLowerCase().includes('fax'))) {
-        suggestions.push({ 
-          name: "Sponsor Agreement or Cover Page with Contact Details",
-          links: [
-            { label: "Clinical Trial Agreement Guide", url: "https://www.paho.org/en/documents/regional-template-clinical-trial-agreement" }
-          ]
-        });
-      }
-    }
-    
-    // Only suggest CIP/IB if the form needs Clinical Data
-    if (requiredSources.length === 0 || requiredSources.includes('CLINICAL')) {
-      if (missingKeys.some(k => k.toLowerCase().startsWith('cip') || k.toLowerCase().startsWith('ib') || k.toLowerCase().includes('study'))) {
-        suggestions.push({ 
-          name: "Clinical Investigation Plan (CIP) / Investigator Brochure (IB)",
-          links: [
-            { label: "ISO 14155:2020 CIP Structure", url: "https://www.iso.org/obp/ui/#iso:std:iso:14155:ed-3:v1:en" },
-            { label: "Investigator Brochure (WHO)", url: "https://cdn.who.int/media/docs/default-source/medicines/norms-and-standards/guidelines/regulatory-standards/trs850-annex3.pdf" }
-          ]
-        });
-      }
-    }
-    
-    // Only suggest QMS/PMF if the form actually needs a PMF or QMS
-    if (requiredSources.length === 0 || requiredSources.includes('PMF') || requiredSources.includes('QMS')) {
-      if (missingKeys.some(k => k.toLowerCase().includes('iso') || k.toLowerCase().includes('qms'))) {
-        suggestions.push({ 
-          name: "ISO Certificate or Quality Management System (QMS) documents",
-          links: [
-            { label: "ISO 13485 (Medical Devices)", url: "https://www.iso.org/standard/59752.html" },
-            { label: "CDSCO QMS Guidelines", url: "https://cdsco.gov.in/opencms/opencms/en/Medical-Device-Diagnostics/Medical-Device-Diagnostics/" }
-          ]
-        });
-      }
-      if (missingKeys.some(k => k.toLowerCase().includes('site') || k.toLowerCase().includes('plant'))) {
-        suggestions.push({ 
-          name: "Site Master File (SMF) or Plant Master File",
-          links: [
-            { label: "WHO SMF Guidelines", url: "https://cdn.who.int/media/docs/default-source/medicines/norms-and-standards/guidelines/production/trs961-annex14-who-gmp-sitemasterfile.pdf" }
-          ]
-        });
-      }
-    }
+    });
 
     // Filter out documents that were already used for AI Extraction
     const filteredSuggestions = suggestions.filter(suggestion => {
@@ -125,7 +82,7 @@ export function DynamicExtractionModal({
       onClick={onClose}
     >
       <div 
-        className="bg-surface border border-border w-full max-w-lg rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-surface border border-border w-full max-w-lg rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface2/50">
@@ -137,16 +94,16 @@ export function DynamicExtractionModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           <p className="text-sm text-muted-foreground mb-4">
             To perfectly fill out this form, we need data for <strong>{missingKeys.length} fields</strong> (e.g. {missingKeys.slice(0, 3).join(", ")}).
           </p>
           <p className="text-sm text-foreground font-medium mb-2">
             Please upload the following documents:
           </p>
-          <ul className="text-sm text-muted-foreground mb-6 list-none bg-surface2/50 p-4 rounded-xl border border-border/50">
+          <ul className="text-sm text-muted-foreground mb-6 list-none bg-surface2/50 p-3 rounded-xl border border-border/50 max-h-[240px] overflow-y-auto">
             {documentSuggestions.map((suggestion, idx) => (
-              <li key={idx} className="flex flex-col items-start pb-3 border-b border-border/30 last:border-0 last:pb-0 pt-3 first:pt-0">
+              <li key={idx} className="flex flex-col items-start py-2.5 border-b border-border/30 last:border-0">
                 <span className="text-[var(--accent)] font-medium flex items-center gap-2">
                   <FileText className="w-4 h-4" />
                   {suggestion.name}

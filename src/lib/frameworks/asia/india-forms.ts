@@ -64,8 +64,8 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
         { fileName: '04_Plant_Master_File_Appendix_I_Template.docx', name: 'Plant Master File Appendix I', source: 'PMF' },
         { fileName: '05_QMS_Compliance_Undertaking_Template.docx', name: 'QMS Compliance Undertaking', source: 'LEGAL' },
         { fileName: '06_QMS_Requirements_and_Environmental_Summary_Template.docx', name: 'QMS Requirements and Environmental Summary', source: 'QMS' },
-        { fileName: '07_Device_Master_File_Appendix_II_Template.docx', name: 'Device Master File Appendix II', source: 'DMF' },
-        { fileName: '08_IVD_Device_Master_File_Appendix_III_Template_CONDITIONAL.docx', name: 'IVD Device Master File Appendix III  CONDITIONAL', source: 'DMF' },
+        { fileName: '07_Device_Master_File_Appendix_II_Template.docx', name: 'Device Master File Appendix II', source: 'DMF', conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: 'Non-IVD Only' },
+        { fileName: '08_IVD_Device_Master_File_Appendix_III_Template_CONDITIONAL.docx', name: 'IVD Device Master File Appendix III  CONDITIONAL', source: 'DMF', conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: 'IVD Only' },
       ]
     },
     {
@@ -83,9 +83,9 @@ export const COMMERCIAL_MANUFACTURING_GROUP: FormGroup<'commercial-manufacturing
         { fileName: '05_Plant_Master_File_Template.docx', name: 'Plant Master File', source: 'PMF' },
         { fileName: '06_QMS_Compliance_Undertaking_Template.docx', name: 'QMS Compliance Undertaking', source: 'LEGAL' },
         { fileName: '07_QMS_Requirements_Summary_Template.docx', name: 'QMS Requirements Summary', source: 'QMS' },
-        { fileName: '08_Device_Master_File_Template.docx', name: 'Device Master File', source: 'DMF' },
+        { fileName: '08_Device_Master_File_Template.docx', name: 'Device Master File', source: 'DMF', conditionRule: "context.product?.deviceType === 'medical-device'", badgeLabel: 'Non-IVD Only' },
         { fileName: '09_Essential_Principles_Checklist_Template.docx', name: 'Essential Principles Checklist', source: 'DMF' },
-        { fileName: '10_IVD_Performance_Evaluation_Report_Template_CONDITIONAL.docx', name: 'IVD Performance Evaluation Report  CONDITIONAL', source: 'DMF' },
+        { fileName: '10_IVD_Performance_Evaluation_Report_Template_CONDITIONAL.docx', name: 'IVD Performance Evaluation Report  CONDITIONAL', source: 'DMF', conditionRule: "context.product?.deviceType === 'ivd'", badgeLabel: 'IVD Only' },
       ]
     },
   ]
@@ -173,6 +173,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       description: 'Conduct Clinical Investigation',
       summary: "Approval from CDSCO to initiate a clinical trial for an investigational medical device involving human participants.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'medical-device',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -185,6 +186,8 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
         { fileName: '09_Case_Report_Form_Template.docx', name: 'Case Report Form', source: 'CLINICAL' },
         { fileName: '10_Patient_Information_and_Informed_Consent_Template.docx', name: 'Patient Information and Informed Consent', source: 'CLINICAL' },
         { fileName: '11_Investigator_Undertaking_Template.docx', name: 'Investigator Undertaking', source: 'LEGAL' },
+        { fileName: '12_Fee_Challan_Declaration_Template.docx', name: 'Fee Challan Declaration', source: 'FORM' },
+        { fileName: '13_Undertaking_Declaration_Template.docx', name: 'Undertaking Declaration', source: 'LEGAL' },
       ]
     },
     {
@@ -193,6 +196,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       description: 'Clinical Performance Evaluation (IVD)',
       summary: "Permission to evaluate the performance and safety of a new In-Vitro Diagnostic (IVD) device using clinical specimens.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'ivd',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -218,6 +222,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       description: 'New Device Approval (No Predicate)',
       summary: "Marketing authorization for innovative medical devices that do not have an equivalent predicate device currently on the market.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'medical-device',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -242,6 +247,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       description: 'New IVD Approval',
       summary: "Application to import or manufacture a completely new In-Vitro Diagnostic (IVD) that lacks a predicate in the Indian market.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'ivd',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },

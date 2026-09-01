@@ -44,6 +44,7 @@ export default function ClassificationWizard({ initialData }: { initialData: any
   const [step, setStep] = useState(1);
   const [isSaving, setIsSaving] = useState(false);
   const [isLocking, setIsLocking] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const [data, setData] = useState({
     deviceName: initialData?.deviceName || "",
@@ -87,6 +88,7 @@ export default function ClassificationWizard({ initialData }: { initialData: any
 
   const save = async (lock = false) => {
     lock ? setIsLocking(true) : setIsSaving(true);
+    setSaveError(null);
     try {
       const payload: any = {
         deviceClassification: {
@@ -111,7 +113,7 @@ export default function ClassificationWizard({ initialData }: { initialData: any
       router.refresh();
     } catch (err) {
       console.error(err);
-      alert("Failed to save. Please try again.");
+      setSaveError("Failed to save. Please try again.");
     } finally {
       setIsSaving(false);
       setIsLocking(false);
@@ -129,6 +131,12 @@ export default function ClassificationWizard({ initialData }: { initialData: any
 
   return (
     <div>
+      {saveError && (
+        <div className="mb-6 p-4 rounded-xl text-sm font-medium border bg-red-500/10 text-red-500 border-red-500/20 animate-in fade-in slide-in-from-top-2">
+          {saveError}
+        </div>
+      )}
+
       {/* Locked banner */}
       {data.classificationLocked && (
         <div className="mb-6 flex items-center gap-3 p-4 bg-[var(--status-success-bg)] border border-[var(--status-success-border)] rounded-xl text-sm text-[var(--status-success)]">

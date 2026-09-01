@@ -58,6 +58,7 @@ export interface FormDefinition<TFormId extends ApplicationFormId = ApplicationF
   description?: string;
   summary?: string;
   requiredContexts?: string[];
+  allowedDeviceType?: 'medical-device' | 'ivd';
   documents: DocumentTemplate[];
 }
 
