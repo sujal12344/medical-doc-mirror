@@ -68,6 +68,7 @@ export default function DynamicFormPage() {
   }
 
   const documents = matchedForm?.documents || [];
+  const requiredSources = Array.from(new Set(documents.map((d: any) => d.source)));
 
   async function handleGenerate(ignoreMissing = false) {
     if (!docId) return;
@@ -248,9 +249,11 @@ export default function DynamicFormPage() {
         isOpen={showUploadModal}
         onClose={() => setShowUploadModal(false)}
         missingKeys={missingKeys}
+        requiredSources={requiredSources}
         uploadFiles={uploadFiles}
         setUploadFiles={setUploadFiles}
         uploading={uploading}
+        filledSummary={filledSummary}
         onExtract={handleDynamicUpload}
         onGenerateAnyway={() => {
           setShowUploadModal(false);
