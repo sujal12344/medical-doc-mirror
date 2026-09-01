@@ -9,7 +9,7 @@ const nextConfig: NextConfig = {
   },
 
   // Retain only valid CommonJS/native binary server packages here
-  serverExternalPackages: ["@napi-rs/canvas", "pdf-parse"],
+  serverExternalPackages: ["@napi-rs/canvas", "pdf-parse", "tesseract.js"],
 };
 
 export default nextConfig;

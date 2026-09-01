@@ -1,9 +1,10 @@
 import { createCanvas } from "@napi-rs/canvas";
+import Tesseract from "tesseract.js";
 import { OpenAI } from "openai";
 import { getDocument, type PDFDocumentProxy, type PDFPageProxy } from "pdfjs-dist/legacy/build/pdf.mjs";
 import mammoth from "mammoth";
 
-export type DocumentExtractMethod = "pdf-text" | "ocr-vision";
+export type DocumentExtractMethod = "pdf-text" | "ocr-vision" | "ocr-tesseract";
 
 export type DocumentExtractResult = {
   text: string;
@@ -236,15 +237,35 @@ export async function extractDocumentText(
   const lower = fileName.toLowerCase();
 
   // Support direct image OCR using Vision
+  // Support direct image OCR 
   if (lower.match(/\.(png|jpg|jpeg|webp)$/)) {
-    console.log("[documentExtract] Image detected, running Vision OCR directly");
-    const openai = new OpenAI();
-    const mime = `image/${lower.split('.').pop()?.replace('jpg', 'jpeg')}`;
-    
+    // Check file size limit
     if (buffer.length > OCR_MAX_BYTES) {
       throw new Error(`Image too large (${(buffer.length / 1e6).toFixed(1)}MB).`);
     }
 
+    // --- TESSERACT OCR (Current) ---
+    // Using Tesseract natively as a quick, free solution for image text extraction
+    console.log("[documentExtract] Image detected, running Tesseract OCR");
+    const { data: { text: tesseractText } } = await Tesseract.recognize(buffer, 'eng');
+    
+    // If Tesseract successfully found text, use it.
+    if (tesseractText && tesseractText.trim().length > 0) {
+      return {
+        text: tesseractText.trim(),
+        method: "ocr-tesseract",
+        pageCount: 1,
+        charCount: tesseractText.length,
+        ocrPages: 1,
+      };
+    }
+
+    // --- GOOGLE CLOUD VISION (Future Migration) ---
+    // Fallback or future migration: This uses your original Vision utility. 
+    // You can easily swap to strictly using this later by removing the Tesseract block above.
+    console.log("[documentExtract] Tesseract yielded no text, falling back to Vision OCR");
+    const openai = new OpenAI();
+    const mime = `image/${lower.split('.').pop()?.replace('jpg', 'jpeg')}`;
     const text = await ocrPageWithVision(openai, buffer, mime, 1, 1);
     return {
       text,

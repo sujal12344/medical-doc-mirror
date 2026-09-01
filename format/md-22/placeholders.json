@@ -3,15 +3,14 @@
   "placeholders": [
     "acceptanceCriteria",
     "acceptanceCriterion",
-    "actualDate",
     "agreementEffectiveDate",
     "amendmentReason",
     "applicableClassificationRule",
     "applicantConstitution",
+    "applicantConstitution",
     "applicantName",
     "applicationDate",
     "applicationPlace",
-    "assessmentEndpoint",
     "authorisedSignatoryDesignation",
     "authorisedSignatoryName",
     "basicDesignFeatures",
@@ -51,10 +50,7 @@
     "clinicalInvestigationType",
     "clinicalSiteAddress",
     "clinicalSiteName",
-    "comments",
     "correspondenceAddress",
-    "crfVersionDate",
-    "criterion",
     "date",
     "designAnalysisConclusion",
     "designAnalysisDeviceOverview",
@@ -105,7 +101,6 @@
     "insuranceDetails",
     "intendedUse",
     "investigatorApprovalDate",
-    "investigatorInitials",
     "investigatorQualificationsExperience",
     "investigatorSignatureDate",
     "investigatorUndertakingDate",
@@ -113,8 +108,6 @@
     "manufacturerDetails",
     "medicalCouncilRegistrationNumber",
     "method",
-    "methodUnit",
-    "no",
     "physicalMetrologicalStandardisation",
     "pisAdditionalApplicableInformation",
     "pisAlternativeProceduresTherapies",
@@ -134,7 +127,6 @@
     "pisStudyProcedures",
     "pisVoluntaryParticipationWithdrawal",
     "plannedSampleSize",
-    "plannedWindow",
     "primaryClinicalSiteAddress",
     "primaryClinicalSiteContactNumber",
     "primaryClinicalSiteEmailAddress",
@@ -150,12 +142,10 @@
     "referenceProtocolStandard",
     "reportReferenceConclusion",
     "researchTeamMembers",
-    "result",
     "scheduleOfAssessments",
     "secondaryEndpoints",
     "secondaryObjectives",
     "siteNameAddress",
-    "slNo",
     "sponsorAddress",
     "sponsorApprovalDate",
     "sponsorContactNumber",
@@ -171,10 +161,7 @@
     "testParameter",
     "testReportResult",
     "testSelectionRationale",
-    "timePoint",
-    "version",
-    "visitName",
-    "yes"
+    "version"
   ],
   "templates": {
     "01_Cover_Letter_Template.docx": [
@@ -217,7 +204,6 @@
       "primaryClinicalSiteFaxNumber",
       "principalInvestigatorName",
       "siteNameAddress",
-      "slNo",
       "sponsorAddress",
       "sponsorContactNumber",
       "sponsorEmailAddress",
@@ -236,8 +222,7 @@
       "deviceDescription",
       "deviceGenericName",
       "deviceModelOrType",
-      "intendedUse",
-      "slNo"
+      "intendedUse"
     ],
     "04_Design_Analysis_Report_Template.docx": [
       "acceptanceCriteria",
@@ -266,7 +251,6 @@
       "physicalMetrologicalStandardisation",
       "referenceProtocolStandard",
       "reportReferenceConclusion",
-      "slNo",
       "testParameter",
       "testReportResult",
       "testSelectionRationale"
@@ -393,27 +377,13 @@
       "version"
     ],
     "09_Case_Report_Form_Template.docx": [
-      "actualDate",
       "applicantName",
-      "assessmentEndpoint",
       "cipNumber",
       "cipVersionDate",
       "clinicalSiteName",
-      "comments",
-      "crfVersionDate",
-      "criterion",
-      "investigatorInitials",
-      "methodUnit",
-      "no",
-      "plannedWindow",
       "principalInvestigatorName",
       "proceduresAssessments",
-      "result",
-      "slNo",
-      "studyTitle",
-      "timePoint",
-      "visitName",
-      "yes"
+      "studyTitle"
     ],
     "10_Patient_Information_and_Informed_Consent_Template.docx": [
       "applicantName",
@@ -458,5 +428,22 @@
       "researchTeamMembers",
       "studyTitle"
     ]
+  },
+  "dmfMapping": {
+    "acceptanceCriteria": ["6.3", "6.1"],
+    "acceptanceCriterion": ["6.3", "6.1"],
+    "basicDesignFeatures": ["4.1", "5.1", "2.1j"],
+    "designAnalysisConclusion": ["6.5", "6.2"],
+    "designAnalysisDeviceOverview": ["1.1b", "2.0"],
+    "designAnalysisPurposeScope": ["1.0", "1.1b"],
+    "designControlSummary": ["4.2", "5.0"],
+    "designRequirement": ["4.1", "2.1j"],
+    "drawingsAndDesignDocumentIndex": ["4.0", "4.2"],
+    "essentialPrinciplesCrossReference": ["3.0"],
+    "referenceProtocolStandard": ["3.0", "6.3"],
+    "reportReferenceConclusion": ["6.5"],
+    "testParameter": ["6.4", "6.2"],
+    "testReportResult": ["6.4", "6.2"],
+    "testSelectionRationale": ["6.1", "6.3"]
   }
 }

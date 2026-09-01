@@ -45,7 +45,10 @@ export async function resolvePlaceholders(
     techDocs = await RegulatoryDocument.find({
       userId,
       frameworkId: { $in: ["IN_DMF", "IN_DMF_MD", "IN_PMF"] },
-      "contextPayload.productId": { $in: productIds }
+      $or: [
+        { "contextPayload.productId": { $in: productIds } },
+        { "contextPayload.productIds": { $in: productIds } }
+      ]
     }).lean();
   }
 
@@ -60,6 +63,7 @@ export async function resolvePlaceholders(
   
   let requiredKeys: string[] = [];
   let templatesMapping: Record<string, string[]> = {};
+  let customDmfMapping: Record<string, string[]> = {};
   
   if (formId) {
     try {
@@ -74,6 +78,9 @@ export async function resolvePlaceholders(
         }
         if (data.templates) {
           templatesMapping = data.templates;
+        }
+        if (data.dmfMapping) {
+          customDmfMapping = data.dmfMapping;
         }
       } else {
         console.log(`[DataResolver] File not found: ${placeholdersPath}`);
@@ -117,16 +124,55 @@ export async function resolvePlaceholders(
     }
   }
 
+  // Built-in alias mapping to map readable DOCX placeholder tags to raw DMF framework field IDs.
+  const dmfAliasMapping: Record<string, string[]> = {
+    validationResults: ["6.4", "7.1"],
+    validationConclusion: ["6.5", "7.2"],
+    validationProtocol: ["6.3"],
+    classificationRationale: ["1.1e", "2.1_risk"],
+    classificationFactors: ["1.1c", "2.4"],
+    classificationJustification: ["1.1e"],
+    deviceDescription: ["1.1b", "2.1j", "4.1"],
+    intendedUse: ["1.1b", "2.0"],
+    designInputsSummary: ["4.1", "2.1j"],
+    designOutputsSummary: ["2.1j", "4.1"],
+    verificationValidationSummary: ["6.1", "6.4"],
+    ...customDmfMapping
+  };
+
   // 3. Fallback to extracting from Tech Docs (PMF/DMF) for scalar strings
   for (const tDoc of techDocs) {
     const sourceName = `Tech Doc (${tDoc.frameworkId})`;
     const tSections = sectionsToPlain(tDoc.sections);
+    
+    // Flatten tDoc fields for easier alias matching
+    const flatTDocFields: Record<string, any> = {};
     for (const sectionData of Object.values(tSections)) {
       if (sectionData.fields) {
         for (const [fieldId, fieldValue] of Object.entries(sectionData.fields)) {
-          if (fieldValue !== undefined && fieldValue !== null && !prefillData[fieldId]) {
-            prefillData[fieldId] = String(fieldValue);
-            addFilledLog(fieldId, sourceName, fieldValue);
+          if (fieldValue !== undefined && fieldValue !== null && fieldValue !== "") {
+            flatTDocFields[fieldId] = fieldValue;
+          }
+        }
+      }
+    }
+
+    // Apply exact matches first
+    for (const [fieldId, fieldValue] of Object.entries(flatTDocFields)) {
+      if (!prefillData[fieldId]) {
+        prefillData[fieldId] = String(fieldValue);
+        addFilledLog(fieldId, sourceName, fieldValue);
+      }
+    }
+    
+    // Apply descriptive aliases
+    for (const [alias, possibleKeys] of Object.entries(dmfAliasMapping)) {
+      if (!prefillData[alias]) {
+        for (const key of possibleKeys) {
+          if (flatTDocFields[key]) {
+            prefillData[alias] = String(flatTDocFields[key]);
+            addFilledLog(alias, `${sourceName} [mapped from ${key}]`, flatTDocFields[key]);
+            break;
           }
         }
       }
