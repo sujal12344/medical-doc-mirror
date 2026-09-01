@@ -55,9 +55,38 @@ export function DynamicExtractionModal({
       }
       if (missingKeys.some(k => k.toLowerCase().includes('sponsor') || k.toLowerCase().includes('contact') || k.toLowerCase().includes('email') || k.toLowerCase().includes('fax'))) {
         suggestions.push({ 
-          name: "Sponsor Agreement or Cover Page with Contact Details",
+          name: "The agreement between the Sponsor and Principal investigator",
           links: [
             { label: "Clinical Trial Agreement Guide", url: "https://www.paho.org/en/documents/regional-template-clinical-trial-agreement" }
+          ]
+        });
+      }
+    }
+    
+    // Add specific test reports for MD-22 requirements
+    if (requiredSources.length === 0 || requiredSources.includes('DMF')) {
+      if (missingKeys.some(k => k.toLowerCase().includes('biocompatibility') || k.toLowerCase().includes('animal') || k.toLowerCase().includes('performance'))) {
+        suggestions.push({
+          name: "Biocompatibility and Animal performance study data / Ex vivo tests",
+          links: [
+            { label: "ISO 10993 Guidelines", url: "https://www.iso.org/obp/ui/#iso:std:iso:10993:-1:ed-5:v1:en" }
+          ]
+        });
+      }
+      if (missingKeys.some(k => k.toLowerCase().includes('design') || k.toLowerCase().includes('mechanical') || k.toLowerCase().includes('electrical') || k.toLowerCase().includes('reliability'))) {
+        suggestions.push({
+          name: "Design analysis data (Mechanical, electrical, reliability, and software validation tests)",
+          links: [
+            { label: "IEC 60601-1 (Electrical Safety)", url: "https://www.iso.org/standard/65529.html" },
+            { label: "IEC 62304 (Software)", url: "https://www.iso.org/standard/38421.html" }
+          ]
+        });
+      }
+      if (missingKeys.some(k => k.toLowerCase().includes('risk'))) {
+        suggestions.push({
+          name: "Results of the risk analysis",
+          links: [
+            { label: "ISO 14971 Risk Management", url: "https://www.iso.org/standard/72704.html" }
           ]
         });
       }
@@ -125,7 +154,7 @@ export function DynamicExtractionModal({
       onClick={onClose}
     >
       <div 
-        className="bg-surface border border-border w-full max-w-lg rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200"
+        className="bg-surface border border-border w-full max-w-lg rounded-2xl shadow-xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-200 max-h-[85vh]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between p-4 border-b border-border bg-surface2/50">
@@ -137,7 +166,7 @@ export function DynamicExtractionModal({
             <X className="w-5 h-5" />
           </button>
         </div>
-        <div className="p-6">
+        <div className="p-6 overflow-y-auto">
           <p className="text-sm text-muted-foreground mb-4">
             To perfectly fill out this form, we need data for <strong>{missingKeys.length} fields</strong> (e.g. {missingKeys.slice(0, 3).join(", ")}).
           </p>

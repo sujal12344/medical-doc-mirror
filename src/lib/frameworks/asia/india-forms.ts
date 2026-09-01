@@ -185,6 +185,8 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
         { fileName: '09_Case_Report_Form_Template.docx', name: 'Case Report Form', source: 'CLINICAL' },
         { fileName: '10_Patient_Information_and_Informed_Consent_Template.docx', name: 'Patient Information and Informed Consent', source: 'CLINICAL' },
         { fileName: '11_Investigator_Undertaking_Template.docx', name: 'Investigator Undertaking', source: 'LEGAL' },
+        { fileName: '12_Fee_Challan_Declaration_Template.docx', name: 'Fee Challan Declaration', source: 'FORM' },
+        { fileName: '13_Undertaking_Declaration_Template.docx', name: 'Undertaking Declaration', source: 'LEGAL' },
       ]
     },
     {

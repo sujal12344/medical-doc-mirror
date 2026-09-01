@@ -7,7 +7,6 @@
     "amendmentReason",
     "applicableClassificationRule",
     "applicantConstitution",
-    "applicantConstitution",
     "applicantName",
     "applicationDate",
     "applicationPlace",
@@ -445,5 +444,28 @@
     "testParameter": ["6.4", "6.2"],
     "testReportResult": ["6.4", "6.2"],
     "testSelectionRationale": ["6.1", "6.3"]
-  }
+  },
+    "12_Fee_Challan_Declaration_Template.docx": [
+      "applicantName",
+      "applicationDate",
+      "authorisedSignatoryDesignation",
+      "authorisedSignatoryName",
+      "feeAmount",
+      "feePaidDate",
+      "feeReferenceNumber",
+      "sponsorAddress",
+      "sponsorContactNumber",
+      "sponsorEmailAddress",
+      "studyTitle"
+    ],
+    "13_Undertaking_Declaration_Template.docx": [
+      "applicantName",
+      "applicationDate",
+      "applicationPlace",
+      "authorisedSignatoryDesignation",
+      "authorisedSignatoryName",
+      "deviceGenericName",
+      "deviceModelOrType",
+      "sponsorAddress"
+    ]
 }
