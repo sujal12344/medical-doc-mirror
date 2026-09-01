@@ -426,25 +426,7 @@
       "principalInvestigatorTitle",
       "researchTeamMembers",
       "studyTitle"
-    ]
-  },
-  "dmfMapping": {
-    "acceptanceCriteria": ["6.3", "6.1"],
-    "acceptanceCriterion": ["6.3", "6.1"],
-    "basicDesignFeatures": ["4.1", "5.1", "2.1j"],
-    "designAnalysisConclusion": ["6.5", "6.2"],
-    "designAnalysisDeviceOverview": ["1.1b", "2.0"],
-    "designAnalysisPurposeScope": ["1.0", "1.1b"],
-    "designControlSummary": ["4.2", "5.0"],
-    "designRequirement": ["4.1", "2.1j"],
-    "drawingsAndDesignDocumentIndex": ["4.0", "4.2"],
-    "essentialPrinciplesCrossReference": ["3.0"],
-    "referenceProtocolStandard": ["3.0", "6.3"],
-    "reportReferenceConclusion": ["6.5"],
-    "testParameter": ["6.4", "6.2"],
-    "testReportResult": ["6.4", "6.2"],
-    "testSelectionRationale": ["6.1", "6.3"]
-  },
+    ],
     "12_Fee_Challan_Declaration_Template.docx": [
       "applicantName",
       "applicationDate",
@@ -468,4 +450,66 @@
       "deviceModelOrType",
       "sponsorAddress"
     ]
+  },
+  "dmfMapping": {
+    "acceptanceCriteria": [
+      "6.3",
+      "6.1"
+    ],
+    "acceptanceCriterion": [
+      "6.3",
+      "6.1"
+    ],
+    "basicDesignFeatures": [
+      "4.1",
+      "5.1",
+      "2.1j"
+    ],
+    "designAnalysisConclusion": [
+      "6.5",
+      "6.2"
+    ],
+    "designAnalysisDeviceOverview": [
+      "1.1b",
+      "2.0"
+    ],
+    "designAnalysisPurposeScope": [
+      "1.0",
+      "1.1b"
+    ],
+    "designControlSummary": [
+      "4.2",
+      "5.0"
+    ],
+    "designRequirement": [
+      "4.1",
+      "2.1j"
+    ],
+    "drawingsAndDesignDocumentIndex": [
+      "4.0",
+      "4.2"
+    ],
+    "essentialPrinciplesCrossReference": [
+      "3.0"
+    ],
+    "referenceProtocolStandard": [
+      "3.0",
+      "6.3"
+    ],
+    "reportReferenceConclusion": [
+      "6.5"
+    ],
+    "testParameter": [
+      "6.4",
+      "6.2"
+    ],
+    "testReportResult": [
+      "6.4",
+      "6.2"
+    ],
+    "testSelectionRationale": [
+      "6.1",
+      "6.3"
+    ]
+  }
 }
