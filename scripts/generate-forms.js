@@ -127,6 +127,9 @@ for (const group of groups) {
     if (config.requiredContexts && config.requiredContexts.length > 0) {
       out += `      requiredContexts: [${config.requiredContexts.map(c => `'${c}'`).join(', ')}],\n`;
     }
+    if (config.allowedDeviceType) {
+      out += `      allowedDeviceType: '${config.allowedDeviceType}',\n`;
+    }
     out += `      documents: [\n${documentsStr}      ]\n`;
     out += `    },\n`;
   }

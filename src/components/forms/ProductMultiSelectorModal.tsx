@@ -15,10 +15,11 @@ interface ProductMultiSelectorModalProps {
   isMultiSelect?: boolean;
   requiresPmf?: boolean;
   requiresDmf?: boolean;
+  allowedDeviceType?: 'medical-device' | 'ivd';
 }
 
 export function ProductMultiSelectorModal({ 
-  formTitle, onClose, onContinue, generating, isMultiSelect = true, requiresPmf, requiresDmf 
+  formTitle, onClose, onContinue, generating, isMultiSelect = true, requiresPmf, requiresDmf, allowedDeviceType 
 }: ProductMultiSelectorModalProps) {
   const router = useRouter();
   const [products, setProducts] = useState<ProductShort[]>([]);
@@ -61,8 +62,9 @@ export function ProductMultiSelectorModal({
       setSelectedIds(prev => prev.includes(id) ? [] : [id]);
     }
   };
-
-  const filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const filteredProducts = products
+    .filter(p => !allowedDeviceType || p.deviceType === allowedDeviceType)
+    .filter(p => p.name.toLowerCase().includes(searchQuery.toLowerCase()));
 
   const modalContent = (
     <div 

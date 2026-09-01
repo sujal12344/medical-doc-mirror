@@ -15,6 +15,7 @@ export type FormSpec = {
   requiredContexts?: string[];
   requiresPmf?: boolean;
   requiresDmf?: boolean;
+  allowedDeviceType?: 'medical-device' | 'ivd';
 };
 
 export function CreateFormButton({ 

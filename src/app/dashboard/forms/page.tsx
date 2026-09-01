@@ -53,6 +53,7 @@ export default function FormsDashboard() {
           isMultiSelect={activeFormForModal.requiredContexts?.includes('PRODUCT_MULTI')}
           requiresPmf={activeFormForModal.requiresPmf}
           requiresDmf={activeFormForModal.requiresDmf}
+          allowedDeviceType={activeFormForModal.allowedDeviceType}
         />
       )}
 
@@ -94,6 +95,7 @@ export default function FormsDashboard() {
                   requiredContexts: form.requiredContexts,
                   requiresPmf: form.documents.some(d => d.source === 'PMF'),
                   requiresDmf: form.documents.some(d => d.source === 'DMF'),
+                  allowedDeviceType: form.allowedDeviceType,
                 };
                 
                 return (

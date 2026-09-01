@@ -173,6 +173,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       description: 'Conduct Clinical Investigation',
       summary: "Approval from CDSCO to initiate a clinical trial for an investigational medical device involving human participants.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'medical-device',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -195,6 +196,7 @@ export const CLINICAL_TRIALS_EVALUATION_GROUP: FormGroup<'clinical-trials-evalua
       description: 'Clinical Performance Evaluation (IVD)',
       summary: "Permission to evaluate the performance and safety of a new In-Vitro Diagnostic (IVD) device using clinical specimens.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'ivd',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -220,6 +222,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       description: 'New Device Approval (No Predicate)',
       summary: "Marketing authorization for innovative medical devices that do not have an equivalent predicate device currently on the market.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'medical-device',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },
@@ -244,6 +247,7 @@ export const NEW_DEVICE_APPROVALS_GROUP: FormGroup<'new-device-approvals', NewDe
       description: 'New IVD Approval',
       summary: "Application to import or manufacture a completely new In-Vitro Diagnostic (IVD) that lacks a predicate in the Indian market.",
       requiredContexts: ['PRODUCT_SINGLE'],
+      allowedDeviceType: 'ivd',
       documents: [
         { fileName: '01_Cover_Letter_Template.docx', name: 'Cover Letter', source: 'FORM' },
         { fileName: '02_Official_Form_Template.docx', name: 'Official Form', source: 'FORM' },

@@ -61,12 +61,12 @@ const formConfigs = {
   'MD-16': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
 
   // 4. Clinical Trials
-  'MD-22': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
-  'MD-24': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
+  'MD-22': { requiredContexts: ['PRODUCT_SINGLE'], allowedDeviceType: 'medical-device', templates: {} },
+  'MD-24': { requiredContexts: ['PRODUCT_SINGLE'], allowedDeviceType: 'ivd', templates: {} },
 
   // 5. New Device Approvals
-  'MD-26': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
-  'MD-28': { requiredContexts: ['PRODUCT_SINGLE'], templates: {} },
+  'MD-26': { requiredContexts: ['PRODUCT_SINGLE'], allowedDeviceType: 'medical-device', templates: {} },
+  'MD-28': { requiredContexts: ['PRODUCT_SINGLE'], allowedDeviceType: 'ivd', templates: {} },
 
   // 6. Market Sale / Wholesale
   'MD-41': { requiredContexts: ['PRODUCT_MULTI'], templates: {} },
